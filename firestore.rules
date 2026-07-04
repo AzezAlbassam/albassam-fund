@@ -1,14 +1,44 @@
 rules_version = '2';
+
+// ============================================================
+// COMPLETE ruleset for Firebase project "albassam-fund".
+// Firestore has ONE ruleset per project, so this file covers
+// BOTH apps sharing it:
+//   /trades/**       — Albassam Fund (stock calls tracker)
+//   /familyOffice/** — Albassam Private Family Office
+// Keep this file identical in the albassam-fund and
+// albassam-office repos; deploying from either then yields the
+// same ruleset.
+// ============================================================
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Trades: anyone can read (family view link needs no login),
-    // only the fund manager's verified Google account can write.
-    match /trades/{tradeId} {
-      allow read: if true;
-      allow write: if request.auth != null
+
+    function isOwner() {
+      return request.auth != null
         && request.auth.token.email == 'azizbassam2018@gmail.com'
         && request.auth.token.email_verified == true;
     }
+
+    // Albassam Fund: trades tracker.
+    match /trades/{tradeId} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
+    // Albassam Private Family Office: config doc + subcollections
+    // (members, ledger, history). Family view link needs no login;
+    // every write requires the steward's verified Google account.
+    match /familyOffice/{doc} {
+      allow read: if true;
+      allow write: if isOwner();
+
+      match /{collection}/{entryId} {
+        allow read: if true;
+        allow write: if isOwner();
+      }
+    }
+
     // Everything else: locked.
     match /{document=**} {
       allow read, write: if false;
