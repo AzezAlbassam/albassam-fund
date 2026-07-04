@@ -1,14 +1,22 @@
 // ============================================================
-// Live prices + company profiles via Finnhub (free tier).
-// Real mode: polls /quote for every active ticker on a timer.
-// Demo mode: fabricates a gentle random walk so the design
-// can be previewed without an API key.
+// Live prices + company profiles.
+//  * Default provider: Yahoo Finance — free, no API key. Yahoo
+//    doesn't send CORS headers, so requests go through public
+//    CORS-friendly mirrors (with fallbacks).
+//  * Optional provider: Finnhub — used automatically if a key
+//    is set in config.js.
+//  * Demo mode: fabricated random walk (no network at all).
+// Logos come from the free Parqet logo CDN; the UI falls back
+// to a letter badge if a logo doesn't exist.
 // ============================================================
 
 import { DEMO, FINNHUB_KEY, PRICE_REFRESH_MS } from "./config.js";
 
-const BASE = "https://finnhub.io/api/v1";
+const USE_FINNHUB = !FINNHUB_KEY.startsWith("__");
+const FINNHUB = "https://finnhub.io/api/v1";
+
 export const quotes = {};   // ticker -> {c: current, pc: prevClose, dp: day %}
+const names = {};           // ticker -> company name (from Yahoo meta)
 let onUpdate = () => {};
 let tickers = [];
 let timer = null;
@@ -31,37 +39,77 @@ export function watchTickers(list) {
 async function refresh() {
   if (DEMO) return demoRefresh();
   await Promise.all(tickers.map(async (tk) => {
-    try {
-      const r = await fetch(`${BASE}/quote?symbol=${encodeURIComponent(tk)}&token=${FINNHUB_KEY}`);
-      if (!r.ok) return;
-      const q = await r.json();
-      if (q && q.c) quotes[tk] = { c: q.c, pc: q.pc, dp: q.dp };
-    } catch (e) { /* offline / rate limited — keep last quote */ }
+    const q = await getQuote(tk);
+    if (q) quotes[tk] = q;
   }));
   onUpdate(quotes);
+}
+
+async function getQuote(tk) {
+  return USE_FINNHUB ? finnhubQuote(tk) : yahooQuote(tk);
 }
 
 // Company name + logo, fetched once when a position is added.
 export async function fetchProfile(ticker) {
   if (DEMO) return { name: ticker + " Inc", logo: "" };
-  try {
-    const r = await fetch(`${BASE}/stock/profile2?symbol=${encodeURIComponent(ticker)}&token=${FINNHUB_KEY}`);
-    if (!r.ok) return { name: "", logo: "" };
-    const p = await r.json();
-    return { name: p.name || "", logo: p.logo || "" };
-  } catch (e) { return { name: "", logo: "" }; }
+  const logo = `https://assets.parqet.com/logos/symbol/${encodeURIComponent(ticker)}?format=png&size=64`;
+  if (USE_FINNHUB) {
+    try {
+      const r = await fetch(`${FINNHUB}/stock/profile2?symbol=${encodeURIComponent(ticker)}&token=${FINNHUB_KEY}`);
+      if (r.ok) {
+        const p = await r.json();
+        return { name: p.name || names[ticker] || "", logo: p.logo || logo };
+      }
+    } catch (e) { /* fall through */ }
+  }
+  return { name: names[ticker] || "", logo };
 }
 
 // Quick validity check when adding a ticker.
 export async function checkTicker(ticker) {
   if (DEMO) return true;
+  const q = await getQuote(ticker);
+  if (q) { quotes[ticker] = q; return true; }
+  return false;
+}
+
+/* ----------------------- Yahoo Finance ----------------------- */
+// Public CORS mirrors, tried in order. Only the ticker symbol is
+// ever sent — no personal data.
+const PROXIES = [
+  (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+];
+
+async function proxiedJson(url) {
+  for (const wrap of PROXIES) {
+    try {
+      const r = await fetch(wrap(url));
+      if (r.ok) return await r.json();
+    } catch (e) { /* try next mirror */ }
+  }
+  return null;
+}
+
+async function yahooQuote(tk) {
+  const j = await proxiedJson(
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(tk)}?interval=1d&range=2d`);
+  const meta = j?.chart?.result?.[0]?.meta;
+  const c = meta?.regularMarketPrice;
+  if (c == null) return null;
+  if (meta.shortName || meta.longName) names[tk] = meta.shortName || meta.longName;
+  const pc = meta.chartPreviousClose ?? meta.previousClose ?? null;
+  return { c, pc, dp: pc ? ((c - pc) / pc) * 100 : null };
+}
+
+/* ----------------------- Finnhub ----------------------- */
+async function finnhubQuote(tk) {
   try {
-    const r = await fetch(`${BASE}/quote?symbol=${encodeURIComponent(ticker)}&token=${FINNHUB_KEY}`);
-    if (!r.ok) return false;
+    const r = await fetch(`${FINNHUB}/quote?symbol=${encodeURIComponent(tk)}&token=${FINNHUB_KEY}`);
+    if (!r.ok) return null;
     const q = await r.json();
-    if (q && q.c) { quotes[ticker] = { c: q.c, pc: q.pc, dp: q.dp }; return true; }
-    return false;
-  } catch (e) { return false; }
+    return q && q.c ? { c: q.c, pc: q.pc, dp: q.dp } : null;
+  } catch (e) { return null; }
 }
 
 /* ----------------------- demo walk ----------------------- */

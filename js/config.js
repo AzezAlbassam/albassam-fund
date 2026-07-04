@@ -14,8 +14,8 @@ export const firebaseConfig = {
   appId: "__FIREBASE_APP_ID__",
 };
 
-// Free API key from https://finnhub.io — used for live US stock
-// quotes and company logos.
+// OPTIONAL: free API key from https://finnhub.io. If left as a
+// placeholder the site uses Yahoo Finance instead — no key needed.
 export const FINNHUB_KEY = "__FINNHUB_KEY__";
 
 // Only this Google account can write to the database.
