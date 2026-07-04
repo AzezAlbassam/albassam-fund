@@ -1,0 +1,175 @@
+// ============================================================
+// Bootstrap. The page sets <body data-mode="view|edit">.
+// View mode: realtime read-only dashboard, no auth, no controls.
+// Edit mode: Google sign-in gate, full controls; Firestore
+// security rules enforce owner-only writes server-side too.
+// ============================================================
+
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js";
+import { initStore, store } from "./store.js";
+import { startPrices, watchTickers, fetchProfile, checkTicker, quotes } from "./prices.js";
+import { renderAll, updateLive, toast } from "./render.js";
+import { startStarfield, startSphere } from "./space.js";
+import { derive, fmtMoney, today } from "./roi.js";
+
+const mode = document.body.dataset.mode || "view";
+const state = { trades: [], mode, canWrite: mode === "edit" && DEMO };
+const $ = (s) => document.querySelector(s);
+
+/* ----------------------- visuals ----------------------- */
+startStarfield($("#stars"));
+startSphere($("#sphere"));
+
+function clock() {
+  const n = new Date();
+  $("#clockT").textContent = n.toTimeString().slice(0, 8);
+  $("#clockD").textContent = n.toDateString().toUpperCase().slice(0, 10);
+}
+clock(); setInterval(clock, 1000);
+
+if (DEMO) $("#demoBanner")?.removeAttribute("hidden");
+
+/* ----------------------- data ----------------------- */
+startPrices(() => updateLive(state));
+
+initStore((trades) => {
+  state.trades = trades;
+  watchTickers(trades.filter(t => t.status === "active").map(t => t.ticker));
+  renderAll(state);
+}).catch(err => {
+  console.error(err);
+  toast("Could not connect to the database.", true);
+});
+
+/* ----------------------- auth (edit mode) ----------------------- */
+if (mode === "edit" && !DEMO) {
+  (async () => {
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+    const { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } =
+      await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+    const app = window.__fbApp || (window.__fbApp = initializeApp(firebaseConfig));
+    const auth = getAuth(app);
+
+    $("#signInBtn")?.addEventListener("click", () =>
+      signInWithPopup(auth, new GoogleAuthProvider()).catch(e => toast(e.message, true)));
+    $("#signOutBtn")?.addEventListener("click", () => signOut(auth));
+
+    onAuthStateChanged(auth, (user) => {
+      const owner = !!user && user.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+      state.canWrite = owner;
+      $("#gate").hidden = !!user;
+      $("#dash").hidden = !user;
+      $("#authBox").hidden = !user;
+      if (user) {
+        $("#authPhoto").src = user.photoURL || "";
+        $("#authWho").textContent = user.email;
+      }
+      if (user && !owner)
+        toast("Signed in, but this account has no edit access — view only.", true);
+      renderAll(state);
+    });
+  })();
+} else if (mode === "edit" && DEMO) {
+  $("#gate").hidden = true;
+  $("#dash").hidden = false;
+}
+
+/* ----------------------- edit actions ----------------------- */
+if (mode === "edit") {
+  // Add position
+  $("#addForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const ticker = $("#adTicker").value.trim().toUpperCase();
+    const shares = parseFloat($("#adShares").value);
+    const price = parseFloat($("#adPrice").value);
+    const date = $("#adDate").value || today();
+    if (!ticker) return toast("Enter a ticker symbol.", true);
+    if (!(shares > 0)) return toast("Enter how many shares you bought.", true);
+    if (!(price > 0)) return toast("Enter your average buy price.", true);
+    if (state.trades.some(t => t.ticker === ticker && t.status === "active"))
+      return toast(ticker + " is already an active position.", true);
+    toast("Checking " + ticker + "…");
+    if (!(await checkTicker(ticker)))
+      return toast(ticker + " not found — is it a US-listed symbol?", true);
+    const profile = await fetchProfile(ticker);
+    await store.add({ ticker, shares, price, date, ...profile });
+    $("#addForm").reset();
+    $("#adDate").value = today();
+    toast(ticker + " added — live ROI is now tracking.");
+  });
+  if ($("#adDate")) $("#adDate").value = today();
+
+  // Card + closed-row actions via event delegation
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-act]");
+    if (!btn) return;
+    const holder = btn.closest("[data-id]");
+    if (!holder) return;
+    const id = holder.dataset.id;
+    const t = state.trades.find(x => x.id === id);
+    if (!t) return;
+
+    const act = btn.dataset.act;
+    if (act === "del") {
+      // two-step confirm: first click arms the button, second deletes
+      if (btn.dataset.armed) {
+        await store.remove(id);
+        toast(t.ticker + " deleted.");
+      } else {
+        btn.dataset.armed = "1";
+        btn.textContent = "SURE?";
+        btn.classList.add("warn");
+        toast(`Click SURE? again to delete ${t.ticker} permanently.`, true);
+        setTimeout(() => {
+          delete btn.dataset.armed;
+          btn.textContent = "✕";
+          btn.classList.remove("warn");
+        }, 3500);
+      }
+    } else if (act === "reopen") {
+      await store.reopen(id);
+      toast(t.ticker + " reopened — live ROI resumed.");
+    } else if (act === "buy" || act === "sell" || act === "close") {
+      openInlineForm(holder, t, act);
+    }
+  });
+}
+
+function openInlineForm(card, t, act) {
+  const box = card.querySelector(".inline-form");
+  if (!box) return;
+  if (box.dataset.act === act && !box.hidden) { box.hidden = true; box.dataset.act = ""; return; }
+  box.dataset.act = act;
+  box.hidden = false;
+  const q = quotes[t.ticker];
+  const live = q ? q.c.toFixed(2) : "";
+  const d = derive(t);
+  const labels = {
+    buy: `Buy more ${t.ticker} — average price updates automatically`,
+    sell: `Sell part of ${t.ticker} (holding ${d.heldSh} shares)`,
+    close: `Close ${t.ticker} — final ROI locks at this price`,
+  };
+  box.innerHTML = `
+    <span class="fl">${labels[act]}</span>
+    ${act !== "close" ? `<input type="number" step="any" min="0" placeholder="shares" data-in="sh">` : ""}
+    <input type="number" step="any" min="0" placeholder="price $" data-in="px" value="${live}">
+    <button class="mini" data-go>OK</button>
+    <button class="mini ghost" data-cancel>Cancel</button>`;
+  box.querySelector("[data-cancel]").addEventListener("click", () => { box.hidden = true; box.dataset.act = ""; });
+  box.querySelector("[data-go]").addEventListener("click", async () => {
+    const px = parseFloat(box.querySelector('[data-in="px"]').value);
+    if (!(px > 0)) return toast("Enter a valid price.", true);
+    if (act === "close") {
+      await store.close(t.id, px);
+      toast(`${t.ticker} closed at ${fmtMoney(px)} — ROI locked in.`);
+    } else {
+      const sh = parseFloat(box.querySelector('[data-in="sh"]').value);
+      if (!(sh > 0)) return toast("Enter a number of shares.", true);
+      if (act === "sell" && sh > d.heldSh)
+        return toast(`You only hold ${d.heldSh} shares of ${t.ticker}.`, true);
+      await store.addTxn(t.id, { t: act, sh, px, d: today() });
+      toast(`${t.ticker}: ${act === "buy" ? "bought" : "sold"} ${sh} @ ${fmtMoney(px)}.`);
+    }
+    box.hidden = true;
+  });
+}

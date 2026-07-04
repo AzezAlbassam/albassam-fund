@@ -1,0 +1,149 @@
+// ============================================================
+// Data layer. Real mode: Firebase Firestore with realtime
+// onSnapshot sync. Demo mode (before config is filled in):
+// in-memory sample data so the design can be previewed offline.
+//
+// Trade document shape (collection "trades"):
+//   ticker   "AAPL"
+//   name     "Apple Inc"            (cached from Finnhub)
+//   logo     "https://…"            (cached from Finnhub)
+//   status   "active" | "closed"
+//   opened   "YYYY-MM-DD"           (date of first buy)
+//   closed   "YYYY-MM-DD" | null
+//   closePx  number | null          (price used when closing)
+//   finalPct number | null          (blended ROI locked at close)
+//   txns     [{t:"buy"|"sell", sh, px, d}]
+//   createdAt server timestamp      (ordering)
+// ============================================================
+
+import { DEMO, firebaseConfig } from "./config.js";
+import { blendedPct, today } from "./roi.js";
+
+let impl;
+
+export async function initStore(onTrades) {
+  impl = DEMO ? demoStore() : await firestoreStore();
+  impl.subscribe(onTrades);
+  return impl;
+}
+
+export const store = {
+  add: (data) => impl.add(data),
+  addTxn: (id, txn) => impl.addTxn(id, txn),
+  close: (id, closePx) => impl.close(id, closePx),
+  reopen: (id) => impl.reopen(id),
+  remove: (id) => impl.remove(id),
+  setProfile: (id, profile) => impl.setProfile(id, profile),
+};
+
+/* ----------------------- Firestore ----------------------- */
+async function firestoreStore() {
+  const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+  const fs = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+  const app = window.__fbApp || (window.__fbApp = initializeApp(firebaseConfig));
+  const db = fs.getFirestore(app);
+  const col = fs.collection(db, "trades");
+  let cache = [];
+
+  const norm = (d) => ({ id: d.id, ...d.data() });
+  const find = (id) => cache.find(t => t.id === id);
+
+  return {
+    subscribe(cb) {
+      const q = fs.query(col, fs.orderBy("createdAt", "desc"));
+      fs.onSnapshot(q, snap => {
+        cache = snap.docs.map(norm);
+        cb(cache);
+      }, err => console.error("Firestore listen failed:", err));
+    },
+    async add({ ticker, shares, price, date, name = "", logo = "" }) {
+      await fs.addDoc(col, {
+        ticker, name, logo,
+        status: "active",
+        opened: date || today(),
+        closed: null, closePx: null, finalPct: null,
+        txns: [{ t: "buy", sh: shares, px: price, d: date || today() }],
+        createdAt: fs.serverTimestamp(),
+      });
+    },
+    async addTxn(id, txn) {
+      const t = find(id); if (!t) return;
+      await fs.updateDoc(fs.doc(db, "trades", id), { txns: [...(t.txns || []), txn] });
+    },
+    async close(id, closePx) {
+      const t = find(id); if (!t) return;
+      const finalPct = blendedPct(t, closePx);
+      await fs.updateDoc(fs.doc(db, "trades", id), {
+        status: "closed", closed: today(), closePx, finalPct,
+      });
+    },
+    async reopen(id) {
+      await fs.updateDoc(fs.doc(db, "trades", id), {
+        status: "active", closed: null, closePx: null, finalPct: null,
+      });
+    },
+    async remove(id) {
+      await fs.deleteDoc(fs.doc(db, "trades", id));
+    },
+    async setProfile(id, { name, logo }) {
+      await fs.updateDoc(fs.doc(db, "trades", id), { name, logo });
+    },
+  };
+}
+
+/* ----------------------- Demo mode ----------------------- */
+function demoStore() {
+  const d = (offset) => {
+    const dt = new Date(Date.now() - offset * 86400000);
+    return dt.toISOString().slice(0, 10);
+  };
+  let seq = 1;
+  const uid = () => "demo" + seq++;
+  let trades = [
+    { id: uid(), ticker: "RKLB", name: "Rocket Lab", logo: "", status: "active",
+      opened: d(40), closed: null, closePx: null, finalPct: null,
+      txns: [{ t: "buy", sh: 100, px: 21.4, d: d(40) }, { t: "buy", sh: 50, px: 19.1, d: d(22) }] },
+    { id: uid(), ticker: "NVDA", name: "NVIDIA", logo: "", status: "active",
+      opened: d(75), closed: null, closePx: null, finalPct: null,
+      txns: [{ t: "buy", sh: 12, px: 118.6, d: d(75) }, { t: "sell", sh: 4, px: 141.2, d: d(12) }] },
+    { id: uid(), ticker: "TSLA", name: "Tesla", logo: "", status: "active",
+      opened: d(18), closed: null, closePx: null, finalPct: null,
+      txns: [{ t: "buy", sh: 10, px: 262.0, d: d(18) }] },
+    { id: uid(), ticker: "PLTR", name: "Palantir", logo: "", status: "closed",
+      opened: d(120), closed: d(9), closePx: 92.5, finalPct: 38.4,
+      txns: [{ t: "buy", sh: 60, px: 66.8, d: d(120) }] },
+    { id: uid(), ticker: "SOFI", name: "SoFi Technologies", logo: "", status: "closed",
+      opened: d(90), closed: d(30), closePx: 12.1, finalPct: -7.9,
+      txns: [{ t: "buy", sh: 200, px: 13.14, d: d(90) }] },
+  ];
+  let cb = () => {};
+  const emit = () => cb([...trades]);
+
+  return {
+    subscribe(fn) { cb = fn; emit(); },
+    async add({ ticker, shares, price, date, name = "", logo = "" }) {
+      trades.unshift({ id: uid(), ticker, name, logo, status: "active",
+        opened: date || today(), closed: null, closePx: null, finalPct: null,
+        txns: [{ t: "buy", sh: shares, px: price, d: date || today() }] });
+      emit();
+    },
+    async addTxn(id, txn) {
+      const t = trades.find(x => x.id === id); if (!t) return;
+      t.txns = [...t.txns, txn]; emit();
+    },
+    async close(id, closePx) {
+      const t = trades.find(x => x.id === id); if (!t) return;
+      t.status = "closed"; t.closed = today(); t.closePx = closePx;
+      t.finalPct = blendedPct(t, closePx); emit();
+    },
+    async reopen(id) {
+      const t = trades.find(x => x.id === id); if (!t) return;
+      t.status = "active"; t.closed = null; t.closePx = null; t.finalPct = null; emit();
+    },
+    async remove(id) { trades = trades.filter(x => x.id !== id); emit(); },
+    async setProfile(id, { name, logo }) {
+      const t = trades.find(x => x.id === id); if (!t) return;
+      t.name = name; t.logo = logo; emit();
+    },
+  };
+}

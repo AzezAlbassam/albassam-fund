@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Albassam Fund — Live Trades</title>
+<meta name="description" content="Albassam Fund — live ROI tracker for our stock calls.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='none' stroke='%23FF8C2B' stroke-width='6'/><circle cx='50' cy='50' r='14' fill='%23FF8C2B'/></svg>">
+</head>
+<body data-mode="view">
+<canvas id="stars"></canvas>
+<div class="nebula"></div>
+
+<div class="wrap">
+  <div class="demo-banner" id="demoBanner" hidden>DEMO DATA — Firebase is not configured yet</div>
+
+  <header>
+    <div class="brand">
+      <h1>Albassam Fund</h1>
+      <div class="sub"><span class="live-dot"></span>Live stock calls · ROI tracker</div>
+    </div>
+    <div class="head-right">
+      <div class="mode-chip">MODE · <b>LIVE VIEW</b></div>
+      <div class="clock">
+        <div class="t" id="clockT">--:--:--</div>
+        <div class="d" id="clockD">—</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="stage">
+    <canvas id="sphere"></canvas>
+    <div class="tag tl"><b>CORE · LIVE</b>positions feed</div>
+    <div class="tag tr"><b id="tagWin">—</b>win rate · closed</div>
+    <div class="stage-overlay">
+      <div class="big-label">Fund Signal · Avg ROI Active Calls</div>
+      <div class="big" id="big">—<small>%</small></div>
+      <div class="stats">
+        <div class="stat"><div class="k">Open</div><div class="v" id="stOpen">0</div></div>
+        <div class="stat"><div class="k">Closed</div><div class="v" id="stClosed">0</div></div>
+        <div class="stat"><div class="k">Best</div><div class="v" id="stBest">—</div></div>
+        <div class="stat"><div class="k">Worst</div><div class="v" id="stWorst">—</div></div>
+        <div class="stat"><div class="k">Avg Closed</div><div class="v" id="stAvgClosed">—</div></div>
+        <div class="stat"><div class="k">Win Rate</div><div class="v" id="stWin">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <div class="panel">
+        <p class="label">Active Calls <small id="activeCount"></small></p>
+        <div class="cards" id="activeCards"></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <p class="label">Closed Calls <small id="closedCount"></small></p>
+        <div id="closedList"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Albassam Fund · prices via Finnhub · updates live</footer>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
