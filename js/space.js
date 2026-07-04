@@ -53,7 +53,7 @@ export function startStarfield(canvas) {
       const glow = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(t * 1.1 + s.tw));
       const a = (0.25 + s.depth * 0.65) * glow;
       cx.fillStyle = s.hue
-        ? `rgba(255,160,70,${a})`
+        ? `rgba(140,235,160,${a})`
         : `rgba(240,235,255,${a * 0.85})`;
       cx.beginPath(); cx.arc(px, py, s.r * glow, 0, 7); cx.fill();
     }
@@ -66,8 +66,8 @@ export function startStarfield(canvas) {
       shoot.x -= 9; shoot.y += 4.5;
       const a = Math.max(0, 1 - shoot.life);
       const g = cx.createLinearGradient(shoot.x, shoot.y, shoot.x + 70, shoot.y - 35);
-      g.addColorStop(0, `rgba(255,190,120,${a})`);
-      g.addColorStop(1, "rgba(255,190,120,0)");
+      g.addColorStop(0, `rgba(170,245,190,${a})`);
+      g.addColorStop(1, "rgba(170,245,190,0)");
       cx.strokeStyle = g; cx.lineWidth = 1.6;
       cx.beginPath(); cx.moveTo(shoot.x, shoot.y); cx.lineTo(shoot.x + 70, shoot.y - 35); cx.stroke();
       if (shoot.life >= 1) { shoot = null; nextShoot = ts + 6000 + Math.random() * 12000; }
@@ -114,8 +114,8 @@ export function startSphere(canvas) {
 
     // glowing core
     const core = cx.createRadialGradient(Cx, Cy, 0, Cx, Cy, R * 0.55);
-    core.addColorStop(0, "rgba(255,150,60,0.20)");
-    core.addColorStop(1, "rgba(255,150,60,0)");
+    core.addColorStop(0, "rgba(110,231,135,0.20)");
+    core.addColorStop(1, "rgba(110,231,135,0)");
     cx.fillStyle = core;
     cx.beginPath(); cx.arc(Cx, Cy, R * 0.55, 0, 7); cx.fill();
 
@@ -133,7 +133,7 @@ export function startSphere(canvas) {
       for (let j = i + 1; j < i + 7 && j < N; j++) {
         const b = proj[j], dx = a.X - b.X, dy = a.Y - b.Y, d = dx * dx + dy * dy;
         if (d < 2400) {
-          cx.strokeStyle = `rgba(255,150,60,${0.10 * (1 - d / 2400) * a.s})`;
+          cx.strokeStyle = `rgba(110,231,135,${0.10 * (1 - d / 2400) * a.s})`;
           cx.beginPath(); cx.moveTo(a.X, a.Y); cx.lineTo(b.X, b.Y); cx.stroke();
         }
       }
@@ -143,7 +143,7 @@ export function startSphere(canvas) {
       const p = proj[i];
       const glow = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 1.4 + p.tw));
       const depth = (p.z + 1) / 2;
-      cx.fillStyle = `rgba(255,${150 + Math.round(60 * glow)},60,${(0.9 - depth * 0.6) * glow})`;
+      cx.fillStyle = `rgba(${100 + Math.round(40 * glow)},${215 + Math.round(30 * glow)},140,${(0.9 - depth * 0.6) * glow})`;
       cx.beginPath(); cx.arc(p.X, p.Y, (1.1 + (1 - depth) * 1.5) * glow, 0, 7); cx.fill();
     }
 
@@ -159,10 +159,10 @@ export function startSphere(canvas) {
       const s = F / (F + z * 0.8);
       const X = Cx + x * s, Y = Cy + y * s;
       const pos = (pl.pct ?? 0) >= 0;
-      const col = pos ? "255,150,60" : "255,90,78";
+      const col = pos ? "110,231,135" : "255,90,78";
       const rad = Math.min(6.5, 2.6 + Math.abs(pl.pct ?? 0) * 0.05) * s;
       // faint orbit path
-      cx.strokeStyle = `rgba(255,150,60,0.05)`;
+      cx.strokeStyle = `rgba(110,231,135,0.05)`;
       cx.beginPath(); cx.ellipse(Cx, Cy, orbR, orbR * 0.30, 0, 0, 7); cx.stroke();
       const g = cx.createRadialGradient(X, Y, 0, X, Y, rad * 3);
       g.addColorStop(0, `rgba(${col},0.85)`);

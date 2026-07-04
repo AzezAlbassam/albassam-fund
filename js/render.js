@@ -82,7 +82,7 @@ export function renderAll(state) {
 function barStyle(pct) {
   if (pct == null) return "width:0";
   const pos = pct >= 0, w = Math.min(Math.abs(pct), 100) / 2;
-  return `${pos ? "left:50%" : "right:50%"};width:${w}%;background:${pos ? "#FF8C2B" : "#FF5A4E"}`;
+  return `${pos ? "left:50%" : "right:50%"};width:${w}%;background:${pos ? "#6EE787" : "#FF5A4E"}`;
 }
 
 // Light pass: only live numbers, stats, hero and sphere planets.
