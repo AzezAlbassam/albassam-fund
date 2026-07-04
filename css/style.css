@@ -224,6 +224,25 @@ input:focus{border-color:var(--org);box-shadow:0 0 0 1px rgba(110,231,135,.4)}
 .closed-row .acts{display:flex;gap:5px}
 .empty{color:var(--dim);font-family:var(--mono);font-size:12px;padding:8px 0}
 
+/* ---------- market wire (news) ---------- */
+.panel.wire{margin-top:18px}
+.news-row{
+  display:flex;gap:12px;align-items:flex-start;
+  padding:10px 4px;border-bottom:1px dashed rgba(110,231,135,.18)
+}
+.news-row:last-child{border-bottom:none}
+.chip{
+  flex:none;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.18em;
+  padding:4px 8px;margin-top:2px;text-transform:uppercase
+}
+.chip.material{background:rgba(110,231,135,.14);border:1px solid var(--line-strong);color:var(--org-bright)}
+.chip.rumor{background:transparent;border:1px dashed var(--line);color:var(--dim)}
+.nbody{min-width:0}
+.nbody a{color:var(--txt);text-decoration:none;font-size:13.5px;line-height:1.45}
+.nbody a:hover{color:var(--org-bright);text-decoration:underline}
+.nmeta{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:3px;letter-spacing:.06em}
+.nmeta b{color:var(--org)}
+
 /* ---------- sign-in gate ---------- */
 .gate{max-width:420px;margin:8vh auto;text-align:center}
 .gate .big-btn{margin-top:16px}

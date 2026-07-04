@@ -8,6 +8,7 @@
 import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js";
 import { initStore, store } from "./store.js";
 import { startPrices, watchTickers, fetchProfile, checkTicker, quotes } from "./prices.js";
+import { watchNews } from "./news.js";
 import { renderAll, updateLive, toast } from "./render.js";
 import { startStarfield, startSphere } from "./space.js";
 import { derive, fmtMoney, today } from "./roi.js";
@@ -34,7 +35,9 @@ startPrices(() => updateLive(state));
 
 initStore((trades) => {
   state.trades = trades;
-  watchTickers(trades.filter(t => t.status === "active").map(t => t.ticker));
+  const active = trades.filter(t => t.status === "active");
+  watchTickers(active.map(t => t.ticker));
+  watchNews(active);
   renderAll(state);
 }).catch(err => {
   console.error(err);

@@ -81,7 +81,7 @@ const PROXIES = [
   (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
 ];
 
-async function proxiedJson(url) {
+export async function proxiedJson(url) {
   for (const wrap of PROXIES) {
     try {
       const r = await fetch(wrap(url));
