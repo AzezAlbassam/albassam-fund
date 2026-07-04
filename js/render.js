@@ -57,11 +57,15 @@ export function renderAll(state) {
   }).join("") : `<div class="empty">No active positions${edit ? " — add your first call below." : " right now."}</div>`;
 
   $("#closedCount").textContent = closed.length + " closed";
-  $("#closedList").innerHTML = closed.length ? closed.map(t => `
+  $("#closedList").innerHTML = closed.length ? closed.map(t => {
+    const d = derive(t);
+    const sellPx = t.closePx ?? (d.soldSh > 0 ? d.proceeds / d.soldSh : null);
+    return `
     <div class="closed-row" data-id="${t.id}">
       <div class="l">${logoHtml(t, "")}
         <div><div class="tk">${esc(t.ticker)}</div>
-        <div class="when">${esc(t.opened)} → ${esc(t.closed || "")}${t.closePx ? " @ " + fmtMoney(t.closePx) : ""}</div></div>
+        <div class="when">${esc(t.opened)} → ${esc(t.closed || "")}</div>
+        <div class="when px">bought ${fmtMoney(d.avgCost)} → sold ${fmtMoney(sellPx)}</div></div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <span class="pct ${pctClass(t.finalPct)}">${fmtPct(t.finalPct)}</span>
@@ -69,7 +73,8 @@ export function renderAll(state) {
           <button class="mini ghost" data-act="reopen" title="Reopen">↩</button>
           <button class="mini ghost" data-act="del" title="Delete">✕</button></span>` : ""}
       </div>
-    </div>`).join("") : `<div class="empty">Nothing closed yet — closed calls land here with their final ROI locked in.</div>`;
+    </div>`;
+  }).join("") : `<div class="empty">Nothing closed yet — closed calls land here with their final ROI locked in.</div>`;
 
   updateLive(state);
 }
@@ -124,11 +129,11 @@ function setStat(sel, text, pct) {
   el.className = "v " + pctClass(pct);
 }
 
-export function toast(text, isErr) {
-  const el = $("#msg");
+export function toast(text, isErr, target = "#msg") {
+  const el = $(target);
   if (!el) return;
   el.textContent = text;
   el.className = "msg " + (isErr ? "err" : "ok");
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => { el.textContent = ""; }, 6000);
+  clearTimeout(toast._t?.[target]);
+  (toast._t ??= {})[target] = setTimeout(() => { el.textContent = ""; }, 6000);
 }

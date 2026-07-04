@@ -99,9 +99,31 @@ if (mode === "edit") {
   });
   if ($("#adDate")) $("#adDate").value = today();
 
-  // Card + closed-row actions via event delegation
+  // Log a past (already sold) call straight into Closed
+  $("#pastForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const ticker = $("#pcTicker").value.trim().toUpperCase();
+    const buyPx = parseFloat($("#pcBuy").value);
+    const sellPx = parseFloat($("#pcSell").value);
+    const opened = $("#pcOpened").value;
+    const closed = $("#pcClosed").value;
+    if (!ticker) return toast("Enter a ticker symbol.", true, "#pastMsg");
+    if (!(buyPx > 0)) return toast("Enter the buy price.", true, "#pastMsg");
+    if (!(sellPx > 0)) return toast("Enter the sell price.", true, "#pastMsg");
+    if (opened && closed && closed < opened)
+      return toast("Sell date is before the buy date.", true, "#pastMsg");
+    const profile = await fetchProfile(ticker);
+    await store.addClosed({ ticker, buyPx, sellPx, opened, closed, ...profile });
+    $("#pastForm").reset();
+    const pct = ((sellPx - buyPx) / buyPx) * 100;
+    toast(`${ticker} logged: ${pct >= 0 ? "+" : ""}${pct.toFixed(2)}% locked in.`, false, "#pastMsg");
+  });
+
+  // Card + closed-row actions via event delegation.
+  // Match BUTTONS only — clicks inside the inline form (inputs,
+  // OK/Cancel) must never re-trigger the action that opened it.
   document.addEventListener("click", async (e) => {
-    const btn = e.target.closest("[data-act]");
+    const btn = e.target.closest("button[data-act]");
     if (!btn) return;
     const holder = btn.closest("[data-id]");
     if (!holder) return;
@@ -138,8 +160,8 @@ if (mode === "edit") {
 function openInlineForm(card, t, act) {
   const box = card.querySelector(".inline-form");
   if (!box) return;
-  if (box.dataset.act === act && !box.hidden) { box.hidden = true; box.dataset.act = ""; return; }
-  box.dataset.act = act;
+  if (box.dataset.form === act && !box.hidden) { box.hidden = true; box.dataset.form = ""; return; }
+  box.dataset.form = act;
   box.hidden = false;
   const q = quotes[t.ticker];
   const live = q ? q.c.toFixed(2) : "";
@@ -155,7 +177,11 @@ function openInlineForm(card, t, act) {
     <input type="number" step="any" min="0" placeholder="price $" data-in="px" value="${live}">
     <button class="mini" data-go>OK</button>
     <button class="mini ghost" data-cancel>Cancel</button>`;
-  box.querySelector("[data-cancel]").addEventListener("click", () => { box.hidden = true; box.dataset.act = ""; });
+  box.querySelector("[data-cancel]").addEventListener("click", () => { box.hidden = true; box.dataset.form = ""; });
+  // Enter inside either field = OK
+  box.querySelectorAll("input").forEach(inp => inp.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); box.querySelector("[data-go]").click(); }
+  }));
   box.querySelector("[data-go]").addEventListener("click", async () => {
     const px = parseFloat(box.querySelector('[data-in="px"]').value);
     if (!(px > 0)) return toast("Enter a valid price.", true);

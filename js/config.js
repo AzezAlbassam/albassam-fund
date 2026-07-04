@@ -24,4 +24,8 @@ export const OWNER_EMAIL = "azizbassam2018@gmail.com";
 // How often live prices refresh (milliseconds).
 export const PRICE_REFRESH_MS = 30000;
 
-export const DEMO = firebaseConfig.apiKey.startsWith("__");
+// Demo mode: active until Firebase is configured, or on demand
+// with ?demo=1 in the URL (handy for testing design changes
+// without touching the real database).
+export const DEMO = firebaseConfig.apiKey.startsWith("__") ||
+  new URLSearchParams(location.search).has("demo");

@@ -29,6 +29,7 @@ export async function initStore(onTrades) {
 
 export const store = {
   add: (data) => impl.add(data),
+  addClosed: (data) => impl.addClosed(data),
   addTxn: (id, txn) => impl.addTxn(id, txn),
   close: (id, closePx) => impl.close(id, closePx),
   reopen: (id) => impl.reopen(id),
@@ -63,6 +64,20 @@ async function firestoreStore() {
         opened: date || today(),
         closed: null, closePx: null, finalPct: null,
         txns: [{ t: "buy", sh: shares, px: price, d: date || today() }],
+        createdAt: fs.serverTimestamp(),
+      });
+    },
+    // Log a past call that was already bought and sold — lands
+    // straight in Closed with its ROI locked in.
+    async addClosed({ ticker, shares = 1, buyPx, sellPx, opened, closed, name = "", logo = "" }) {
+      const finalPct = ((sellPx - buyPx) / buyPx) * 100;
+      await fs.addDoc(col, {
+        ticker, name, logo,
+        status: "closed",
+        opened: opened || today(),
+        closed: closed || today(),
+        closePx: sellPx, finalPct,
+        txns: [{ t: "buy", sh: shares, px: buyPx, d: opened || today() }],
         createdAt: fs.serverTimestamp(),
       });
     },
@@ -125,6 +140,13 @@ function demoStore() {
       trades.unshift({ id: uid(), ticker, name, logo, status: "active",
         opened: date || today(), closed: null, closePx: null, finalPct: null,
         txns: [{ t: "buy", sh: shares, px: price, d: date || today() }] });
+      emit();
+    },
+    async addClosed({ ticker, shares = 1, buyPx, sellPx, opened, closed, name = "", logo = "" }) {
+      trades.unshift({ id: uid(), ticker, name, logo, status: "closed",
+        opened: opened || today(), closed: closed || today(),
+        closePx: sellPx, finalPct: ((sellPx - buyPx) / buyPx) * 100,
+        txns: [{ t: "buy", sh: shares, px: buyPx, d: opened || today() }] });
       emit();
     },
     async addTxn(id, txn) {
