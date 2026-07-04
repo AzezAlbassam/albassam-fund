@@ -6,12 +6,12 @@
 // ============================================================
 
 export const firebaseConfig = {
-  apiKey: "__FIREBASE_API_KEY__",
-  authDomain: "__FIREBASE_AUTH_DOMAIN__",
-  projectId: "__FIREBASE_PROJECT_ID__",
-  storageBucket: "__FIREBASE_STORAGE_BUCKET__",
-  messagingSenderId: "__FIREBASE_SENDER_ID__",
-  appId: "__FIREBASE_APP_ID__",
+  apiKey: "AIzaSyAqE1RBIxQ_OZ01hyUcuakU46tElOPbwqg",
+  authDomain: "albassam-fund.firebaseapp.com",
+  projectId: "albassam-fund",
+  storageBucket: "albassam-fund.firebasestorage.app",
+  messagingSenderId: "882020792950",
+  appId: "1:882020792950:web:d6be1279a2903c52277d57",
 };
 
 // OPTIONAL: free API key from https://finnhub.io. If left as a
