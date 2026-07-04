@@ -234,6 +234,7 @@ input:focus{border-color:var(--org);box-shadow:0 0 0 1px rgba(255,140,43,.4)}
   background:var(--org);padding:7px 12px;text-align:center;margin-bottom:16px
 }
 footer{margin-top:34px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.26em;color:var(--dim);text-transform:uppercase}
+footer .credit{margin-top:9px;color:var(--org);text-shadow:0 0 12px rgba(255,140,43,.45);letter-spacing:.34em}
 
 @media (max-width:640px){
   .brand h1{font-size:22px;letter-spacing:.22em}
