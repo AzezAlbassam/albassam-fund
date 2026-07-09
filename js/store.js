@@ -16,8 +16,8 @@
 //   createdAt server timestamp      (ordering)
 // ============================================================
 
-import { DEMO, firebaseConfig } from "./config.js?v=5";
-import { blendedPct, derive, today } from "./roi.js?v=5";
+import { DEMO, firebaseConfig } from "./config.js?v=6";
+import { blendedPct, derive, today } from "./roi.js?v=6";
 
 let impl;
 
@@ -71,9 +71,9 @@ async function firestoreStore() {
     async setSimStart(v) {
       await fs.setDoc(fs.doc(db, "meta", "settings"), { simStart: v }, { merge: true });
     },
-    async add({ ticker, shares, price, date, name = "", logo = "" }) {
+    async add({ ticker, shares, price, date, name = "", logo = "", wt = null }) {
       await fs.addDoc(col, {
-        ticker, name, logo,
+        ticker, name, logo, wt,
         status: "active",
         opened: date || today(),
         closed: null, closePx: null, finalPct: null,
@@ -83,10 +83,10 @@ async function firestoreStore() {
     },
     // Log a past call that was already bought and sold — lands
     // straight in Closed with its ROI locked in.
-    async addClosed({ ticker, shares = 1, buyPx, sellPx, opened, closed, name = "", logo = "" }) {
+    async addClosed({ ticker, shares = 1, buyPx, sellPx, opened, closed, name = "", logo = "", wt = null }) {
       const finalPct = ((sellPx - buyPx) / buyPx) * 100;
       await fs.addDoc(col, {
-        ticker, name, logo,
+        ticker, name, logo, wt,
         status: "closed",
         opened: opened || today(),
         closed: closed || today(),
@@ -101,18 +101,18 @@ async function firestoreStore() {
     },
     // Fix mistyped numbers without deleting. Active: buys are
     // replaced by one equivalent buy, partial sells stay intact.
-    async editActive(id, { shares, price, date }) {
+    async editActive(id, { shares, price, date, wt = null }) {
       const t = find(id); if (!t) return;
       const sells = (t.txns || []).filter(x => x.t === "sell");
       await fs.updateDoc(fs.doc(db, "trades", id), {
-        opened: date, txns: [{ t: "buy", sh: shares, px: price, d: date }, ...sells],
+        opened: date, wt, txns: [{ t: "buy", sh: shares, px: price, d: date }, ...sells],
       });
     },
-    async editClosed(id, { buyPx, sellPx, opened, closed }) {
+    async editClosed(id, { buyPx, sellPx, opened, closed, wt = null }) {
       const t = find(id); if (!t) return;
       const sh = derive(t).boughtSh || 1;
       await fs.updateDoc(fs.doc(db, "trades", id), {
-        opened, closed, closePx: sellPx,
+        opened, closed, closePx: sellPx, wt,
         finalPct: ((sellPx - buyPx) / buyPx) * 100,
         txns: [{ t: "buy", sh, px: buyPx, d: opened }],
       });
@@ -171,14 +171,14 @@ function demoStore() {
     subscribe(fn) { cb = fn; emit(); },
     watchSettings(fn) { settingsCb = fn; settingsCb({}); },
     async setSimStart(v) { settingsCb({ simStart: v }); },
-    async add({ ticker, shares, price, date, name = "", logo = "" }) {
-      trades.unshift({ id: uid(), ticker, name, logo, status: "active",
+    async add({ ticker, shares, price, date, name = "", logo = "", wt = null }) {
+      trades.unshift({ id: uid(), ticker, name, logo, wt, status: "active",
         opened: date || today(), closed: null, closePx: null, finalPct: null,
         txns: [{ t: "buy", sh: shares, px: price, d: date || today() }] });
       emit();
     },
-    async addClosed({ ticker, shares = 1, buyPx, sellPx, opened, closed, name = "", logo = "" }) {
-      trades.unshift({ id: uid(), ticker, name, logo, status: "closed",
+    async addClosed({ ticker, shares = 1, buyPx, sellPx, opened, closed, name = "", logo = "", wt = null }) {
+      trades.unshift({ id: uid(), ticker, name, logo, wt, status: "closed",
         opened: opened || today(), closed: closed || today(),
         closePx: sellPx, finalPct: ((sellPx - buyPx) / buyPx) * 100,
         txns: [{ t: "buy", sh: shares, px: buyPx, d: opened || today() }] });
@@ -188,17 +188,17 @@ function demoStore() {
       const t = trades.find(x => x.id === id); if (!t) return;
       t.txns = [...t.txns, txn]; emit();
     },
-    async editActive(id, { shares, price, date }) {
+    async editActive(id, { shares, price, date, wt = null }) {
       const t = trades.find(x => x.id === id); if (!t) return;
       const sells = t.txns.filter(x => x.t === "sell");
-      t.opened = date;
+      t.opened = date; t.wt = wt;
       t.txns = [{ t: "buy", sh: shares, px: price, d: date }, ...sells];
       emit();
     },
-    async editClosed(id, { buyPx, sellPx, opened, closed }) {
+    async editClosed(id, { buyPx, sellPx, opened, closed, wt = null }) {
       const t = trades.find(x => x.id === id); if (!t) return;
       const sh = derive(t).boughtSh || 1;
-      t.opened = opened; t.closed = closed; t.closePx = sellPx;
+      t.opened = opened; t.closed = closed; t.closePx = sellPx; t.wt = wt;
       t.finalPct = ((sellPx - buyPx) / buyPx) * 100;
       t.txns = [{ t: "buy", sh, px: buyPx, d: opened }];
       emit();

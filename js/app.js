@@ -5,13 +5,13 @@
 // security rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=5";
-import { initStore, store } from "./store.js?v=5";
-import { startPrices, watchTickers, fetchProfile, checkTicker, quotes } from "./prices.js?v=5";
-import { watchNews } from "./news.js?v=5";
-import { renderAll, updateLive, toast } from "./render.js?v=5";
-import { startStarfield, startSphere } from "./space.js?v=5";
-import { derive, fmtMoney, today } from "./roi.js?v=5";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=6";
+import { initStore, store } from "./store.js?v=6";
+import { startPrices, watchTickers, fetchProfile, checkTicker, quotes } from "./prices.js?v=6";
+import { watchNews } from "./news.js?v=6";
+import { renderAll, updateLive, toast } from "./render.js?v=6";
+import { startStarfield, startSphere } from "./space.js?v=6";
+import { derive, fmtMoney, today } from "./roi.js?v=6";
 
 const mode = document.body.dataset.mode || "view";
 const state = { trades: [], mode, canWrite: mode === "edit" && DEMO, simStart: 100000 };
@@ -94,11 +94,12 @@ if (mode === "edit") {
     if (!(price > 0)) return toast("Enter your average buy price.", true);
     if (state.trades.some(t => t.ticker === ticker && t.status === "active"))
       return toast(ticker + " is already an active position.", true);
+    const wtv = parseFloat($("#adWt")?.value);
     toast("Checking " + ticker + "…");
     if (!(await checkTicker(ticker)))
       return toast(ticker + " not found — is it a US-listed symbol?", true);
     const profile = await fetchProfile(ticker);
-    await store.add({ ticker, shares, price, date, ...profile });
+    await store.add({ ticker, shares, price, date, wt: wtv > 0 ? wtv : null, ...profile });
     $("#addForm").reset();
     $("#adDate").value = today();
     toast(ticker + " added — live ROI is now tracking.");
@@ -118,8 +119,9 @@ if (mode === "edit") {
     if (!(sellPx > 0)) return toast("Enter the sell price.", true, "#pastMsg");
     if (opened && closed && closed < opened)
       return toast("Sell date is before the buy date.", true, "#pastMsg");
+    const wtv = parseFloat($("#pcWt")?.value);
     const profile = await fetchProfile(ticker);
-    await store.addClosed({ ticker, buyPx, sellPx, opened, closed, ...profile });
+    await store.addClosed({ ticker, buyPx, sellPx, opened, closed, wt: wtv > 0 ? wtv : null, ...profile });
     $("#pastForm").reset();
     const pct = ((sellPx - buyPx) / buyPx) * 100;
     toast(`${ticker} logged: ${pct >= 0 ? "+" : ""}${pct.toFixed(2)}% locked in.`, false, "#pastMsg");
@@ -198,20 +200,22 @@ function openEditForm(holder, t) {
   const d = derive(t);
   if (t.status === "active") {
     box.innerHTML = `
-      <span class="fl">Fix ${t.ticker} — sells stay intact</span>
+      <span class="fl">Fix ${t.ticker} — sells stay intact · "% of pot" sizes it in the fund signal &amp; simulator</span>
       <input type="number" step="any" min="0" placeholder="total shares" data-in="sh" value="${d.boughtSh}">
       <input type="number" step="any" min="0" placeholder="avg price $" data-in="px" value="${d.avgCost ? d.avgCost.toFixed(2) : ""}">
       <input type="date" data-in="d" value="${t.opened}" style="width:135px">
+      <input type="number" step="any" min="0" max="100" placeholder="% of pot" data-in="wt" value="${t.wt > 0 ? t.wt : ""}">
       <button class="mini" data-go>Save</button>
       <button class="mini ghost" data-cancel>Cancel</button>`;
   } else {
     const sellPx = t.closePx ?? (d.soldSh > 0 ? d.proceeds / d.soldSh : "");
     box.innerHTML = `
-      <span class="fl">Fix ${t.ticker} closed call</span>
+      <span class="fl">Fix ${t.ticker} closed call · "% of pot" sizes it inside its wave</span>
       <input type="number" step="any" min="0" placeholder="bought $" data-in="buy" value="${d.avgCost ? d.avgCost.toFixed(2) : ""}">
       <input type="number" step="any" min="0" placeholder="sold $" data-in="sell" value="${sellPx ? Number(sellPx).toFixed(2) : ""}">
       <input type="date" data-in="d1" value="${t.opened}" style="width:135px">
       <input type="date" data-in="d2" value="${t.closed || ""}" style="width:135px">
+      <input type="number" step="any" min="0" max="100" placeholder="% of pot" data-in="wt" value="${t.wt > 0 ? t.wt : ""}">
       <button class="mini" data-go>Save</button>
       <button class="mini ghost" data-cancel>Cancel</button>`;
   }
@@ -220,6 +224,8 @@ function openEditForm(holder, t) {
     if (e.key === "Enter") { e.preventDefault(); box.querySelector("[data-go]").click(); }
   }));
   box.querySelector("[data-go]").addEventListener("click", async () => {
+    const wtv = parseFloat(box.querySelector('[data-in="wt"]').value);
+    const wt = wtv > 0 ? Math.min(100, wtv) : null;
     if (t.status === "active") {
       const shares = parseFloat(box.querySelector('[data-in="sh"]').value);
       const price = parseFloat(box.querySelector('[data-in="px"]').value);
@@ -227,7 +233,7 @@ function openEditForm(holder, t) {
       if (!(shares > 0)) return toast("Enter total shares bought.", true);
       if (!(price > 0)) return toast("Enter the average buy price.", true);
       if (shares < d.soldSh) return toast(`You already sold ${d.soldSh} shares — total bought can't be less.`, true);
-      await store.editActive(t.id, { shares, price, date });
+      await store.editActive(t.id, { shares, price, date, wt });
       toast(`${t.ticker} numbers fixed.`);
     } else {
       const buyPx = parseFloat(box.querySelector('[data-in="buy"]').value);
@@ -236,7 +242,7 @@ function openEditForm(holder, t) {
       const closed = box.querySelector('[data-in="d2"]').value || t.closed;
       if (!(buyPx > 0) || !(sellPx > 0)) return toast("Enter both buy and sell prices.", true);
       if (opened && closed && closed < opened) return toast("Sell date is before the buy date.", true);
-      await store.editClosed(t.id, { buyPx, sellPx, opened, closed });
+      await store.editClosed(t.id, { buyPx, sellPx, opened, closed, wt });
       toast(`${t.ticker} closed call fixed.`);
     }
     box.hidden = true;

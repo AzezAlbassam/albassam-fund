@@ -34,13 +34,28 @@ export function statPct(trade, quotes) {
   return blendedPct(trade, q ? q.c : null);
 }
 
+// Resolve "% of pot" weights for a group of calls held together.
+// Calls with an explicit wt keep it; the rest split what's left
+// of 100% equally. Returns fractions (0..1).
+export function resolveWeights(calls) {
+  const sumExp = calls.reduce((a, c) => a + (c.wt > 0 ? c.wt : 0), 0);
+  const nAuto = calls.filter(c => !(c.wt > 0)).length;
+  const auto = nAuto ? Math.max(0, 100 - sumExp) / nAuto : 0;
+  return calls.map(c => (c.wt > 0 ? c.wt : auto) / 100);
+}
+
 export function computeStats(trades, quotes) {
   const active = trades.filter(t => t.status === "active");
   const closed = trades.filter(t => t.status === "closed");
 
-  const activePcts = active.map(t => statPct(t, quotes)).filter(p => p != null);
-  const avgActive = activePcts.length
-    ? activePcts.reduce((a, b) => a + b, 0) / activePcts.length : null;
+  // Fund signal: pot-share-weighted average ROI of active calls
+  const acts = active.map(t => ({ pct: statPct(t, quotes), wt: t.wt }))
+    .filter(x => x.pct != null);
+  const fr = resolveWeights(acts);
+  const frTot = fr.reduce((a, b) => a + b, 0);
+  const avgActive = acts.length && frTot > 0
+    ? acts.reduce((a, x, i) => a + fr[i] * x.pct, 0) / frTot
+    : (acts.length ? acts.reduce((a, x) => a + x.pct, 0) / acts.length : null);
 
   const closedPcts = closed.map(t => t.finalPct).filter(p => p != null);
   const avgClosed = closedPcts.length
@@ -72,7 +87,7 @@ export function simulate(trades, quotes, start = 100000) {
     return {
       from: t.opened || "0000-00-00",
       to: t.status === "closed" ? (t.closed || t.opened || "9999-99-99") : "9999-99-99",
-      pct,
+      pct, wt: t.wt,
     };
   }).filter(Boolean).sort((a, b) => a.from.localeCompare(b.from));
 
@@ -88,7 +103,12 @@ export function simulate(trades, quotes, start = 100000) {
   }
   let value = start;
   for (const w of waves) {
-    w.mult = w.calls.reduce((a, c) => a + (1 + c.pct / 100), 0) / w.calls.length;
+    // pot-share weighted: each call grows its slice, whatever
+    // isn't deployed (weights under 100%) sits as cash
+    const fr = resolveWeights(w.calls);
+    const deployed = fr.reduce((a, b) => a + b, 0);
+    w.mult = w.calls.reduce((a, c, i) => a + fr[i] * (1 + c.pct / 100), 0)
+      + Math.max(0, 1 - deployed);
     value *= w.mult;
   }
   return { value, totalPct: (value / start - 1) * 100, waves, nCalls: items.length };

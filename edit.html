@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/style.css?v=6">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='none' stroke='%236EE787' stroke-width='6'/><circle cx='50' cy='50' r='14' fill='%236EE787'/></svg>">
 </head>
 <body data-mode="edit">
@@ -95,8 +95,12 @@
               <div class="field"><label>Avg buy price $</label>
                 <input id="adPrice" type="number" step="any" min="0" placeholder="e.g. 21.40"></div>
             </div>
-            <div class="field"><label>Entry date</label>
-              <input id="adDate" type="date"></div>
+            <div class="row2">
+              <div class="field"><label>Entry date</label>
+                <input id="adDate" type="date"></div>
+              <div class="field"><label>% of pot (optional)</label>
+                <input id="adWt" type="number" step="any" min="0" max="100" placeholder="e.g. 65"></div>
+            </div>
             <div class="field"><button class="btn big-btn" type="submit">🚀 Launch position</button></div>
           </form>
           <div class="msg" id="msg" role="status"></div>
@@ -117,6 +121,8 @@
               <div class="field"><label>Buy date</label><input id="pcOpened" type="date"></div>
               <div class="field"><label>Sell date</label><input id="pcClosed" type="date"></div>
             </div>
+            <div class="field"><label>% of pot (optional)</label>
+              <input id="pcWt" type="number" step="any" min="0" max="100" placeholder="e.g. 25"></div>
             <div class="field"><button class="btn big-btn" type="submit">✓ Log closed call</button></div>
           </form>
           <div class="msg" id="pastMsg" role="status"></div>
@@ -140,6 +146,6 @@
   </footer>
 </div>
 
-<script type="module" src="js/app.js?v=5"></script>
+<script type="module" src="js/app.js?v=6"></script>
 </body>
 </html>

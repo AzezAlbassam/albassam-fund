@@ -4,9 +4,9 @@
 //  * updateLive — retouches only live numbers (on price ticks)
 // ============================================================
 
-import { derive, blendedPct, statPct, computeStats, simulate, fmtShortMoney, fmtPct, fmtMoney } from "./roi.js?v=5";
-import { quotes } from "./prices.js?v=5";
-import { setPlanets } from "./space.js?v=5";
+import { derive, blendedPct, statPct, computeStats, simulate, fmtShortMoney, fmtPct, fmtMoney } from "./roi.js?v=6";
+import { quotes } from "./prices.js?v=6";
+import { setPlanets } from "./space.js?v=6";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c =>
@@ -43,6 +43,7 @@ export function renderAll(state) {
       <div class="kvs">
         <div class="kv"><span class="k">Avg cost</span><span class="v">${fmtMoney(d.avgCost)}</span></div>
         <div class="kv"><span class="k">Live price</span><span class="v" data-f="px">${q ? fmtMoney(q.c) : "—"}</span></div>
+        ${t.wt > 0 ? `<div class="kv"><span class="k">Pot share</span><span class="v">${t.wt}%</span></div>` : ""}
         ${edit ? `<div class="kv"><span class="k">Shares held</span><span class="v">${d.heldSh}${d.soldSh ? ` <span style="color:var(--dim)">(sold ${d.soldSh})</span>` : ""}</span></div>` : ""}
       </div>
       <div class="bar"><i data-f="bar" style="${barStyle(pct)}"></i></div>
@@ -67,7 +68,7 @@ export function renderAll(state) {
         <div class="l">${logoHtml(t, "")}
           <div><div class="tk">${esc(t.ticker)}</div>
           <div class="when">${esc(t.opened)} → ${esc(t.closed || "")}</div>
-          <div class="when px">bought ${fmtMoney(d.avgCost)} → sold ${fmtMoney(sellPx)}</div></div>
+          <div class="when px">bought ${fmtMoney(d.avgCost)} → sold ${fmtMoney(sellPx)}${t.wt > 0 ? ` · ${t.wt}% of pot` : ""}</div></div>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
           <span class="pct ${pctClass(t.finalPct)}">${fmtPct(t.finalPct)}</span>
