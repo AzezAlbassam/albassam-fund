@@ -26,6 +26,12 @@ service cloud.firestore {
       allow write: if isOwner();
     }
 
+    // Albassam Fund: shared settings (simulator starting pot etc.).
+    match /meta/{doc} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
     // Albassam Private Family Office: config doc + subcollections
     // (members, ledger, history). Family view link needs no login;
     // every write requires the steward's verified Google account.

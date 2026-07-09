@@ -60,20 +60,45 @@ export function computeStats(trades, quotes) {
   return { nOpen: active.length, nClosed: closed.length, avgActive, avgClosed, best, worst, winRate };
 }
 
-// "$100K since day one" simulation: the pot compounds through
-// every closed call in the order they closed (all-in each time),
-// then today's average live ROI of the active calls is applied
-// on top (pot split equally across them).
+// "$X since day one" simulation. Calls whose holding periods
+// overlap form one WAVE: the pot splits equally across the wave
+// and each call compounds its share; waves then compound in
+// chronological order. Waves are derived purely from each call's
+// buy/sell dates, so editing a call regroups everything.
 export function simulate(trades, quotes, start = 100000) {
-  const closed = trades.filter(t => t.status === "closed" && t.finalPct != null)
-    .sort((a, b) => (a.closed || "").localeCompare(b.closed || ""));
-  let realized = 1;
-  for (const t of closed) realized *= 1 + t.finalPct / 100;
-  const pcts = trades.filter(t => t.status === "active")
-    .map(t => statPct(t, quotes)).filter(p => p != null);
-  const liveAvg = pcts.length ? pcts.reduce((a, b) => a + b, 0) / pcts.length : 0;
-  const value = start * realized * (1 + liveAvg / 100);
-  return { value, totalPct: (value / start - 1) * 100, realized, liveAvg, nClosed: closed.length };
+  const items = trades.map(t => {
+    const pct = t.status === "closed" ? t.finalPct : statPct(t, quotes);
+    if (pct == null) return null;
+    return {
+      from: t.opened || "0000-00-00",
+      to: t.status === "closed" ? (t.closed || t.opened || "9999-99-99") : "9999-99-99",
+      pct,
+    };
+  }).filter(Boolean).sort((a, b) => a.from.localeCompare(b.from));
+
+  const waves = [];
+  for (const it of items) {
+    const w = waves[waves.length - 1];
+    if (w && it.from <= w.to) {
+      w.calls.push(it);
+      if (it.to > w.to) w.to = it.to;
+    } else {
+      waves.push({ from: it.from, to: it.to, calls: [it] });
+    }
+  }
+  let value = start;
+  for (const w of waves) {
+    w.mult = w.calls.reduce((a, c) => a + (1 + c.pct / 100), 0) / w.calls.length;
+    value *= w.mult;
+  }
+  return { value, totalPct: (value / start - 1) * 100, waves, nCalls: items.length };
+}
+
+// $100000 -> "$100K", $10000 -> "$10K", $1500000 -> "$1.5M"
+export function fmtShortMoney(v) {
+  if (v >= 1e6) return "$" + +(v / 1e6).toFixed(1).replace(/\.0$/, "") + "M";
+  if (v >= 1e3) return "$" + +(v / 1e3).toFixed(1).replace(/\.0$/, "") + "K";
+  return "$" + Math.round(v);
 }
 
 export function fmtPct(p, digits = 2) {

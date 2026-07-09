@@ -4,9 +4,9 @@
 //  * updateLive — retouches only live numbers (on price ticks)
 // ============================================================
 
-import { derive, blendedPct, statPct, computeStats, simulate, fmtPct, fmtMoney } from "./roi.js?v=4";
-import { quotes } from "./prices.js?v=4";
-import { setPlanets } from "./space.js?v=4";
+import { derive, blendedPct, statPct, computeStats, simulate, fmtShortMoney, fmtPct, fmtMoney } from "./roi.js?v=5";
+import { quotes } from "./prices.js?v=5";
+import { setPlanets } from "./space.js?v=5";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c =>
@@ -124,17 +124,25 @@ export function updateLive(state) {
   $("#stWin").textContent = s.winRate == null ? "—" : s.winRate + "%";
   $("#tagWin").textContent = s.winRate == null ? "—" : s.winRate + "%";
 
-  // $100K simulator
+  // simulator: pot splits across calls held together (a "wave"),
+  // waves compound in date order
   const simVal = $("#simVal");
   if (simVal) {
-    const sim = simulate(trades, quotes);
+    const start = state.simStart || 100000;
+    const sim = simulate(trades, quotes, start);
+    const lbl = $("#simStartLbl");
+    if (lbl) lbl.textContent = fmtShortMoney(start);
     simVal.textContent = "$" + Math.round(sim.value).toLocaleString("en-US");
     const sp = $("#simPct");
     sp.textContent = fmtPct(sim.totalPct, 1);
     sp.className = "pct " + pctClass(sim.totalPct);
-    $("#simMeta").textContent =
-      `${sim.nClosed} closed call${sim.nClosed === 1 ? "" : "s"} compounded ×${sim.realized.toFixed(2)}` +
-      ` · live calls ${fmtPct(sim.liveAvg, 1)}`;
+    const parts = sim.waves.map(w => `${w.calls.length} call${w.calls.length === 1 ? "" : "s"} ×${w.mult.toFixed(2)}`);
+    $("#simMeta").textContent = sim.waves.length
+      ? `${sim.waves.length} wave${sim.waves.length === 1 ? "" : "s"}: ` +
+        (parts.length > 4 ? parts.slice(0, 4).join(" → ") + " → …" : parts.join(" → "))
+      : "no calls yet";
+    const seb = $("#simEditBtn");
+    if (seb) seb.hidden = !(state.mode === "edit" && state.canWrite);
   }
 
   setPlanets(trades.filter(t => t.status === "active")

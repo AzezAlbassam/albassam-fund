@@ -16,14 +16,15 @@
 //   createdAt server timestamp      (ordering)
 // ============================================================
 
-import { DEMO, firebaseConfig } from "./config.js?v=4";
-import { blendedPct, derive, today } from "./roi.js?v=4";
+import { DEMO, firebaseConfig } from "./config.js?v=5";
+import { blendedPct, derive, today } from "./roi.js?v=5";
 
 let impl;
 
-export async function initStore(onTrades) {
+export async function initStore(onTrades, onSettings) {
   impl = DEMO ? demoStore() : await firestoreStore();
   impl.subscribe(onTrades);
+  impl.watchSettings(onSettings || (() => {}));
   return impl;
 }
 
@@ -37,6 +38,7 @@ export const store = {
   reopen: (id) => impl.reopen(id),
   remove: (id) => impl.remove(id),
   setProfile: (id, profile) => impl.setProfile(id, profile),
+  setSimStart: (v) => impl.setSimStart(v),
 };
 
 /* ----------------------- Firestore ----------------------- */
@@ -58,6 +60,16 @@ async function firestoreStore() {
         cache = snap.docs.map(norm);
         cb(cache);
       }, err => console.error("Firestore listen failed:", err));
+    },
+    // Shared settings (e.g. simulator starting pot) — public read,
+    // owner-only write, live-synced to every viewer.
+    watchSettings(cb) {
+      fs.onSnapshot(fs.doc(db, "meta", "settings"),
+        snap => cb(snap.data() || {}),
+        err => console.warn("settings listen failed:", err));
+    },
+    async setSimStart(v) {
+      await fs.setDoc(fs.doc(db, "meta", "settings"), { simStart: v }, { merge: true });
     },
     async add({ ticker, shares, price, date, name = "", logo = "" }) {
       await fs.addDoc(col, {
@@ -154,8 +166,11 @@ function demoStore() {
   let cb = () => {};
   const emit = () => cb([...trades]);
 
+  let settingsCb = () => {};
   return {
     subscribe(fn) { cb = fn; emit(); },
+    watchSettings(fn) { settingsCb = fn; settingsCb({}); },
+    async setSimStart(v) { settingsCb({ simStart: v }); },
     async add({ ticker, shares, price, date, name = "", logo = "" }) {
       trades.unshift({ id: uid(), ticker, name, logo, status: "active",
         opened: date || today(), closed: null, closePx: null, finalPct: null,

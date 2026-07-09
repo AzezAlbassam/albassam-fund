@@ -5,16 +5,16 @@
 // security rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=4";
-import { initStore, store } from "./store.js?v=4";
-import { startPrices, watchTickers, fetchProfile, checkTicker, quotes } from "./prices.js?v=4";
-import { watchNews } from "./news.js?v=4";
-import { renderAll, updateLive, toast } from "./render.js?v=4";
-import { startStarfield, startSphere } from "./space.js?v=4";
-import { derive, fmtMoney, today } from "./roi.js?v=4";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=5";
+import { initStore, store } from "./store.js?v=5";
+import { startPrices, watchTickers, fetchProfile, checkTicker, quotes } from "./prices.js?v=5";
+import { watchNews } from "./news.js?v=5";
+import { renderAll, updateLive, toast } from "./render.js?v=5";
+import { startStarfield, startSphere } from "./space.js?v=5";
+import { derive, fmtMoney, today } from "./roi.js?v=5";
 
 const mode = document.body.dataset.mode || "view";
-const state = { trades: [], mode, canWrite: mode === "edit" && DEMO };
+const state = { trades: [], mode, canWrite: mode === "edit" && DEMO, simStart: 100000 };
 const $ = (s) => document.querySelector(s);
 
 /* ----------------------- visuals ----------------------- */
@@ -39,6 +39,9 @@ initStore((trades) => {
   watchTickers(active.map(t => t.ticker));
   watchNews(active);
   renderAll(state);
+}, (settings) => {
+  if (settings.simStart > 0) state.simStart = settings.simStart;
+  updateLive(state);
 }).catch(err => {
   console.error(err);
   toast("Could not connect to the database.", true);
@@ -120,6 +123,29 @@ if (mode === "edit") {
     $("#pastForm").reset();
     const pct = ((sellPx - buyPx) / buyPx) * 100;
     toast(`${ticker} logged: ${pct >= 0 ? "+" : ""}${pct.toFixed(2)}% locked in.`, false, "#pastMsg");
+  });
+
+  // ✎ on the simulator: change the starting pot (e.g. $100K → $10K)
+  $("#simEditBtn")?.addEventListener("click", () => {
+    const box = $("#simForm");
+    if (!box.hidden) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = `
+      <span class="fl">Starting pot for the simulation</span>
+      <input type="number" step="any" min="1" placeholder="e.g. 10000" data-in="amt" value="${state.simStart}" style="width:130px">
+      <button class="mini" data-go>Save</button>
+      <button class="mini ghost" data-cancel>Cancel</button>`;
+    box.querySelector("[data-cancel]").addEventListener("click", () => { box.hidden = true; });
+    box.querySelector('[data-in="amt"]').addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); box.querySelector("[data-go]").click(); }
+    });
+    box.querySelector("[data-go]").addEventListener("click", async () => {
+      const v = parseFloat(box.querySelector('[data-in="amt"]').value);
+      if (!(v > 0)) return toast("Enter a starting amount.", true);
+      await store.setSimStart(v);
+      box.hidden = true;
+      toast(`Simulator now starts from $${v.toLocaleString("en-US")}.`);
+    });
   });
 
   // Card + closed-row actions via event delegation.
