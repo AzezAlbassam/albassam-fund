@@ -209,10 +209,8 @@ input:focus{border-color:var(--org);box-shadow:0 0 0 1px rgba(110,231,135,.4)}
 .msg.ok{color:var(--org-bright)}
 
 /* ---------- closed rows ---------- */
-.closed-row{
-  display:flex;justify-content:space-between;align-items:center;gap:10px;
-  padding:10px 4px;border-bottom:1px dashed rgba(110,231,135,.18)
-}
+.closed-row{padding:10px 4px;border-bottom:1px dashed rgba(110,231,135,.18)}
+.closed-row .cr-main{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .closed-row:last-child{border-bottom:none}
 .closed-row .l{display:flex;align-items:center;gap:9px;min-width:0}
 .closed-row .logo{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:#000;object-fit:contain;flex:none}
@@ -223,6 +221,17 @@ input:focus{border-color:var(--org);box-shadow:0 0 0 1px rgba(110,231,135,.4)}
 .closed-row .pct{font-family:var(--mono);font-size:16px;font-weight:700}
 .closed-row .acts{display:flex;gap:5px}
 .empty{color:var(--dim);font-family:var(--mono);font-size:12px;padding:8px 0}
+
+/* ---------- $100K simulator ---------- */
+.panel.sim{margin-bottom:18px}
+.sim-row{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
+.sim-big{
+  font-family:var(--mono);font-size:38px;font-weight:700;color:#fff;
+  text-shadow:0 0 26px rgba(110,231,135,.4)
+}
+.sim-side .pct{font-family:var(--mono);font-size:19px;font-weight:700}
+.sim-meta{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:.08em;margin-top:3px}
+@media (max-width:640px){.sim-big{font-size:30px}}
 
 /* ---------- market wire (news) ---------- */
 .panel.wire{margin-top:18px}
@@ -259,7 +268,10 @@ footer .credit{margin-top:9px;color:var(--org);text-shadow:0 0 12px rgba(110,231
 @media (max-width:640px){
   .brand h1{font-size:22px;letter-spacing:.22em}
   .big{font-size:46px}
-  .stage{min-height:360px}
+  .stage{min-height:520px}
+  .stats{grid-template-columns:repeat(3,1fr);gap:4px}
+  .stat .k{font-size:8.5px;letter-spacing:.14em}
+  .stat .v{font-size:13.5px}
 }
 @media (prefers-reduced-motion: reduce){
   #stars,.stage canvas{display:none}

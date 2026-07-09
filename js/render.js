@@ -4,7 +4,7 @@
 //  * updateLive — retouches only live numbers (on price ticks)
 // ============================================================
 
-import { derive, blendedPct, statPct, computeStats, fmtPct, fmtMoney } from "./roi.js";
+import { derive, blendedPct, statPct, computeStats, simulate, fmtPct, fmtMoney } from "./roi.js";
 import { quotes } from "./prices.js";
 import { setPlanets } from "./space.js";
 
@@ -51,6 +51,7 @@ export function renderAll(state) {
         <button class="mini" data-act="buy">＋ Buy</button>
         <button class="mini" data-act="sell">− Sell</button>
         <button class="mini warn" data-act="close">Close ▸</button>
+        <button class="mini ghost" data-act="edit" title="Fix numbers">✎</button>
         <button class="mini ghost" data-act="del">✕</button>
       </div><div class="inline-form" hidden></div>` : ""}
     </div>`;
@@ -62,17 +63,21 @@ export function renderAll(state) {
     const sellPx = t.closePx ?? (d.soldSh > 0 ? d.proceeds / d.soldSh : null);
     return `
     <div class="closed-row" data-id="${t.id}">
-      <div class="l">${logoHtml(t, "")}
-        <div><div class="tk">${esc(t.ticker)}</div>
-        <div class="when">${esc(t.opened)} → ${esc(t.closed || "")}</div>
-        <div class="when px">bought ${fmtMoney(d.avgCost)} → sold ${fmtMoney(sellPx)}</div></div>
+      <div class="cr-main">
+        <div class="l">${logoHtml(t, "")}
+          <div><div class="tk">${esc(t.ticker)}</div>
+          <div class="when">${esc(t.opened)} → ${esc(t.closed || "")}</div>
+          <div class="when px">bought ${fmtMoney(d.avgCost)} → sold ${fmtMoney(sellPx)}</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="pct ${pctClass(t.finalPct)}">${fmtPct(t.finalPct)}</span>
+          ${edit ? `<span class="acts">
+            <button class="mini ghost" data-act="edit" title="Fix numbers">✎</button>
+            <button class="mini ghost" data-act="reopen" title="Reopen">↩</button>
+            <button class="mini ghost" data-act="del" title="Delete">✕</button></span>` : ""}
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <span class="pct ${pctClass(t.finalPct)}">${fmtPct(t.finalPct)}</span>
-        ${edit ? `<span class="acts">
-          <button class="mini ghost" data-act="reopen" title="Reopen">↩</button>
-          <button class="mini ghost" data-act="del" title="Delete">✕</button></span>` : ""}
-      </div>
+      ${edit ? `<div class="inline-form" hidden></div>` : ""}
     </div>`;
   }).join("") : `<div class="empty">Nothing closed yet — closed calls land here with their final ROI locked in.</div>`;
 
@@ -118,6 +123,19 @@ export function updateLive(state) {
   setStat("#stAvgClosed", fmtPct(s.avgClosed), s.avgClosed);
   $("#stWin").textContent = s.winRate == null ? "—" : s.winRate + "%";
   $("#tagWin").textContent = s.winRate == null ? "—" : s.winRate + "%";
+
+  // $100K simulator
+  const simVal = $("#simVal");
+  if (simVal) {
+    const sim = simulate(trades, quotes);
+    simVal.textContent = "$" + Math.round(sim.value).toLocaleString("en-US");
+    const sp = $("#simPct");
+    sp.textContent = fmtPct(sim.totalPct, 1);
+    sp.className = "pct " + pctClass(sim.totalPct);
+    $("#simMeta").textContent =
+      `${sim.nClosed} closed call${sim.nClosed === 1 ? "" : "s"} compounded ×${sim.realized.toFixed(2)}` +
+      ` · live calls ${fmtPct(sim.liveAvg, 1)}`;
+  }
 
   setPlanets(trades.filter(t => t.status === "active")
     .map(t => ({ ticker: t.ticker, pct: statPct(t, quotes) ?? 0 })));

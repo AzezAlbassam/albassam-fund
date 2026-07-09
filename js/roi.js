@@ -60,6 +60,22 @@ export function computeStats(trades, quotes) {
   return { nOpen: active.length, nClosed: closed.length, avgActive, avgClosed, best, worst, winRate };
 }
 
+// "$100K since day one" simulation: the pot compounds through
+// every closed call in the order they closed (all-in each time),
+// then today's average live ROI of the active calls is applied
+// on top (pot split equally across them).
+export function simulate(trades, quotes, start = 100000) {
+  const closed = trades.filter(t => t.status === "closed" && t.finalPct != null)
+    .sort((a, b) => (a.closed || "").localeCompare(b.closed || ""));
+  let realized = 1;
+  for (const t of closed) realized *= 1 + t.finalPct / 100;
+  const pcts = trades.filter(t => t.status === "active")
+    .map(t => statPct(t, quotes)).filter(p => p != null);
+  const liveAvg = pcts.length ? pcts.reduce((a, b) => a + b, 0) / pcts.length : 0;
+  const value = start * realized * (1 + liveAvg / 100);
+  return { value, totalPct: (value / start - 1) * 100, realized, liveAvg, nClosed: closed.length };
+}
+
 export function fmtPct(p, digits = 2) {
   if (p == null || isNaN(p)) return "—";
   const r = Math.round(p * 10 ** digits) / 10 ** digits;

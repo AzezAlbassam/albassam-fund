@@ -156,7 +156,64 @@ if (mode === "edit") {
       toast(t.ticker + " reopened — live ROI resumed.");
     } else if (act === "buy" || act === "sell" || act === "close") {
       openInlineForm(holder, t, act);
+    } else if (act === "edit") {
+      openEditForm(holder, t);
     }
+  });
+}
+
+// ✎ Fix mistyped numbers without deleting the position.
+function openEditForm(holder, t) {
+  const box = holder.querySelector(".inline-form");
+  if (!box) return;
+  if (box.dataset.form === "edit" && !box.hidden) { box.hidden = true; box.dataset.form = ""; return; }
+  box.dataset.form = "edit";
+  box.hidden = false;
+  const d = derive(t);
+  if (t.status === "active") {
+    box.innerHTML = `
+      <span class="fl">Fix ${t.ticker} — sells stay intact</span>
+      <input type="number" step="any" min="0" placeholder="total shares" data-in="sh" value="${d.boughtSh}">
+      <input type="number" step="any" min="0" placeholder="avg price $" data-in="px" value="${d.avgCost ? d.avgCost.toFixed(2) : ""}">
+      <input type="date" data-in="d" value="${t.opened}" style="width:135px">
+      <button class="mini" data-go>Save</button>
+      <button class="mini ghost" data-cancel>Cancel</button>`;
+  } else {
+    const sellPx = t.closePx ?? (d.soldSh > 0 ? d.proceeds / d.soldSh : "");
+    box.innerHTML = `
+      <span class="fl">Fix ${t.ticker} closed call</span>
+      <input type="number" step="any" min="0" placeholder="bought $" data-in="buy" value="${d.avgCost ? d.avgCost.toFixed(2) : ""}">
+      <input type="number" step="any" min="0" placeholder="sold $" data-in="sell" value="${sellPx ? Number(sellPx).toFixed(2) : ""}">
+      <input type="date" data-in="d1" value="${t.opened}" style="width:135px">
+      <input type="date" data-in="d2" value="${t.closed || ""}" style="width:135px">
+      <button class="mini" data-go>Save</button>
+      <button class="mini ghost" data-cancel>Cancel</button>`;
+  }
+  box.querySelector("[data-cancel]").addEventListener("click", () => { box.hidden = true; box.dataset.form = ""; });
+  box.querySelectorAll("input").forEach(inp => inp.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); box.querySelector("[data-go]").click(); }
+  }));
+  box.querySelector("[data-go]").addEventListener("click", async () => {
+    if (t.status === "active") {
+      const shares = parseFloat(box.querySelector('[data-in="sh"]').value);
+      const price = parseFloat(box.querySelector('[data-in="px"]').value);
+      const date = box.querySelector('[data-in="d"]').value || t.opened;
+      if (!(shares > 0)) return toast("Enter total shares bought.", true);
+      if (!(price > 0)) return toast("Enter the average buy price.", true);
+      if (shares < d.soldSh) return toast(`You already sold ${d.soldSh} shares — total bought can't be less.`, true);
+      await store.editActive(t.id, { shares, price, date });
+      toast(`${t.ticker} numbers fixed.`);
+    } else {
+      const buyPx = parseFloat(box.querySelector('[data-in="buy"]').value);
+      const sellPx = parseFloat(box.querySelector('[data-in="sell"]').value);
+      const opened = box.querySelector('[data-in="d1"]').value || t.opened;
+      const closed = box.querySelector('[data-in="d2"]').value || t.closed;
+      if (!(buyPx > 0) || !(sellPx > 0)) return toast("Enter both buy and sell prices.", true);
+      if (opened && closed && closed < opened) return toast("Sell date is before the buy date.", true);
+      await store.editClosed(t.id, { buyPx, sellPx, opened, closed });
+      toast(`${t.ticker} closed call fixed.`);
+    }
+    box.hidden = true;
   });
 }
 
