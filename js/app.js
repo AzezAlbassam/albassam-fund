@@ -5,13 +5,13 @@
 // security rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js";
-import { initStore, store } from "./store.js";
-import { startPrices, watchTickers, fetchProfile, checkTicker, quotes } from "./prices.js";
-import { watchNews } from "./news.js";
-import { renderAll, updateLive, toast } from "./render.js";
-import { startStarfield, startSphere } from "./space.js";
-import { derive, fmtMoney, today } from "./roi.js";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=4";
+import { initStore, store } from "./store.js?v=4";
+import { startPrices, watchTickers, fetchProfile, checkTicker, quotes } from "./prices.js?v=4";
+import { watchNews } from "./news.js?v=4";
+import { renderAll, updateLive, toast } from "./render.js?v=4";
+import { startStarfield, startSphere } from "./space.js?v=4";
+import { derive, fmtMoney, today } from "./roi.js?v=4";
 
 const mode = document.body.dataset.mode || "view";
 const state = { trades: [], mode, canWrite: mode === "edit" && DEMO };

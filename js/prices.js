@@ -10,7 +10,7 @@
 // to a letter badge if a logo doesn't exist.
 // ============================================================
 
-import { DEMO, FINNHUB_KEY, PRICE_REFRESH_MS } from "./config.js";
+import { DEMO, FINNHUB_KEY, PRICE_REFRESH_MS } from "./config.js?v=4";
 
 const USE_FINNHUB = !FINNHUB_KEY.startsWith("__");
 const FINNHUB = "https://finnhub.io/api/v1";

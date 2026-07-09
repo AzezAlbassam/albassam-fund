@@ -16,8 +16,8 @@
 //   createdAt server timestamp      (ordering)
 // ============================================================
 
-import { DEMO, firebaseConfig } from "./config.js";
-import { blendedPct, derive, today } from "./roi.js";
+import { DEMO, firebaseConfig } from "./config.js?v=4";
+import { blendedPct, derive, today } from "./roi.js?v=4";
 
 let impl;
 
