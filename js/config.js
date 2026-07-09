@@ -29,3 +29,7 @@ export const PRICE_REFRESH_MS = 30000;
 // without touching the real database).
 export const DEMO = firebaseConfig.apiKey.startsWith("__") ||
   new URLSearchParams(location.search).has("demo");
+
+// Build number, read from this module's own ?v= query — single
+// source of truth, bumped by the deploy step.
+export const BUILD = +(new URL(import.meta.url).searchParams.get("v") || 0);

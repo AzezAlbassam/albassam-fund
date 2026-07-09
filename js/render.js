@@ -4,9 +4,9 @@
 //  * updateLive — retouches only live numbers (on price ticks)
 // ============================================================
 
-import { derive, blendedPct, statPct, computeStats, simulate, fmtShortMoney, fmtPct, fmtMoney } from "./roi.js?v=6";
-import { quotes } from "./prices.js?v=6";
-import { setPlanets } from "./space.js?v=6";
+import { derive, blendedPct, statPct, computeStats, simulate, fmtShortMoney, fmtPct, fmtMoney } from "./roi.js?v=7";
+import { quotes } from "./prices.js?v=7";
+import { setPlanets } from "./space.js?v=7";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c =>

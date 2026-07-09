@@ -5,13 +5,13 @@
 // security rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=6";
-import { initStore, store } from "./store.js?v=6";
-import { startPrices, watchTickers, fetchProfile, checkTicker, quotes } from "./prices.js?v=6";
-import { watchNews } from "./news.js?v=6";
-import { renderAll, updateLive, toast } from "./render.js?v=6";
-import { startStarfield, startSphere } from "./space.js?v=6";
-import { derive, fmtMoney, today } from "./roi.js?v=6";
+import { DEMO, firebaseConfig, OWNER_EMAIL, BUILD } from "./config.js?v=7";
+import { initStore, store } from "./store.js?v=7";
+import { startPrices, watchTickers, fetchProfile, checkTicker, quotes } from "./prices.js?v=7";
+import { watchNews } from "./news.js?v=7";
+import { renderAll, updateLive, toast } from "./render.js?v=7";
+import { startStarfield, startSphere } from "./space.js?v=7";
+import { derive, fmtMoney, today } from "./roi.js?v=7";
 
 const mode = document.body.dataset.mode || "view";
 const state = { trades: [], mode, canWrite: mode === "edit" && DEMO, simStart: 100000 };
@@ -29,6 +29,37 @@ function clock() {
 clock(); setInterval(clock, 1000);
 
 if (DEMO) $("#demoBanner")?.removeAttribute("hidden");
+
+/* ------------------ version stamp + auto-update ------------------ */
+const bt = $("#buildTag");
+if (bt) bt.textContent = "build " + BUILD;
+
+async function checkForUpdate() {
+  try {
+    const html = await (await fetch(location.pathname, { cache: "no-store" })).text();
+    const m = html.match(/app\.js\?v=(\d+)/);
+    if (m && +m[1] > BUILD) showUpdateBar();
+  } catch (e) { /* offline — try again later */ }
+}
+function showUpdateBar() {
+  if ($("#updBar")) return;
+  const b = document.createElement("div");
+  b.id = "updBar";
+  b.className = "demo-banner";
+  b.style.cursor = "pointer";
+  b.textContent = "✨ New version ready — tap here to update";
+  b.onclick = async () => {
+    b.textContent = "Updating…";
+    for (const f of ["app.js", "render.js", "store.js", "roi.js", "prices.js", "space.js", "news.js", "config.js"]) {
+      try { await fetch("js/" + f, { cache: "reload" }); } catch (e) {}
+    }
+    try { await fetch("css/style.css", { cache: "reload" }); } catch (e) {}
+    location.reload();
+  };
+  document.querySelector(".wrap")?.prepend(b);
+}
+setTimeout(checkForUpdate, 10000);
+setInterval(checkForUpdate, 4 * 60 * 1000);
 
 /* ----------------------- data ----------------------- */
 startPrices(() => updateLive(state));
