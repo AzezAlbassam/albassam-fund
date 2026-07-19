@@ -4,9 +4,9 @@
 //  * updateLive — retouches only live numbers (on price ticks)
 // ============================================================
 
-import { derive, blendedPct, statPct, computeStats, simulate, fmtShortMoney, fmtPct, fmtMoney } from "./roi.js?v=7";
-import { quotes } from "./prices.js?v=7";
-import { setPlanets } from "./space.js?v=7";
+import { derive, blendedPct, statPct, computeStats, simulate, fmtShortMoney, fmtPct, fmtMoney } from "./roi.js?v=8";
+import { quotes } from "./prices.js?v=8";
+import { setPlanets } from "./space.js?v=8";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c =>
@@ -137,10 +137,8 @@ export function updateLive(state) {
     const sp = $("#simPct");
     sp.textContent = fmtPct(sim.totalPct, 1);
     sp.className = "pct " + pctClass(sim.totalPct);
-    const parts = sim.waves.map(w => `${w.calls.length} call${w.calls.length === 1 ? "" : "s"} ×${w.mult.toFixed(2)}`);
-    $("#simMeta").textContent = sim.waves.length
-      ? `${sim.waves.length} wave${sim.waves.length === 1 ? "" : "s"}: ` +
-        (parts.length > 4 ? parts.slice(0, 4).join(" → ") + " → …" : parts.join(" → "))
+    $("#simMeta").textContent = (sim.nClosed + sim.nOpen)
+      ? `realized ${fmtPct(sim.realizedPct, 1)} (banked ${fmtMoney(sim.realizedDollars)}) · open ${fmtPct(sim.openPct, 1)} · ${sim.nClosed} closed / ${sim.nOpen} open`
       : "no calls yet";
     const seb = $("#simEditBtn");
     if (seb) seb.hidden = !(state.mode === "edit" && state.canWrite);

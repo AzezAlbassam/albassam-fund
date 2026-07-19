@@ -273,27 +273,19 @@ def main():
     frtot = sum(fr) or 1
     fund_signal = sum(f * a["pct"] for f, a in zip(fr, acts)) / frtot if acts else None
 
-    # simulator: waves
-    items = []
+    # simulator: banking model (no leverage). Closed calls bank
+    # their weighted gain; open calls mark to market. Total = sum.
+    realized_pct = sum((t["wt"] or 0) / 100 * (t["finalPct"] or 0)
+                       for t in closed if t["wt"])
+    open_pct = sum((t["wt"] or 0) / 100 * (call_pct(t) or 0)
+                   for t in active if t["wt"] and call_pct(t) is not None)
+    sim_total_pct = realized_pct + open_pct
+    sim = pot * (1 + sim_total_pct / 100)
+    realized_dollars = pot * realized_pct / 100
+    # per-call dollar P&L (size × return × pot)
     for t in trades:
-        p = call_pct(t)
-        if p is None: continue
-        items.append({"from": t["opened"] or "0000", "to": (t["closed"] or "9999") if t["status"] == "closed" else "9999",
-                      "pct": p, "wt": t["wt"], "tk": t["ticker"]})
-    items.sort(key=lambda x: x["from"])
-    waves = []
-    for it in items:
-        if waves and it["from"] <= waves[-1]["to"]:
-            waves[-1]["calls"].append(it); waves[-1]["to"] = max(waves[-1]["to"], it["to"])
-        else:
-            waves.append({"from": it["from"], "to": it["to"], "calls": [it]})
-    sim = pot
-    for wv in waves:
-        wfr = resolve_weights(wv["calls"])
-        deployed = sum(wfr)
-        wv["mult"] = sum(f * (1 + c["pct"] / 100) for f, c in zip(wfr, wv["calls"])) + max(0, 1 - deployed)
-        sim *= wv["mult"]
-    sim_total_pct = (sim / pot - 1) * 100
+        p = t["finalPct"] if t["status"] == "closed" else call_pct(t)
+        t["_pnl"] = (t["wt"] or 0) / 100 * (p or 0) / 100 * pot if t["wt"] else None
 
     # best / worst / win rate (month realized, fall back to all)
     universe = realized_month if realized_month else closed
@@ -302,29 +294,31 @@ def main():
     wins = sum(1 for t in universe if (t["finalPct"] or 0) > 0)
     win_rate = round(wins / len(universe) * 100) if universe else 0
 
-    # daily portfolio line — mark to market across the month
+    # daily portfolio line — banking model marked across the month.
+    # By day d: closed calls opened on/before d bank their weighted
+    # gain once their close date passes (else marked to that day's
+    # price); open calls mark to that day's price.
     days = sorted({d for tk in tickers for d in (hist.get(tk) or {}) if first <= d <= last})
     line = []
     for d in days:
-        # realized locked by day d
-        locked = 0.0
-        # per day, weight-normalise the calls active on/before d that belong to same wave logic —
-        # simplified honest mark: pot * (1 + sum over calls of wavefrac*ret_so_far(d))
         contrib = 0.0
-        for wv in waves:
-            wfr = resolve_weights(wv["calls"])
-            for f, c in zip(wfr, wv["calls"]):
-                t = next((x for x in trades if x["ticker"] == c["tk"] and (x["closed"] or "9999") == (None if c["to"] == "9999" else c["to"]) and (x["opened"] or "0000") == c["from"]), None)
-                if c["from"] > d:
-                    continue
-                if c["to"] != "9999" and c["to"] <= d:
-                    contrib += f * (c["pct"] / 100)                    # locked realized
+        for t in trades:
+            wt = (t["wt"] or 0) / 100
+            if not wt or (t["opened"] or "0000") > d:
+                continue
+            if t["status"] == "closed":
+                if (t["closed"] or "9999") <= d:
+                    contrib += wt * (t["finalPct"] or 0) / 100          # banked
                 else:
-                    px = (hist.get(c["tk"]) or {}).get(d)
-                    if t and px:
-                        r = live_pct(t, px)
-                        if r is not None:
-                            contrib += f * (r / 100)                    # mark to market
+                    px = (hist.get(t["ticker"]) or {}).get(d)
+                    r = live_pct(t, px) if px else None
+                    if r is not None:
+                        contrib += wt * r / 100                          # mark to market
+            else:
+                px = (hist.get(t["ticker"]) or {}).get(d)
+                r = live_pct(t, px) if px else None
+                if r is not None:
+                    contrib += wt * r / 100
         line.append((d, pot * (1 + contrib)))
 
     # benchmark: $pot invested in the S&P 500 across the same days
@@ -475,7 +469,7 @@ def main():
     md.append("")
     md.append("## SLIDE 2 — The headline (big numbers)")
     md.append(f"- **{money(sim)}** — fund value from a {money(pot)} starting book")
-    md.append(f"- **{pctf(sim_total_pct)}** total return")
+    md.append(f"- **{pctf(sim_total_pct)}** total return  ·  **{money(realized_dollars)} banked** in realized profit")
     if alpha is not None:
         md.append(f"- **{alpha:+.1f} pts vs S&P 500** (market: {pctf(spx_ret)})")
     md.append(f"- **{win_rate}%** win rate · **{len(universe)}** calls closed")
@@ -497,18 +491,19 @@ def main():
     md.append("## SLIDE 5 — What drove the return (bar chart)")
     md.append("One bar per closed call, tallest = biggest winner, red bars for losses, stock logo under each bar.")
     md.append("")
-    md.append("| Stock | Result | Pot share |")
-    md.append("|---|---|---|")
+    md.append("| Stock | Result | Pot share | Profit ($) |")
+    md.append("|---|---|---|---|")
     for tk, pct, _ in contribs:
         t = next(x for x in universe if x["ticker"] == tk)
-        md.append(f"| {tk} | {pctf(pct)} | {(str(round(t['wt']))+'%') if t.get('wt') else 'auto'} |")
+        pnl = t.get("_pnl")
+        md.append(f"| {tk} | {pctf(pct)} | {(str(round(t['wt']))+'%') if t.get('wt') else 'auto'} | {('+'+money(pnl) if pnl and pnl>=0 else money(pnl)) if pnl is not None else '—'} |")
     md.append("")
     md.append("## SLIDE 6 — Open positions (still running)")
-    md.append("| Stock | Avg cost | Pot share | Live ROI |")
-    md.append("|---|---|---|---|")
+    md.append("| Stock | Avg cost | Pot share | Live ROI | Open P&L ($) |")
+    md.append("|---|---|---|---|---|")
     for t in active:
-        p = call_pct(t)
-        md.append(f"| {t['ticker']} ({names.get(t['ticker']) or t['name']}) | {money(derive(t)['avgCost'])} | {(str(round(t['wt']))+'%') if t.get('wt') else 'auto'} | {pctf(p)} |")
+        p = call_pct(t); pnl = t.get("_pnl")
+        md.append(f"| {t['ticker']} ({names.get(t['ticker']) or t['name']}) | {money(derive(t)['avgCost'])} | {(str(round(t['wt']))+'%') if t.get('wt') else 'auto'} | {pctf(p)} | {('+'+money(pnl) if pnl and pnl>=0 else money(pnl)) if pnl is not None else '—'} |")
     if not active:
         md.append("| — | — | — | none open |")
     md.append("")

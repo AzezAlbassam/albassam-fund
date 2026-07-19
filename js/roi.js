@@ -75,43 +75,33 @@ export function computeStats(trades, quotes) {
   return { nOpen: active.length, nClosed: closed.length, avgActive, avgClosed, best, worst, winRate };
 }
 
-// "$X since day one" simulation. Calls whose holding periods
-// overlap form one WAVE: the pot splits equally across the wave
-// and each call compounds its share; waves then compound in
-// chronological order. Waves are derived purely from each call's
-// buy/sell dates, so editing a call regroups everything.
+// "$X since day one" simulation — BANKING model (no leverage).
+// Each call's "% of pot" is the capital put to work in it. Closed
+// calls BANK their gain (size × final %); open calls MARK to today
+// (size × live %). Total return = banked realized + open unrealized.
+// Because calls are sized as a share of the pot and gains bank as
+// they close, positions that rotated over time never overlap into
+// phantom leverage — you can never make more than you actually put
+// in. Each trade's `wt` (% of pot) drives it; unsized trades don't
+// count toward the pot until you give them a size.
 export function simulate(trades, quotes, start = 100000) {
-  const items = trades.map(t => {
-    const pct = t.status === "closed" ? t.finalPct : statPct(t, quotes);
-    if (pct == null) return null;
-    return {
-      from: t.opened || "0000-00-00",
-      to: t.status === "closed" ? (t.closed || t.opened || "9999-99-99") : "9999-99-99",
-      pct, wt: t.wt,
-    };
-  }).filter(Boolean).sort((a, b) => a.from.localeCompare(b.from));
-
-  const waves = [];
-  for (const it of items) {
-    const w = waves[waves.length - 1];
-    if (w && it.from <= w.to) {
-      w.calls.push(it);
-      if (it.to > w.to) w.to = it.to;
+  let realized = 0, openPct = 0, nClosed = 0, nOpen = 0;
+  for (const t of trades) {
+    const wt = t.wt > 0 ? t.wt / 100 : 0;
+    if (t.status === "closed") {
+      if (t.finalPct != null) { realized += wt * t.finalPct; nClosed++; }
     } else {
-      waves.push({ from: it.from, to: it.to, calls: [it] });
+      const p = statPct(t, quotes);
+      if (p != null) { openPct += wt * p; nOpen++; }
     }
   }
-  let value = start;
-  for (const w of waves) {
-    // pot-share weighted: each call grows its slice, whatever
-    // isn't deployed (weights under 100%) sits as cash
-    const fr = resolveWeights(w.calls);
-    const deployed = fr.reduce((a, b) => a + b, 0);
-    w.mult = w.calls.reduce((a, c, i) => a + fr[i] * (1 + c.pct / 100), 0)
-      + Math.max(0, 1 - deployed);
-    value *= w.mult;
-  }
-  return { value, totalPct: (value / start - 1) * 100, waves, nCalls: items.length };
+  const totalPct = realized + openPct;
+  return {
+    value: start * (1 + totalPct / 100),
+    totalPct, realizedPct: realized, openPct,
+    realizedDollars: start * realized / 100,
+    nClosed, nOpen,
+  };
 }
 
 // $100000 -> "$100K", $10000 -> "$10K", $1500000 -> "$1.5M"
