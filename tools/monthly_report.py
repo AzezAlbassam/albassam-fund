@@ -440,45 +440,93 @@ def main():
     with open(os.path.join(outdir, "report.html"), "w") as f:
         f.write(html)
 
-    # ------- markdown brief (for Claude design) -------
-    md = [f"# Albassam Fund — {month_name} Report Brief\n",
-          "_Hand this to Claude design to build the slide deck. Every number below is live from the fund database._\n",
-          "## Headline numbers (cover slide)\n",
-          f"- **Simulated fund value** (starting pot {money(pot)}): **{money(sim)}**",
-          f"- **Total return to date:** {pctf(sim_total_pct)}",
-          (f"- **S&P 500 same period:** {pctf(spx_ret)}  →  **fund beat the market by {alpha:+.1f} points**" if alpha is not None else ""),
-          f"- **Open-positions fund signal:** {pctf(fund_signal)}",
-          f"- **Calls closed this month:** {len(universe)}  ·  **Win rate:** {win_rate}%",
-          f"- **Best call:** {best['ticker']} {pctf(best['finalPct'])}" if best else "",
-          f"- **Worst call:** {worst['ticker']} {pctf(worst['finalPct'])}" if worst else "",
-          "\n## Slide: Portfolio value vs S&P 500 line chart\n",
-          f"Daily marked-to-market value of the fund across {month_name}. Start {money(line[0][1]) if line else '—'} → latest {money(line[-1][1]) if line else '—'}.",
-          "Two lines: solid green = Albassam Fund, dashed grey = S&P 500 (same starting pot).",
-          "Data points (date, fund value, S&P 500 value):",
-          "```",
-          "\n".join(f"{d}  fund {money(v)}   spx {money(dict(bench).get(d)) if dict(bench).get(d) else '—'}" for d, v in line) or "(not enough daily data)",
-          "```",
-          "\n## Slide: Contribution by call (bar chart)\n",
-          "| Stock | Result | Pot share |",
-          "|---|---|---|"]
+    # ------- deck brief (paste into Claude design) -------
+    winners = [t for t in universe if (t["finalPct"] or 0) > 0]
+    top3 = sorted(universe, key=lambda t: -(t["finalPct"] or 0))[:3]
+    top3_txt = ", ".join(f"{t['ticker']} {pctf(t['finalPct'])}" for t in top3)
+    beat_txt = (f"beating the S&P 500 by {alpha:+.1f} points (the market did {pctf(spx_ret)} over the same stretch)"
+                if alpha is not None else "")
+    open_txt = ", ".join(f"{t['ticker']} {pctf(call_pct(t))}" for t in active) or "none"
+    period = "since inception" if inception else f"in {month_name}"
+
+    narrative = (
+        f"{period.capitalize()}, the Albassam Fund closed {len(universe)} "
+        f"call{'s' if len(universe)!=1 else ''} with a {win_rate}% win rate. "
+        f"On a {money(pot)} book the fund grew to {money(sim)} — a {pctf(sim_total_pct)} return"
+        + (f", {beat_txt}. " if beat_txt else ". ")
+        + (f"The standout was {best['ticker']} at {pctf(best['finalPct'])}; " if best else "")
+        + (f"top movers were {top3_txt}. " if top3 else "")
+        + (f"{len(active)} position{'s' if len(active)!=1 else ''} remain open ({open_txt})." if active else "All positions are closed.")
+    )
+
+    md = []
+    md.append(f"# Albassam Fund — {month_name} · Slide Deck Brief")
+    md.append("")
+    md.append("Build a presentation from the content below. Keep the fund's look: dark background, "
+              "light-green accents, red only for losses, clean mono numbers, each stock shown with its logo. "
+              "Every figure here is pulled live from the fund database and Yahoo Finance — do not change the numbers.")
+    md.append("")
+    md.append("---")
+    md.append("")
+    md.append("## SLIDE 1 — Title")
+    md.append(f"- **Albassam Fund**")
+    md.append(f"- Subtitle: Performance Report · {month_name}")
+    md.append("- Small tag line: live stock calls · ROI tracker")
+    md.append("")
+    md.append("## SLIDE 2 — The headline (big numbers)")
+    md.append(f"- **{money(sim)}** — fund value from a {money(pot)} starting book")
+    md.append(f"- **{pctf(sim_total_pct)}** total return")
+    if alpha is not None:
+        md.append(f"- **{alpha:+.1f} pts vs S&P 500** (market: {pctf(spx_ret)})")
+    md.append(f"- **{win_rate}%** win rate · **{len(universe)}** calls closed")
+    md.append(f"- Best: **{best['ticker']} {pctf(best['finalPct'])}**" if best else "")
+    md.append(f"- Worst: **{worst['ticker']} {pctf(worst['finalPct'])}**" if worst else "")
+    md.append("")
+    md.append("## SLIDE 3 — Executive summary (one paragraph)")
+    md.append(f"> {narrative}")
+    md.append("")
+    md.append("## SLIDE 4 — Growth vs the market (line chart)")
+    md.append("Two lines on one chart, same starting pot:")
+    md.append("- **Solid green = Albassam Fund**  ·  **dashed grey = S&P 500**")
+    md.append(f"- Story to tell: the fund {'crushed' if (alpha or 0) > 5 else 'edged'} the market this period.")
+    md.append("- Chart data (date, fund value, S&P 500 value):")
+    md.append("```")
+    md.append("\n".join(f"{d}  fund {money(v)}   spx {money(dict(bench).get(d)) if dict(bench).get(d) else '—'}" for d, v in line) or "(not enough daily data)")
+    md.append("```")
+    md.append("")
+    md.append("## SLIDE 5 — What drove the return (bar chart)")
+    md.append("One bar per closed call, tallest = biggest winner, red bars for losses, stock logo under each bar.")
+    md.append("")
+    md.append("| Stock | Result | Pot share |")
+    md.append("|---|---|---|")
     for tk, pct, _ in contribs:
         t = next(x for x in universe if x["ticker"] == tk)
         md.append(f"| {tk} | {pctf(pct)} | {(str(round(t['wt']))+'%') if t.get('wt') else 'auto'} |")
-    md += ["\n## Slide: Open positions\n", "| Stock | Avg cost | Pot share | Live ROI |", "|---|---|---|---|"]
+    md.append("")
+    md.append("## SLIDE 6 — Open positions (still running)")
+    md.append("| Stock | Avg cost | Pot share | Live ROI |")
+    md.append("|---|---|---|---|")
     for t in active:
         p = call_pct(t)
         md.append(f"| {t['ticker']} ({names.get(t['ticker']) or t['name']}) | {money(derive(t)['avgCost'])} | {(str(round(t['wt']))+'%') if t.get('wt') else 'auto'} | {pctf(p)} |")
-    md += ["\n## Slide: All closed calls this month\n", "| Stock | Bought → Sold | Window | Pot share | Result |", "|---|---|---|---|---|"]
+    if not active:
+        md.append("| — | — | — | none open |")
+    md.append("")
+    md.append("## SLIDE 7 — Every closed call")
+    md.append("| Stock | Bought → Sold | Window | Pot share | Result |")
+    md.append("|---|---|---|---|---|")
     for t in sorted(universe, key=lambda t: -(t["finalPct"] or 0)):
         d = derive(t); sell = t["closePx"] or (d["proceeds"] / d["soldSh"] if d["soldSh"] else None)
-        md.append(f"| {t['ticker']} | {money(d['avgCost'])} → {money(sell) if sell else '—'} | {t['opened']} → {t['closed'] or 'open'} | {(str(round(t['wt']))+'%') if t.get('wt') else 'auto'} | {pctf(t['finalPct'])} |")
-    md += ["\n## Waves (how the pot was deployed)\n"]
-    for i, wv in enumerate(waves, 1):
-        nm = ", ".join(c["tk"] for c in wv["calls"])
-        md.append(f"- **Wave {i}** ({wv['from']} → {'open' if wv['to']=='9999' else wv['to']}): {nm} — pot ×{wv['mult']:.2f}")
-    md += ["\n## Stock logos\n", "Logos are embedded in report.html (base64). Source URL pattern for fresh pulls:",
-           "`https://assets.parqet.com/logos/symbol/<TICKER>?format=png&size=128`\n",
-           "Tickers this month: " + ", ".join(tickers)]
+        md.append(f"| {t['ticker']} ({names.get(t['ticker']) or t['name']}) | {money(d['avgCost'])} → {money(sell) if sell else '—'} | {t['opened']} → {t['closed'] or 'open'} | {(str(round(t['wt']))+'%') if t.get('wt') else 'auto'} | {pctf(t['finalPct'])} |")
+    md.append("")
+    md.append("## SLIDE 8 — Win rate")
+    md.append(f"- **{win_rate}%** of closed calls were profitable ({len(winners)} of {len(universe)}). Show as a donut / big stat.")
+    md.append("")
+    md.append("## Design notes")
+    md.append("- Stock logos: `https://assets.parqet.com/logos/symbol/<TICKER>?format=png&size=128`")
+    md.append(f"- Tickers used: {', '.join(tickers)}")
+    md.append("- Palette: bg near-black, green #6EE787 for gains, red #FF5A4E for losses, off-white text.")
+    md.append("- A rendered visual reference of this exact data is saved next to this file as report.html.")
 
     with open(os.path.join(outdir, "brief.md"), "w") as f:
         f.write("\n".join(x for x in md if x is not None))
