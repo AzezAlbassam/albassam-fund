@@ -222,17 +222,24 @@ def donut(win, total, size=150):
 # ----------------------------- main -----------------------------
 def main():
     arg = sys.argv[1] if len(sys.argv) > 1 else None
-    if arg in (None, "current"):
-        month = dt.date.today().strftime("%Y-%m")
-    elif arg == "prev":                          # the calendar month that just ended
-        first_of_this = dt.date.today().replace(day=1)
-        month = (first_of_this - dt.timedelta(days=1)).strftime("%Y-%m")
+    inception = arg in ("inception", "all", "alltime")
+    if inception:
+        slug = "inception"
+        month_name = "Since Inception"
+        first, last = "0000-00-00", "9999-99-99"
     else:
-        month = arg
-    y, m = map(int, month.split("-"))
-    month_name = dt.date(y, m, 1).strftime("%B %Y")
-    first = f"{month}-01"
-    last = f"{month}-31"
+        if arg in (None, "current"):
+            month = dt.date.today().strftime("%Y-%m")
+        elif arg == "prev":                      # the calendar month that just ended
+            first_of_this = dt.date.today().replace(day=1)
+            month = (first_of_this - dt.timedelta(days=1)).strftime("%Y-%m")
+        else:
+            month = arg
+        y, m = map(int, month.split("-"))
+        month_name = dt.date(y, m, 1).strftime("%B %Y")
+        slug = month
+        first = f"{month}-01"
+        last = f"{month}-31"
 
     trades = fetch_trades()
     settings = fetch_settings()
@@ -335,7 +342,7 @@ def main():
     alpha = (sim_total_pct - spx_ret) if spx_ret is not None else None
 
     # ---- write files ----
-    outdir = os.path.join(ROOT, "reports", month)
+    outdir = os.path.join(ROOT, "reports", slug)
     os.makedirs(outdir, exist_ok=True)
 
     contribs = []
@@ -396,9 +403,11 @@ def main():
   td{{padding:10px 8px;border-bottom:1px solid rgba(158,175,163,.12);font-size:14px}}
   th{{text-align:left;font-family:monospace;font-size:10px;letter-spacing:.16em;color:{DIM};text-transform:uppercase;padding:0 8px 8px}}
   .flex{{display:flex;gap:20px;flex-wrap:wrap;align-items:center}}
+  .panel svg{{display:block;width:100%;height:auto;max-height:360px}}
+  .panel.donutp svg{{max-height:170px}}
 </style></head><body>
   <h1>Albassam Fund</h1>
-  <div class="sub">Monthly Report · {month_name}</div>
+  <div class="sub">{'Performance Report' if inception else 'Monthly Report'} · {month_name}</div>
 
   <div class="kpis">
     <div class="kpi"><div class="k">$1M-style Sim Value</div><div class="v">{money(sim)}</div></div>
@@ -418,7 +427,7 @@ def main():
     <div class="panel" style="flex:1;min-width:280px"><h2>Open Positions</h2>
       <table><tr><th>Stock</th><th>Basis</th><th>Pot</th><th style="text-align:right">ROI</th></tr>{act_rows or '<tr><td class="dim">none</td></tr>'}</table>
     </div>
-    <div class="panel" style="width:210px;text-align:center"><h2>Win Rate</h2>{donut(wins, len(universe))}</div>
+    <div class="panel donutp" style="width:210px;text-align:center"><h2>Win Rate</h2>{donut(wins, len(universe))}</div>
   </div>
 
   <div class="panel"><h2>Closed Calls · {month_name}</h2>
