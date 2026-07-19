@@ -125,17 +125,21 @@ def resolve_weights(calls):
 
 
 # ----------------------------- charts (inline SVG) -----------------------------
-def line_chart(points, w=920, h=300, pad=44, padl=78):
-    """points: list of (label, value). Green line, area fill, dotted grid."""
+def line_chart(points, bench=None, w=920, h=300, pad=44, padl=78):
+    """points: [(label, value)] fund line. bench: optional [(label, value)]
+    benchmark (S&P 500) drawn as a muted dashed line on the same scale."""
     if len(points) < 2:
         return f'<svg viewBox="0 0 {w} {h}"><text x="{w/2}" y="{h/2}" fill="{DIM}" text-anchor="middle" font-family="monospace">not enough data yet</text></svg>'
     vals = [v for _, v in points]
-    lo, hi = min(vals), max(vals)
+    bvals = [v for _, v in bench] if bench else []
+    lo, hi = min(vals + bvals), max(vals + bvals)
     if hi == lo: hi = lo + 1
     span = hi - lo
     iw, ih = w - padl - pad, h - pad * 2
-    xs = [padl + iw * i / (len(points) - 1) for i in range(len(points))]
-    ys = [pad + ih * (1 - (v - lo) / span) for v in vals]
+    X = lambda i, n: padl + iw * i / (n - 1)
+    Y = lambda v: pad + ih * (1 - (v - lo) / span)
+    xs = [X(i, len(points)) for i in range(len(points))]
+    ys = [Y(v) for v in vals]
     pts = " ".join(f"{x:.1f},{y:.1f}" for x, y in zip(xs, ys))
     area = f"{xs[0]:.1f},{pad+ih:.1f} " + pts + f" {xs[-1]:.1f},{pad+ih:.1f}"
     up = vals[-1] >= vals[0]
@@ -146,11 +150,21 @@ def line_chart(points, w=920, h=300, pad=44, padl=78):
         gv = hi - span * gi / 4
         grid += f'<line x1="{padl}" y1="{gy:.1f}" x2="{w-pad}" y2="{gy:.1f}" stroke="{DIM}" stroke-opacity=".15" stroke-dasharray="2 4"/>'
         grid += f'<text x="{padl-8}" y="{gy+4:.1f}" fill="{DIM}" font-size="11" font-family="monospace" text-anchor="end">${gv:,.0f}</text>'
-    # sparse x labels
     xlab = ""
     step = max(1, len(points) // 6)
     for i in range(0, len(points), step):
         xlab += f'<text x="{xs[i]:.1f}" y="{h-14}" fill="{DIM}" font-size="10" font-family="monospace" text-anchor="middle">{points[i][0][5:]}</text>'
+    benchsvg = legend = ""
+    if bench and len(bench) >= 2:
+        bpts = " ".join(f"{X(i, len(bench)):.1f},{Y(v):.1f}" for i, (_, v) in enumerate(bench))
+        benchsvg = (f'<polyline points="{bpts}" fill="none" stroke="{DIM}" stroke-width="2" '
+                    f'stroke-dasharray="5 4" stroke-opacity=".8"/>'
+                    f'<circle cx="{X(len(bench)-1, len(bench)):.1f}" cy="{Y(bench[-1][1]):.1f}" r="3.5" fill="{DIM}"/>')
+        legend = (f'<g font-family="monospace" font-size="11">'
+                  f'<line x1="{padl}" y1="24" x2="{padl+22}" y2="24" stroke="{col}" stroke-width="2.5"/>'
+                  f'<text x="{padl+28}" y="28" fill="{INK}">Albassam Fund</text>'
+                  f'<line x1="{padl+150}" y1="24" x2="{padl+172}" y2="24" stroke="{DIM}" stroke-width="2" stroke-dasharray="5 4"/>'
+                  f'<text x="{padl+178}" y="28" fill="{DIM}">S&amp;P 500</text></g>')
     dot = f'<circle cx="{xs[-1]:.1f}" cy="{ys[-1]:.1f}" r="4" fill="{col}"/>'
     return f'''<svg viewBox="0 0 {w} {h}">
       <defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1">
@@ -158,8 +172,9 @@ def line_chart(points, w=920, h=300, pad=44, padl=78):
       </linearGradient></defs>
       {grid}
       <polygon points="{area}" fill="url(#lg)"/>
+      {benchsvg}
       <polyline points="{pts}" fill="none" stroke="{col}" stroke-width="2.5" stroke-linejoin="round"/>
-      {dot}{xlab}
+      {dot}{xlab}{legend}
     </svg>'''
 
 
@@ -206,7 +221,14 @@ def donut(win, total, size=150):
 
 # ----------------------------- main -----------------------------
 def main():
-    month = sys.argv[1] if len(sys.argv) > 1 else dt.date.today().strftime("%Y-%m")
+    arg = sys.argv[1] if len(sys.argv) > 1 else None
+    if arg in (None, "current"):
+        month = dt.date.today().strftime("%Y-%m")
+    elif arg == "prev":                          # the calendar month that just ended
+        first_of_this = dt.date.today().replace(day=1)
+        month = (first_of_this - dt.timedelta(days=1)).strftime("%Y-%m")
+    else:
+        month = arg
     y, m = map(int, month.split("-"))
     month_name = dt.date(y, m, 1).strftime("%B %Y")
     first = f"{month}-01"
@@ -222,6 +244,7 @@ def main():
         h, nm = fetch_history(tk)
         hist[tk] = h; names[tk] = nm
         logos[tk] = fetch_logo(tk)
+    spx_hist, _ = fetch_history("^GSPC")   # S&P 500 benchmark
 
     def last_price(tk):
         h = hist.get(tk) or {}
@@ -297,6 +320,20 @@ def main():
                             contrib += f * (r / 100)                    # mark to market
         line.append((d, pot * (1 + contrib)))
 
+    # benchmark: $pot invested in the S&P 500 across the same days
+    bench = []
+    if line and spx_hist:
+        base = None
+        for d, _ in line:
+            if d in spx_hist:
+                if base is None:
+                    base = spx_hist[d]
+                bench.append((d, pot * spx_hist[d] / base))
+            elif bench:
+                bench.append((d, bench[-1][1]))       # carry forward gaps
+    spx_ret = (bench[-1][1] / bench[0][1] - 1) * 100 if len(bench) >= 2 else None
+    alpha = (sim_total_pct - spx_ret) if spx_ret is not None else None
+
     # ---- write files ----
     outdir = os.path.join(ROOT, "reports", month)
     os.makedirs(outdir, exist_ok=True)
@@ -366,13 +403,14 @@ def main():
   <div class="kpis">
     <div class="kpi"><div class="k">$1M-style Sim Value</div><div class="v">{money(sim)}</div></div>
     <div class="kpi"><div class="k">Total Return</div><div class="v mono" style="color:{sim_col}">{pctf(sim_total_pct)}</div></div>
+    <div class="kpi"><div class="k">vs S&amp;P 500</div><div class="v mono" style="color:{GREEN if (alpha or 0)>=0 else RED};font-size:22px">{(('+' if alpha>=0 else '')+f'{alpha:.1f} pts') if alpha is not None else '—'}</div></div>
     <div class="kpi"><div class="k">Fund Signal · open</div><div class="v mono" style="color:{fund_col}">{pctf(fund_signal)}</div></div>
     <div class="kpi"><div class="k">Calls Closed</div><div class="v">{len(universe)}</div></div>
     <div class="kpi"><div class="k">Best</div><div class="v mono" style="color:{GREEN};font-size:18px">{best["ticker"] if best else "—"} {pctf(best["finalPct"]) if best else ""}</div></div>
     <div class="kpi"><div class="k">Worst</div><div class="v mono" style="color:{RED};font-size:18px">{worst["ticker"] if worst else "—"} {pctf(worst["finalPct"]) if worst else ""}</div></div>
   </div>
 
-  <div class="panel"><h2>Portfolio Value · {month_name}</h2>{line_chart(line)}</div>
+  <div class="panel"><h2>Portfolio Value vs S&amp;P 500 · {month_name}</h2>{line_chart(line, bench)}</div>
 
   <div class="panel"><h2>Contribution by Call</h2>{bars_chart(contribs)}</div>
 
@@ -399,15 +437,17 @@ def main():
           "## Headline numbers (cover slide)\n",
           f"- **Simulated fund value** (starting pot {money(pot)}): **{money(sim)}**",
           f"- **Total return to date:** {pctf(sim_total_pct)}",
+          (f"- **S&P 500 same period:** {pctf(spx_ret)}  →  **fund beat the market by {alpha:+.1f} points**" if alpha is not None else ""),
           f"- **Open-positions fund signal:** {pctf(fund_signal)}",
           f"- **Calls closed this month:** {len(universe)}  ·  **Win rate:** {win_rate}%",
           f"- **Best call:** {best['ticker']} {pctf(best['finalPct'])}" if best else "",
           f"- **Worst call:** {worst['ticker']} {pctf(worst['finalPct'])}" if worst else "",
-          "\n## Slide: Portfolio value line chart\n",
+          "\n## Slide: Portfolio value vs S&P 500 line chart\n",
           f"Daily marked-to-market value of the fund across {month_name}. Start {money(line[0][1]) if line else '—'} → latest {money(line[-1][1]) if line else '—'}.",
-          "Data points (date, value):",
+          "Two lines: solid green = Albassam Fund, dashed grey = S&P 500 (same starting pot).",
+          "Data points (date, fund value, S&P 500 value):",
           "```",
-          "\n".join(f"{d}  {money(v)}" for d, v in line) or "(not enough daily data)",
+          "\n".join(f"{d}  fund {money(v)}   spx {money(dict(bench).get(d)) if dict(bench).get(d) else '—'}" for d, v in line) or "(not enough daily data)",
           "```",
           "\n## Slide: Contribution by call (bar chart)\n",
           "| Stock | Result | Pot share |",
