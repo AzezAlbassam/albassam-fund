@@ -65,26 +65,30 @@ ANIM_JS = """
         return s;
       }
 
+      // proper candlestick anatomy: slim body + upper AND lower wicks,
+      // the candle standing on its low-wick like a real chart
       const spacing = 2.2, n = CANDLES.length;
       const items = [];
       CANDLES.forEach((d, i) => {
         const x = (i - (n-1)/2) * spacing;
-        const h = Math.min(8, .9 + Math.abs(d.pct) * .12);
+        const h = Math.min(8, .9 + Math.abs(d.pct) * .12);   // body height
+        const uw = .35 * Math.min(3, .6 + h * .35);           // upper shadow
+        const lw = .35 * Math.min(1.6, .4 + h * .18);         // lower shadow
         const neg = d.pct < 0;
         const col = neg ? LOSS_C : GOLD_C;
-        const body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1, 1.5),
-          new THREE.MeshBasicMaterial({color: col, transparent: !!d.open, opacity: d.open ? .55 : 1}));
+        const mat = () => new THREE.MeshBasicMaterial({color: col, transparent: !!d.open, opacity: d.open ? .55 : 1});
+        const body = new THREE.Mesh(new THREE.BoxGeometry(1.05, 1, 1.05), mat());
         body.add(new THREE.LineSegments(
-          new THREE.EdgesGeometry(new THREE.BoxGeometry(1.5, 1, 1.5)),
+          new THREE.EdgesGeometry(new THREE.BoxGeometry(1.05, 1, 1.05)),
           new THREE.LineBasicMaterial({color: EDGE_C, transparent:true, opacity:.9})));
-        const wick = new THREE.Mesh(new THREE.BoxGeometry(.16, 1, .16),
-          new THREE.MeshBasicMaterial({color: col, transparent: !!d.open, opacity: d.open ? .55 : 1}));
+        const wickUp = new THREE.Mesh(new THREE.BoxGeometry(.12, 1, .12), mat());
+        const wickDn = new THREE.Mesh(new THREE.BoxGeometry(.12, 1, .12), mat());
         const lab = label(d.tk, d.pct, neg);
         const grp = new THREE.Group();
-        grp.add(body); grp.add(wick); grp.add(lab);
+        grp.add(body); grp.add(wickUp); grp.add(wickDn); grp.add(lab);
         grp.position.x = x;
         world.add(grp);
-        items.push({body, wick, lab, h, neg, stag: (i % 2) * 1.15, delay: .2 + i * .13});
+        items.push({body, wickUp, wickDn, lab, h, uw, lw, neg, stag: (i % 2) * 1.15, delay: .2 + i * .13});
       });
 
       // gold dust in the air
@@ -119,14 +123,19 @@ ANIM_JS = """
         for (const it of items) {
           const k = Math.min(1, Math.max(0, (t - it.delay) / 1.1));
           const e = 1 - Math.pow(1 - k, 4);
+          const s = it.neg ? -1 : 1;
           const bh = Math.max(.001, it.h * e);
+          const uw = Math.max(.001, it.uw * e);   // shadow away from the line
+          const lw = Math.max(.001, it.lw * e);   // shadow toward the line
+          // low wick from the baseline, body on top of it, high wick above
+          it.wickDn.scale.y = lw;
+          it.wickDn.position.y = s * lw / 2;
           it.body.scale.y = bh;
-          it.body.position.y = it.neg ? -bh/2 : bh/2;
-          const wh = Math.max(.001, it.h * .3 * e);
-          it.wick.scale.y = wh;
-          it.wick.position.y = it.neg ? -bh - wh/2 : bh + wh/2;
+          it.body.position.y = s * (lw + bh / 2);
+          it.wickUp.scale.y = uw;
+          it.wickUp.position.y = s * (lw + bh + uw / 2);
           it.lab.material.opacity = e * .95;
-          it.lab.position.y = it.neg ? -bh - wh - 1.1 : bh + wh + 1.0 + it.stag;
+          it.lab.position.y = it.neg ? -(lw + bh + uw) - 1.1 : (lw + bh + uw) + 1.0 + it.stag;
         }
         renderer.render(scene, cam); });
     } catch(e) { console.warn('3D skyline skipped:', e); }
