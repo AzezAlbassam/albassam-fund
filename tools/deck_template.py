@@ -11,17 +11,20 @@ build_deck(ctx) -> html string.  ctx keys are filled by monthly_report.py.
 BG, CARD, LINE, GOLD, GOLD2, GOLD_DIM, LOSS = \
     "#4C4840", "#5B564B", "#34322D", "#E6CF8B", "#C9B478", "#B99A45", "#D2705F"
 
-# Motion layer: 3D gold globe on the title (Three.js from CDN, drag to
-# spin), scroll-triggered reveals, count-up numbers, self-drawing chart,
-# growing bars, sweeping win-ring, and 3D card tilt. Plain string (not an
-# f-string) so the JS braces stay untouched. Skips itself entirely under
-# prefers-reduced-motion, and finalizes all states before printing.
+# Motion layer: 3D candlestick skyline on the title — the fund's REAL
+# calls as golden candles growing from a trading-grid floor (Three.js
+# from CDN, drag to orbit; __CANDLES__ is injected by build_deck) —
+# plus scroll-triggered reveals, count-up numbers, self-drawing chart,
+# growing bars, sweeping win-ring, and 3D card tilt. Plain string (not
+# an f-string) so the JS braces stay untouched. Skips itself entirely
+# under prefers-reduced-motion, and finalizes all states before printing.
 ANIM_JS = """
 <script type="module">
 (async () => {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---------- 3D particle globe behind the title ---------- */
+  /* ---------- 3D candlestick skyline: the fund's real calls ---------- */
+  const CANDLES = __CANDLES__;
   const canvas = document.getElementById('bg3d');
   if (canvas && !reduced) {
     try {
@@ -29,51 +32,104 @@ ANIM_JS = """
       const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
       renderer.setPixelRatio(Math.min(devicePixelRatio||1, 2));
       const scene = new THREE.Scene();
-      const cam = new THREE.PerspectiveCamera(45, 1, .1, 100);
-      cam.position.set(0, 1.5, 26);
-      const world = new THREE.Group(); world.rotation.x = .22; scene.add(world);
-      const tex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64;
+      const cam = new THREE.PerspectiveCamera(40, 1, .1, 200);
+      cam.position.set(1.5, 5.5, 30); cam.lookAt(2.5, 2.4, 0);
+      const world = new THREE.Group();
+      world.scale.setScalar(.75);
+      world.position.set(13.2, -1, 0);
+      scene.add(world);
+      const GOLD_C = 0xE6CF8B, LOSS_C = 0xD2705F, EDGE_C = 0x34322D;
+
+      const dotTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64;
         const g = c.getContext('2d'); const gr = g.createRadialGradient(32,32,0,32,32,32);
-        gr.addColorStop(0,'rgba(255,244,205,1)'); gr.addColorStop(.35,'rgba(230,207,139,.55)'); gr.addColorStop(1,'rgba(0,0,0,0)');
+        gr.addColorStop(0,'rgba(255,244,205,1)'); gr.addColorStop(.4,'rgba(230,207,139,.5)'); gr.addColorStop(1,'rgba(0,0,0,0)');
         g.fillStyle = gr; g.fillRect(0,0,64,64); return new THREE.CanvasTexture(c); })();
-      const N = 1800, R = 9, pos = new Float32Array(N*3), col = new Float32Array(N*3);
-      const golden = Math.PI*(3-Math.sqrt(5)); const base = new THREE.Color(0xE6CF8B);
-      for (let i=0;i<N;i++){ const y=1-(i/(N-1))*2, r=Math.sqrt(Math.max(0,1-y*y)), th=golden*i, rad=R*(.98+Math.random()*.06);
-        pos[i*3]=Math.cos(th)*r*rad; pos[i*3+1]=y*rad; pos[i*3+2]=Math.sin(th)*r*rad;
-        const v=.5+Math.random()*.6; col[i*3]=base.r*v; col[i*3+1]=base.g*v; col[i*3+2]=base.b*v; }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
-      geo.setAttribute('color', new THREE.BufferAttribute(col,3));
-      world.add(new THREE.Points(geo, new THREE.PointsMaterial({size:.2, map:tex, vertexColors:true,
-        transparent:true, depthWrite:false, blending:THREE.AdditiveBlending})));
-      world.add(new THREE.LineSegments(
-        new THREE.WireframeGeometry(new THREE.IcosahedronGeometry(R*.94, 2)),
-        new THREE.LineBasicMaterial({color:0xE6CF8B, transparent:true, opacity:.05})));
-      const DN = 500, dp = new Float32Array(DN*3);
-      for (let i=0;i<DN;i++){ const a=Math.random()*Math.PI*2, r2=11.5+Math.pow(Math.random(),1.5)*6;
-        dp[i*3]=Math.cos(a)*r2; dp[i*3+1]=(Math.random()-.5)*.5; dp[i*3+2]=Math.sin(a)*r2; }
+
+      // faint trading-grid floor
+      const grid = new THREE.GridHelper(80, 28, GOLD_C, GOLD_C);
+      grid.material.transparent = true; grid.material.opacity = .10;
+      world.add(grid);
+
+      function label(tk, pct, neg) {
+        const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+        const g = c.getContext('2d'); g.textAlign = 'center';
+        g.font = "700 54px 'Baloo Bhaijaan 2',sans-serif";
+        g.fillStyle = neg ? '#D2705F' : '#E6CF8B';
+        g.fillText(tk, 128, 56);
+        g.font = "700 40px 'IBM Plex Mono',monospace";
+        g.globalAlpha = .85;
+        g.fillText((pct >= 0 ? '+' : '') + pct.toFixed(1) + '%', 128, 108);
+        const s = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: new THREE.CanvasTexture(c), transparent: true, opacity: 0}));
+        s.scale.set(2.7, 1.35, 1);
+        return s;
+      }
+
+      const spacing = 2.2, n = CANDLES.length;
+      const items = [];
+      CANDLES.forEach((d, i) => {
+        const x = (i - (n-1)/2) * spacing;
+        const h = Math.min(8, .9 + Math.abs(d.pct) * .12);
+        const neg = d.pct < 0;
+        const col = neg ? LOSS_C : GOLD_C;
+        const body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1, 1.5),
+          new THREE.MeshBasicMaterial({color: col, transparent: !!d.open, opacity: d.open ? .55 : 1}));
+        body.add(new THREE.LineSegments(
+          new THREE.EdgesGeometry(new THREE.BoxGeometry(1.5, 1, 1.5)),
+          new THREE.LineBasicMaterial({color: EDGE_C, transparent:true, opacity:.9})));
+        const wick = new THREE.Mesh(new THREE.BoxGeometry(.16, 1, .16),
+          new THREE.MeshBasicMaterial({color: col, transparent: !!d.open, opacity: d.open ? .55 : 1}));
+        const lab = label(d.tk, d.pct, neg);
+        const grp = new THREE.Group();
+        grp.add(body); grp.add(wick); grp.add(lab);
+        grp.position.x = x;
+        world.add(grp);
+        items.push({body, wick, lab, h, neg, stag: (i % 2) * 1.15, delay: .2 + i * .13});
+      });
+
+      // gold dust in the air
+      const DN = 320, dp = new Float32Array(DN*3);
+      for (let i=0;i<DN;i++){ dp[i*3]=(Math.random()-.5)*60; dp[i*3+1]=Math.random()*18-2; dp[i*3+2]=(Math.random()-.5)*30; }
       const dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.BufferAttribute(dp,3));
-      const dust = new THREE.Points(dg, new THREE.PointsMaterial({size:.14, map:tex, color:0xC9B478,
-        transparent:true, opacity:.7, depthWrite:false, blending:THREE.AdditiveBlending}));
+      const dust = new THREE.Points(dg, new THREE.PointsMaterial({size:.22, map:dotTex, color:GOLD_C,
+        transparent:true, opacity:.5, depthWrite:false, blending:THREE.AdditiveBlending}));
       world.add(dust);
-      let drag=false, lx=0, ly=0, vel=0;
+
+      let userY=0, tiltX=0, drag=false, lx=0, ly=0, vel=0;
       canvas.style.cursor = 'grab';
       canvas.addEventListener('pointerdown', e => { drag=true; lx=e.clientX; ly=e.clientY;
         canvas.setPointerCapture(e.pointerId); canvas.style.cursor='grabbing'; });
       canvas.addEventListener('pointermove', e => { if(!drag) return;
-        world.rotation.y += (e.clientX-lx)*.005;
-        world.rotation.x = Math.max(-.5, Math.min(.7, world.rotation.x+(e.clientY-ly)*.003));
-        vel=(e.clientX-lx)*.005; lx=e.clientX; ly=e.clientY; });
+        userY += (e.clientX-lx)*.004;
+        tiltX = Math.max(-.12, Math.min(.32, tiltX+(e.clientY-ly)*.002));
+        vel=(e.clientX-lx)*.004; lx=e.clientX; ly=e.clientY; });
       const end = () => { drag=false; canvas.style.cursor='grab'; };
       canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
-      function size(){ const w=canvas.offsetWidth, h=canvas.offsetHeight; if(!w||!h) return false;
-        renderer.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); return true; }
+
+      function size(){ const w=canvas.offsetWidth, h2=canvas.offsetHeight; if(!w||!h2) return false;
+        renderer.setSize(w,h2,false); cam.aspect=w/h2; cam.updateProjectionMatrix(); return true; }
       let ok = size(); addEventListener('resize', () => { ok = size(); });
-      renderer.setAnimationLoop(() => { if(!ok){ ok=size(); if(!ok) return; }
-        if(!drag){ vel*=.95; world.rotation.y += .0018+vel; }
-        dust.rotation.y -= .0008;
+      const t0 = performance.now();
+      renderer.setAnimationLoop(ts => { if(!ok){ ok=size(); if(!ok) return; }
+        const t = (ts - t0) / 1000;
+        if(!drag){ vel *= .94; userY += vel; }
+        world.rotation.y = userY + Math.sin(t*.14)*.20;
+        world.rotation.x = tiltX;
+        dust.rotation.y += .0006;
+        for (const it of items) {
+          const k = Math.min(1, Math.max(0, (t - it.delay) / 1.1));
+          const e = 1 - Math.pow(1 - k, 4);
+          const bh = Math.max(.001, it.h * e);
+          it.body.scale.y = bh;
+          it.body.position.y = it.neg ? -bh/2 : bh/2;
+          const wh = Math.max(.001, it.h * .3 * e);
+          it.wick.scale.y = wh;
+          it.wick.position.y = it.neg ? -bh - wh/2 : bh + wh/2;
+          it.lab.material.opacity = e * .95;
+          it.lab.position.y = it.neg ? -bh - wh - 1.1 : bh + wh + 1.0 + it.stag;
+        }
         renderer.render(scene, cam); });
-    } catch(e) { console.warn('3D globe skipped:', e); }
+    } catch(e) { console.warn('3D skyline skipped:', e); }
   }
 
   if (reduced) return;
@@ -169,7 +225,18 @@ def _logo(tk, s=64, ring=64):
             f'alt="{tk}" style="width:{s}px;height:{s}px;object-fit:contain"></span>')
 
 
+import json
+
+
 def build_deck(c):
+    # candles for the title skyline, ascending left→right so the short
+    # ones sit under the title text and the towers rise on the right —
+    # reads as a growth story; open positions drawn translucent
+    candles = ([{"tk": x["tk"], "pct": round(x["pct"], 1), "open": False}
+                for x in sorted(c["closed"], key=lambda x: x["pct"])]
+               + [{"tk": x["tk"], "pct": round(x["pct"] or 0, 1), "open": True}
+                  for x in sorted(c["open"], key=lambda x: x["pct"] or 0)])
+    anim_js = ANIM_JS.replace("__CANDLES__", json.dumps(candles))
     money = lambda v: "$" + format(round(v), ",")
     pctf = lambda p, d=1: ("+" if (p or 0) >= 0 else "") + f"{p:.{d}f}%"
     dol = lambda v: ("+" if v >= 0 else "−") + "$" + format(abs(round(v)), ",")
@@ -279,7 +346,6 @@ def build_deck(c):
 
 <section class="slide" style="justify-content:center">
   <div class="blob" style="width:30vw;height:30vw;background:{CARD};border-radius:46% 54% 60% 40%/50% 45% 55% 50%;right:-8vw;top:-10vw"></div>
-  <div class="blob" style="width:12vw;height:12vw;background:{GOLD};border-radius:55% 45% 40% 60%/45% 60% 40% 55%;right:12vw;bottom:8vw;transform:rotate(12deg)"></div>
   <canvas id="bg3d" style="position:absolute;inset:0;width:100%;height:100%;touch-action:pan-y"></canvas>
   <span class="pill" style="margin-bottom:3vh;position:relative;z-index:1">live stock calls · ROI tracker</span>
   <h1 class="baloo" style="font-size:8vw;font-weight:800;line-height:1.05;position:relative;z-index:1">Albassam Fund</h1>
@@ -366,5 +432,5 @@ def build_deck(c):
     if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){{e.preventDefault();s[Math.max(i-1,0)]?.scrollIntoView()}}
   }});
 </script>
-''' + ANIM_JS + '''
+''' + anim_js + '''
 </body></html>'''
