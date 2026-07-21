@@ -93,7 +93,16 @@ def main():
     months = sorted({(t["closed"] or "")[:7] for t in universe if t["closed"]})
     plabel = dt.datetime.strptime(months[-1]+"-01", "%Y-%m-%d").strftime("%b %Y") if months else month_name
 
+    # "Period ending ..." for the title page: last day of the report month,
+    # or today's date for the running since-inception view
+    if inception:
+        period_ending = dt.date.today().strftime("%B %-d, %Y")
+    else:
+        import calendar
+        period_ending = dt.date(y, m, calendar.monthrange(y, m)[1]).strftime("%B %-d, %Y")
+
     ctx = dict(month_name=month_name, period_label=plabel, pot=pot, value=value, total_pct=total_pct,
+               period_ending=period_ending,
                realized_dollars=realized_dollars, spx_ret=spx_ret, alpha=alpha,
                win_rate=win_rate, n_closed=len(universe), n_wins=n_wins,
                best={"tk": best["ticker"], "pct": best["finalPct"]} if best else {"tk":"—","pct":0},

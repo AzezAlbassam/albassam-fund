@@ -359,6 +359,7 @@ def build_deck(c):
   <span class="pill" style="margin-bottom:3vh;position:relative;z-index:1">live stock calls · ROI tracker</span>
   <h1 class="baloo" style="font-size:8vw;font-weight:800;line-height:1.05;position:relative;z-index:1">Albassam Fund</h1>
   <div style="font-size:2.4vw;color:{GOLD2};margin-top:1.5vh;position:relative;z-index:1">Performance Report · {c["month_name"]}</div>
+  <div class="mono" style="font-size:1.6vw;color:{GOLD};margin-top:1.2vh;position:relative;z-index:1">Period ending {c["period_ending"]}</div>
 </section>
 
 <section class="slide">
