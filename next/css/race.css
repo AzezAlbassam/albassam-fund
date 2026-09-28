@@ -1,0 +1,144 @@
+/* ============================================================
+   The Race page. Shared tokens and components live in site.css.
+   ============================================================ */
+
+/* ---------- cinematic header: molten channel, text on the calm left ---------- */
+.rh{position:relative;isolation:isolate;overflow:hidden;overflow:clip;display:flex;align-items:flex-end;
+  min-height:clamp(580px,84svh,820px);padding:calc(var(--nav-h) + 56px) 0 clamp(96px,11vw,150px)}
+/* the image box runs past the right edge so the bright line sits right of center, away from the text */
+.rh-bg{position:absolute;inset:0 -24% 0 0;z-index:-2;background:url(../assets/race-channel.jpg) 50% 40%/cover no-repeat;
+  animation:rhIn 2.8s var(--ease-out) both}
+@keyframes rhIn{from{opacity:0;transform:scale(1.07)}to{opacity:1;transform:none}}
+.rh::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:
+  linear-gradient(180deg,rgba(14,21,20,.8) 0%,rgba(14,21,20,.18) 22%,rgba(14,21,20,.12) 58%,rgba(14,21,20,.7) 84%,var(--canvas) 100%),
+  linear-gradient(90deg,rgba(14,21,20,.95) 0%,rgba(14,21,20,.84) 28%,rgba(14,21,20,.4) 46%,rgba(14,21,20,.06) 60%,rgba(14,21,20,.1) 82%,rgba(14,21,20,.55) 100%)}
+.rh-copy{max-width:min(600px,48vw);text-shadow:var(--tshadow)}
+.rh .kicker{color:var(--text-secondary)}
+.rh h1{font-size:clamp(42px,5.4vw,82px);max-width:9.5ch}
+.rh .lede{color:#CFD6D1;max-width:40ch}
+
+/* live headline strip: three lanes, one per series */
+.rh-strip{margin-top:clamp(28px,4vw,44px)}
+.rh-since{margin:0 0 14px;font:500 12px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--text-secondary)}
+.rh-strip dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(12px,2vw,24px);margin:0}
+.rh-strip dl>div{border-top:2px solid var(--c);padding-top:12px;min-width:0}
+.rh-strip .fund{--c:var(--jade)} .rh-strip .gold{--c:var(--gold)} .rh-strip .spx{--c:var(--pearl)}
+.rh-strip dt{font:500 11px/1.3 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--text-secondary)}
+.rh-strip dd{margin:8px 0 0;font-size:clamp(24px,2.6vw,38px);line-height:1;white-space:nowrap}
+.rh-strip dd.neg{color:var(--loss)}
+.rh-strip[data-state="empty"] dl,.rh-strip[data-state="failed"] dl{display:none}
+.sk{display:inline-block;width:3.4em;height:.78em;border-radius:6px;background:rgba(242,236,224,.1);animation:skPulse 1.6s var(--ease-io) infinite}
+@keyframes skPulse{50%{opacity:.4}}
+
+/* ---------- the big chart, lifted over the header's fade ---------- */
+.rc{padding-top:0!important;padding-bottom:clamp(40px,5vw,64px);margin-top:clamp(-72px,-6vw,-40px);z-index:1}
+.rc-panel{padding:clamp(16px,2.4vw,30px);background:linear-gradient(180deg,rgba(22,31,29,.9),rgba(17,24,23,.88))}
+.rc .race-controls{margin-bottom:clamp(16px,2.4vw,26px)}
+.race-legend .asof{margin-left:auto;font:400 12px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+.race-legend b.jade{color:var(--jade)}
+
+/* ---------- shared bits ---------- */
+.state-note{margin:0;padding:clamp(28px,4vw,44px) 0;color:var(--text-muted);font:400 15px/1.5 var(--body);list-style:none}
+.state-note.busy{animation:skPulse 1.8s var(--ease-io) infinite}
+.tscroll{overflow-x:auto;overscroll-behavior-x:contain;border-radius:12px}
+.split{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:clamp(24px,5vw,80px);align-items:start}
+.split-head{position:sticky;top:calc(var(--nav-h) + 28px)}
+.span-note{margin:18px 0 0;font:400 13px/1.5 var(--mono);color:var(--text-muted)}
+.molten{margin-bottom:clamp(40px,6vw,72px)}
+
+/* ---------- the numbers behind the lines ---------- */
+.nb-box{padding:clamp(6px,1.2vw,14px) clamp(6px,1.6vw,18px)}
+.nb-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.nb-table th,.nb-table td{padding:18px 16px;text-align:right;vertical-align:top;border-bottom:1px solid var(--line)}
+.nb-table tr:last-child>*{border-bottom:0}
+.nb-table thead th{font:500 12px/1.3 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--text-secondary);padding-top:20px}
+.nb-table tbody th{text-align:left;font:500 15px/1.35 var(--body);color:var(--text-secondary)}
+.nb-table td{font:500 18px/1.2 var(--mono);color:var(--text-primary);white-space:nowrap}
+.nb-table td small{display:block;margin-top:6px;font:400 12px/1.2 var(--mono);color:var(--text-muted)}
+.nb-table .us{background:rgba(79,209,161,.06)}
+.nb-table thead .us{color:var(--jade);box-shadow:inset 0 2px 0 var(--jade)}
+.nb-table td.us{color:var(--text-primary)}
+.nb-table tbody tr:first-child td.us span:not(.neg){color:var(--jade)}
+.nb-table .neg{color:var(--loss)}
+
+/* ---------- month by month: heat grid ---------- */
+.mm h2{margin-bottom:clamp(24px,3.6vw,44px)}
+.hm{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:6px;font-variant-numeric:tabular-nums}
+.hm thead th{padding:0 16px 4px;text-align:left;font:500 12px/1.3 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--text-secondary)}
+.hm tbody th{width:1%;padding-right:14px;text-align:left;white-space:nowrap;font:500 12px/1.3 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--text-secondary)}
+.hm tbody th::before{content:"";display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:10px;vertical-align:middle;background:var(--c)}
+.hm td{--rgb:79,209,161;min-width:96px;padding:clamp(18px,2.6vw,30px) 16px;border-radius:12px;background:rgba(var(--rgb),var(--a));
+  font:800 clamp(17px,2vw,26px)/1 var(--display);font-stretch:125%;color:var(--text-primary);white-space:nowrap}
+.hm .fund{--c:var(--jade)}
+.hm .gold{--c:var(--gold)} .hm .gold td{--rgb:230,179,78}
+.hm .spx{--c:var(--pearl)} .hm .spx td{--rgb:159,180,199}
+.hm td.neg{--rgb:238,111,94}
+
+/* ---------- where our lead came from ---------- */
+.lb-sec .lede{max-width:34ch}
+.lb{--z:0%;list-style:none;margin:0;padding:0}
+.lb-row{display:grid;grid-template-columns:minmax(150px,190px) minmax(0,1fr) minmax(96px,auto);gap:18px;align-items:center;
+  padding:14px 0;border-bottom:1px solid var(--line)}
+.lb-row:last-child{border-bottom:0}
+.lb-name{display:flex;align-items:center;gap:12px;min-width:0}
+.lb-name b{display:block;font:800 16px/1.15 var(--display);font-stretch:125%}
+.lb-name small,.lb-val small{display:block;margin-top:3px;font:400 12px/1.3 var(--mono);color:var(--text-muted);white-space:nowrap}
+.lb-track{position:relative;height:14px}
+.lb-track::before{content:"";position:absolute;left:var(--z);top:-10px;bottom:-10px;width:1px;background:var(--line-strong)}
+.lb-bar{position:absolute;top:0;bottom:0;left:var(--z);min-width:2px;border-radius:0 7px 7px 0;
+  background:linear-gradient(90deg,rgba(79,209,161,.3),var(--jade));transform:scaleX(0);transform-origin:left center;
+  transition:transform 1.3s var(--ease-out) var(--d,0ms)}
+.loss .lb-bar{left:auto;right:calc(100% - var(--z));border-radius:7px 0 0 7px;transform-origin:right center;
+  background:linear-gradient(270deg,rgba(238,111,94,.3),var(--loss))}
+.lb.in .lb-bar{transform:scaleX(1)}
+.lb-val{text-align:right}
+.lb-val b{display:block;font:500 15px/1.2 var(--mono);font-variant-numeric:tabular-nums;color:var(--jade)}
+.loss .lb-val b{color:var(--loss)}
+.lb-val small{color:var(--text-secondary)}
+
+/* ---------- how we count ---------- */
+.hw-list{list-style:none;counter-reset:hw;margin:clamp(28px,4vw,52px) 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(16px,2.6vw,36px)}
+.hw-list li{counter-increment:hw;position:relative;padding-top:22px;border-top:1px solid var(--line-strong)}
+.hw-list li::before{content:counter(hw);display:grid;place-items:center;width:38px;height:38px;margin-bottom:18px;border-radius:50%;
+  border:1px solid var(--line-strong);font:500 14px/1 var(--mono);color:var(--text-secondary)}
+.hw-list p{margin:0;font:400 clamp(17px,1.6vw,20px)/1.5 var(--body);color:var(--text-primary);max-width:30ch}
+.hw-note{margin-top:clamp(32px,5vw,56px);padding-top:18px;border-top:1px solid var(--line);max-width:72ch}
+.hw-note p{margin:0 0 6px;font:400 14px/1.6 var(--body);color:var(--text-secondary)}
+
+/* ---------- tablets and phones ---------- */
+@media (max-width:900px){
+  .split{grid-template-columns:1fr}
+  .split-head{position:static}
+  .hw-list{grid-template-columns:1fr}
+  .rh-copy{max-width:min(560px,62vw)}
+}
+@media (max-width:720px){
+  .rh{min-height:clamp(600px,96svh,760px);padding-bottom:84px}
+  /* phones: push the bright line to the right edge, darken the lower half where the text sits */
+  .rh-bg{inset:0 -84% 0 0;background-position:50% 30%}
+  .rh::before{background:
+    linear-gradient(180deg,rgba(14,21,20,.7) 0%,rgba(14,21,20,.2) 20%,rgba(14,21,20,.55) 44%,rgba(14,21,20,.9) 66%,var(--canvas) 100%),
+    linear-gradient(90deg,rgba(14,21,20,.8) 0%,rgba(14,21,20,.45) 60%,rgba(14,21,20,.1) 100%)}
+  .rh-copy{max-width:none}
+  .rh h1{font-size:clamp(40px,11.4vw,56px)}
+  .race-legend .asof{margin-left:0;flex-basis:100%}
+  .nb-table th,.nb-table td{padding:14px 8px}
+  .nb-table thead th{font-size:11px;letter-spacing:.08em}
+  .nb-table tbody th{font-size:13px;min-width:92px}
+  .nb-table td{font-size:14px}
+  .hm{border-spacing:5px}
+  .hm tbody th{position:sticky;left:0;z-index:1;background:var(--canvas);padding-right:6px;font-size:11px;letter-spacing:.08em}
+  .hm tbody th::before{display:none}
+  .hm thead th{padding:0 8px 2px}
+  .hm td{min-width:0;padding:16px 8px;font-size:15px}
+  .lb-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name val" "bar bar";gap:10px 14px}
+  .lb-name{grid-area:name} .lb-val{grid-area:val} .lb-track{grid-area:bar;height:10px}
+}
+@media (max-width:420px){
+  .rh-strip dl{gap:10px}
+  .rh-strip dt{font-size:10px;letter-spacing:.1em}
+  .rh-strip dd{font-size:clamp(20px,6vw,24px)}
+}
+
+/* site.css gives .race-empty display:grid, which beats the hidden attribute chart.js sets once lines draw */
+.race-empty[hidden]{display:none}

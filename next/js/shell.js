@@ -1,0 +1,133 @@
+// ============================================================
+// Shared page behaviors: the environment layer, nav state, reveal
+// choreography, number count-ups, pausing on hidden tabs, the
+// build stamp and the "new version" bar. Plus small formatters.
+// ============================================================
+
+import { BUILD } from "./config.js?v=9";
+
+export const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+
+export function initShell() {
+  // environment: a few sparks drifting up (seeded, so identical every load)
+  const env = document.querySelector(".env");
+  if (env && !env.children.length) {
+    let s = 20260704;
+    const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+    for (let i = 0; i < 14; i++) {
+      const sp = document.createElement("i");
+      const dur = 26 + rnd() * 22;
+      sp.style.cssText = `left:${(4 + rnd() * 92).toFixed(1)}%;animation-duration:${dur.toFixed(1)}s;` +
+        `animation-delay:${(-rnd() * dur).toFixed(1)}s;--dx:${((rnd() - 0.5) * 120).toFixed(0)}px;` +
+        `scale:${(0.5 + rnd() * 0.9).toFixed(2)}`;
+      env.appendChild(sp);
+    }
+  }
+
+  // nav gets a glass background once the page moves
+  const nav = document.querySelector(".nav");
+  let scrolled = null;
+  const onScroll = () => {
+    const s = scrollY > 24;
+    if (s !== scrolled) { scrolled = s; nav?.classList.toggle("scrolled", s); }
+  };
+  addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+
+  // pause every loop on hidden tabs
+  document.addEventListener("visibilitychange", () =>
+    document.body.classList.toggle("paused", document.hidden));
+
+  // reveal choreography
+  observeReveals(document);
+
+  // build stamp + update bar
+  document.querySelectorAll("[data-build]").forEach(el => (el.textContent = "build " + BUILD));
+  setTimeout(checkForUpdate, 10000);
+  setInterval(checkForUpdate, 4 * 60 * 1000);
+}
+
+// Adds .in to [data-reveal], [data-stagger] and .molten once they are
+// on screen; staggers retire their delays after the entrance.
+const revealCbs = new WeakMap();
+let io = null;
+export function observeReveals(root) {
+  const els = root.querySelectorAll("[data-reveal]:not(.in),[data-stagger]:not(.in),.molten:not(.in)");
+  if (!("IntersectionObserver" in window) || reducedMotion.matches) {
+    els.forEach(show);
+    return;
+  }
+  io ??= new IntersectionObserver((entries) => {
+    for (const e of entries) if (e.isIntersecting) { io.unobserve(e.target); show(e.target); }
+  }, { rootMargin: "0px 0px -8% 0px", threshold: 0.12 });
+  els.forEach(el => io.observe(el));
+}
+function show(el) {
+  el.classList.add("in");
+  if (el.hasAttribute("data-stagger")) setTimeout(() => el.classList.add("done"), 1400);
+  revealCbs.get(el)?.();
+}
+// Run fn the first time el is revealed (immediately if it already was).
+export function onReveal(el, fn) {
+  if (el.classList.contains("in")) fn();
+  else revealCbs.set(el, fn);
+}
+
+// Count a number up to its new value. fmt turns a number into text.
+export function countTo(el, to, fmt, ms = 1100) {
+  if (!el || to == null || isNaN(to)) return;
+  const from = el._v ?? 0;
+  el._v = to;
+  cancelAnimationFrame(el._raf);
+  if (reducedMotion.matches || document.hidden || from === to) { el.textContent = fmt(to); return; }
+  const t0 = performance.now();
+  const step = (now) => {
+    const k = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = fmt(from + (to - from) * e);
+    if (k < 1) el._raf = requestAnimationFrame(step);
+  };
+  el._raf = requestAnimationFrame(step);
+}
+
+async function checkForUpdate() {
+  try {
+    const html = await (await fetch(location.pathname, { cache: "no-store" })).text();
+    const m = html.match(/\?v=(\d+)/);
+    if (m && +m[1] > BUILD && !document.querySelector(".bar-note")) {
+      const b = document.createElement("button");
+      b.className = "bar-note";
+      b.textContent = "New version ready. Tap to update.";
+      b.onclick = async () => {
+        b.textContent = "Updating…";
+        try { await fetch(location.href, { cache: "reload" }); } catch (e) {}
+        location.reload();
+      };
+      document.body.appendChild(b);
+    }
+  } catch (e) { /* offline: try later */ }
+}
+
+/* ----------------------- formatters ----------------------- */
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export const usd0 = (v) => (v < 0 ? "-$" : "$") + Math.round(Math.abs(v)).toLocaleString("en-US");
+export const usd2 = (v) => v == null || isNaN(v) ? "…" :
+  "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const signedUsd = (v) => (v >= 0 ? "+" : "-") + "$" + Math.round(Math.abs(v)).toLocaleString("en-US");
+export const pct1 = (p) => p == null || isNaN(p) ? "…" : (p >= 0 ? "+" : "-") + Math.abs(p).toFixed(1) + "%";
+export const pts1 = (p) => (p >= 0 ? "+" : "-") + Math.abs(p).toFixed(1) + " pts";
+export const shortUsd = (v) => v >= 1e6 ? "$" + +(v / 1e6).toFixed(2) + "M" : v >= 1e3 ? "$" + +(v / 1e3).toFixed(1) + "K" : "$" + Math.round(v);
+export const day = (d) => d ? MON[+d.slice(5, 7) - 1] + " " + +d.slice(8, 10) : "";
+export const dayYear = (d) => d ? day(d) + ", " + d.slice(0, 4) : "";
+export const month = (m) => MON[+m.slice(5, 7) - 1];
+export const daysBetween = (a, b) => Math.max(0, Math.round((Date.parse(b) - Date.parse(a)) / 864e5));
+export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+export const pctClass = (p) => p == null ? "" : p >= 0 ? "pos" : "neg";
+
+// Company logo with a letter-badge fallback.
+export function logoHtml(t) {
+  const ph = `<span class="logo ph" aria-hidden="true">${esc((t.ticker || "?")[0])}</span>`;
+  return t.logo
+    ? `<img class="logo" src="${esc(t.logo)}" alt="" loading="lazy" onerror="this.outerHTML='${ph.replace(/"/g, "&quot;")}'">`
+    : ph;
+}

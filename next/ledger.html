@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Ledger · Albassam Fund</title>
+<meta name="description" content="Every Albassam Fund call on the record. Wins and losses, sized and dated. Nothing deleted.">
+<meta name="theme-color" content="#0E1514">
+<!-- DEPLOY STEP: og:url and og:image carry the live absolute URL (patch on promotion to the root) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Albassam Fund">
+<meta property="og:description" content="Every stock call we make, measured against gold and the S&amp;P 500.">
+<meta property="og:image" content="https://azezalbassam.github.io/albassam-fund/next/assets/og.jpg">
+<meta property="og:url" content="https://azezalbassam.github.io/albassam-fund/next/ledger.html">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230E1514'/%3E%3Cpath d='M19 20h26l9 26H10z' fill='none' stroke='%23E6B34E' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M32 27l5 6.5-5 6.5-5-6.5z' fill='%23E6B34E'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
+<!-- fonts load without blocking the page: text shows at once, the faces swap in -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,800;125,900&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@600&text=%D8%A7%D9%84%D8%A8%D8%B3%D8%A7%D9%85&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="css/site.css?v=9">
+<link rel="stylesheet" href="css/ledger.css?v=9">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="env" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="Albassam Fund, home">
+      <svg class="mark" viewBox="0 0 40 28" aria-hidden="true"><path d="M9 3h22l7 22H2z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 8.5h16" stroke="currentColor" stroke-width="1.3" opacity=".55"/><path d="M20 12.5l3.6 4.3L20 21l-3.6-4.2z" fill="currentColor"/></svg>
+      <b>Albassam Fund</b><span class="ar" lang="ar" aria-hidden="true">البسام</span>
+    </a>
+    <nav aria-label="Main">
+      <ul class="nav-links">
+        <li><a href="race.html">The Race</a></li>
+        <li><a href="ledger.html" aria-current="page">The Ledger</a></li>
+        <li class="wire-link"><a href="./#wire">The Wire</a></li>
+      </ul>
+    </nav>
+    <span class="live-pill" title="Updates live"><span>Live</span></span>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <section class="lhead" aria-labelledby="ledger-title">
+    <img class="lhead-bg" src="assets/ledger-bars.jpg" alt="" fetchpriority="high" decoding="async">
+    <div class="wrap lhead-copy" data-stagger>
+      <p class="kicker">The Ledger</p>
+      <h1 id="ledger-title">Every call, <span class="nw">on the record.</span></h1>
+      <p class="lede">Wins and losses, sized and dated. Nothing deleted.</p>
+    </div>
+  </section>
+
+  <section class="tally-sec" aria-labelledby="tally-h">
+    <div class="wrap">
+      <h2 id="tally-h" class="sr">Summary</h2>
+      <div class="molten" aria-hidden="true"></div>
+      <dl class="tally" id="tally" data-stagger>
+        <div><dt>Calls</dt><dd data-s="calls"><span class="sk"></span></dd></div>
+        <div><dt>Won</dt><dd data-s="won"><span class="sk"></span></dd></div>
+        <div><dt>Win rate</dt><dd data-s="rate"><span class="sk"></span></dd></div>
+        <div><dt>Average win</dt><dd data-s="avgw"><span class="sk"></span></dd></div>
+        <div><dt>Average loss</dt><dd data-s="avgl"><span class="sk"></span></dd></div>
+        <div><dt>Banked</dt><dd data-s="bank"><span class="sk"></span></dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="book" aria-labelledby="book-h">
+    <div class="wrap">
+      <h2 id="book-h" class="sr">All calls</h2>
+      <div class="tools" data-reveal>
+        <div class="seg" id="filter" role="group" aria-label="Show">
+          <button type="button" data-f="all" aria-pressed="true">All</button>
+          <button type="button" data-f="open" aria-pressed="false">Open</button>
+          <button type="button" data-f="closed" aria-pressed="false">Closed</button>
+          <button type="button" data-f="wins" aria-pressed="false">Wins</button>
+          <button type="button" data-f="losses" aria-pressed="false">Losses</button>
+        </div>
+        <div class="tools-r">
+          <label class="pick">
+            <span class="sr">Sort</span>
+            <select id="sort">
+              <option value="new">Newest first</option>
+              <option value="gain">Biggest gain</option>
+              <option value="size">Biggest size</option>
+              <option value="profit">Most profit</option>
+            </select>
+          </label>
+          <label class="find">
+            <span class="sr">Find a ticker</span>
+            <input type="search" id="q" placeholder="Find a ticker" autocomplete="off" autocapitalize="characters" spellcheck="false">
+          </label>
+        </div>
+      </div>
+
+      <p class="sr" id="count" aria-live="polite">Loading calls</p>
+      <ol class="calls" id="calls" aria-busy="true">
+        <li class="call skel" aria-hidden="true"><span class="sk s1"></span><span class="sk s2"></span><span class="sk s3"></span><span class="sk s4"></span><span class="sk s5"></span></li>
+        <li class="call skel" aria-hidden="true"><span class="sk s1"></span><span class="sk s2"></span><span class="sk s3"></span><span class="sk s4"></span><span class="sk s5"></span></li>
+        <li class="call skel" aria-hidden="true"><span class="sk s1"></span><span class="sk s2"></span><span class="sk s3"></span><span class="sk s4"></span><span class="sk s5"></span></li>
+        <li class="call skel" aria-hidden="true"><span class="sk s1"></span><span class="sk s2"></span><span class="sk s3"></span><span class="sk s4"></span><span class="sk s5"></span></li>
+      </ol>
+      <p class="slow" id="slow" hidden>Still connecting to the record.</p>
+      <div class="empty" id="empty" hidden><span class="empty-stamp" aria-hidden="true"></span><p>No calls match that filter.</p></div>
+      <p class="note">Calls opened before this record started are dated July 4, 2026.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div>
+      <a class="brand" href="./" aria-label="Albassam Fund, home">
+        <svg class="mark" viewBox="0 0 40 28" aria-hidden="true"><path d="M9 3h22l7 22H2z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 8.5h16" stroke="currentColor" stroke-width="1.3" opacity=".55"/><path d="M20 12.5l3.6 4.3L20 21l-3.6-4.2z" fill="currentColor"/></svg>
+        <b>Albassam Fund</b>
+      </a>
+      <p>Albassam Fund. A family record of every call since July 4, 2026.</p>
+      <p>Prices from Yahoo Finance and may be delayed. Not investment advice.</p>
+      <p class="build" data-build></p>
+    </div>
+    <div class="credit">✦ idea from Rejooo ✦</div>
+  </div>
+</footer>
+
+<script type="module" src="js/ledger.js?v=9"></script>
+</body>
+</html>

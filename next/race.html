@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Race · Albassam Fund</title>
+<meta name="description" content="Our fund against gold and the S&amp;P 500, day by day, from the same starting pot.">
+<meta name="theme-color" content="#0E1514">
+<!-- DEPLOY STEP: og:url and og:image carry the live absolute URL (patch on promotion to the root) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Albassam Fund">
+<meta property="og:description" content="Every stock call we make, measured against gold and the S&amp;P 500.">
+<meta property="og:image" content="https://azezalbassam.github.io/albassam-fund/next/assets/og.jpg">
+<meta property="og:url" content="https://azezalbassam.github.io/albassam-fund/next/race.html">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230E1514'/%3E%3Cpath d='M19 20h26l9 26H10z' fill='none' stroke='%23E6B34E' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M32 27l5 6.5-5 6.5-5-6.5z' fill='%23E6B34E'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
+<!-- fonts load without blocking the page: text shows at once, the faces swap in -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,800;125,900&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@600&text=%D8%A7%D9%84%D8%A8%D8%B3%D8%A7%D9%85&display=swap" media="print" onload="this.media='all'">
+<link rel="preload" as="image" href="assets/race-channel.jpg">
+<link rel="stylesheet" href="css/site.css?v=9">
+<link rel="stylesheet" href="css/race.css?v=9">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="env" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="Albassam Fund, home">
+      <svg class="mark" viewBox="0 0 40 28" aria-hidden="true"><path d="M9 3h22l7 22H2z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 8.5h16" stroke="currentColor" stroke-width="1.3" opacity=".55"/><path d="M20 12.5l3.6 4.3L20 21l-3.6-4.2z" fill="currentColor"/></svg>
+      <b>Albassam Fund</b><span class="ar" lang="ar" aria-hidden="true">البسام</span>
+    </a>
+    <nav aria-label="Main">
+      <ul class="nav-links">
+        <li><a href="race.html" aria-current="page">The Race</a></li>
+        <li><a href="ledger.html">The Ledger</a></li>
+        <li class="wire-link"><a href="./#wire">The Wire</a></li>
+      </ul>
+    </nav>
+    <span class="live-pill" title="Updates live"><span>Live</span></span>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+
+  <!-- cinematic header: the molten channel, text on the calm left side -->
+  <section class="rh" aria-labelledby="rhTitle">
+    <div class="rh-bg" aria-hidden="true"></div>
+    <div class="wrap">
+      <div class="rh-copy" data-stagger>
+        <p class="kicker">The Race</p>
+        <h1 id="rhTitle">Every day, against the bar.</h1>
+        <p class="lede">Our fund against gold and the S&amp;P 500, from the same starting pot.</p>
+        <div class="rh-strip" id="strip" data-state="loading">
+          <p class="rh-since" id="since">Loading the race…</p>
+          <dl>
+            <div class="fund"><dt>Our fund</dt><dd class="num jade" data-k="fund"><span class="sk"></span></dd></div>
+            <div class="gold"><dt>Gold</dt><dd class="num gold" data-k="gold"><span class="sk"></span></dd></div>
+            <div class="spx"><dt>S&amp;P 500</dt><dd class="num pearl" data-k="spx"><span class="sk"></span></dd></div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- the big chart -->
+  <section class="section rc" aria-label="The race chart">
+    <div class="wrap">
+      <div class="panel rc-panel" data-reveal>
+        <div class="race-controls" id="raceControls">
+          <div class="seg" role="group" aria-label="Compare with">
+            <button type="button" data-bench="gold" aria-pressed="true">vs Gold</button>
+            <button type="button" data-bench="spx" aria-pressed="false">vs S&amp;P 500</button>
+            <button type="button" data-bench="both" aria-pressed="false">All three</button>
+          </div>
+          <div class="seg" role="group" aria-label="Range">
+            <button type="button" data-range="1M" aria-pressed="false">1M</button>
+            <button type="button" data-range="3M" aria-pressed="false">3M</button>
+            <button type="button" data-range="ALL" aria-pressed="true">All</button>
+          </div>
+          <div class="seg" role="group" aria-label="Unit">
+            <button type="button" data-unit="pct" aria-pressed="true" aria-label="Percent">%</button>
+            <button type="button" data-unit="usd" aria-pressed="false" aria-label="Dollars">$</button>
+          </div>
+        </div>
+        <div id="race" style="--race-h:clamp(340px,52vw,560px)"></div>
+        <div class="race-legend" id="legend"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- numbers behind the lines: split, heading left, table right -->
+  <section class="section nb" aria-labelledby="nbTitle">
+    <div class="wrap">
+      <hr class="molten">
+      <div class="split">
+        <div class="split-head" data-reveal>
+          <h2 id="nbTitle">The numbers behind the lines.</h2>
+          <p class="span-note" id="nbSpan"></p>
+        </div>
+        <div class="panel nb-box" data-reveal>
+          <div class="tscroll" id="nbBox" tabindex="0" role="region" aria-labelledby="nbTitle">
+            <p class="state-note busy">Loading the numbers…</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- month by month: heading on top, full-width heat grid -->
+  <section class="section mm" aria-labelledby="mmTitle">
+    <div class="wrap">
+      <h2 id="mmTitle" data-reveal>Month by month.</h2>
+      <div class="mm-box" data-reveal>
+        <div class="tscroll" id="mmBox" tabindex="0" role="region" aria-labelledby="mmTitle">
+          <p class="state-note busy">Loading the months…</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- where the lead came from: sticky heading left, bars right -->
+  <section class="section lb-sec" aria-labelledby="lbTitle">
+    <div class="wrap split">
+      <div class="split-head" data-reveal>
+        <h2 id="lbTitle">Where our lead came from.</h2>
+        <p class="lede">Each bar is one call: its result times its share of the pot.</p>
+      </div>
+      <ol class="lb" id="leadBars" data-reveal role="list">
+        <li class="state-note busy">Loading the calls…</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- how we count -->
+  <section class="section hw" aria-labelledby="hwTitle">
+    <div class="wrap">
+      <hr class="molten">
+      <h2 id="hwTitle" data-reveal>How we count.</h2>
+      <ol class="hw-list" data-stagger role="list">
+        <li><p>Each call gets a share of the pot, like 30%.</p></li>
+        <li><p>When a call closes, its result is banked.</p></li>
+        <li><p>Open calls count at today's price. No borrowed money, no double counting.</p></li>
+      </ol>
+      <div class="hw-note" data-reveal>
+        <p>Gold is tracked by GLD, the S&amp;P 500 by its index. Calls opened before this record started are dated July 4, 2026.</p>
+        <p>Day one shows those earlier gains landing all at once.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div>
+      <a class="brand" href="./" aria-label="Albassam Fund, home">
+        <svg class="mark" viewBox="0 0 40 28" aria-hidden="true"><path d="M9 3h22l7 22H2z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 8.5h16" stroke="currentColor" stroke-width="1.3" opacity=".55"/><path d="M20 12.5l3.6 4.3L20 21l-3.6-4.2z" fill="currentColor"/></svg>
+        <b>Albassam Fund</b>
+      </a>
+      <p>Albassam Fund. A family record of every call since July 4, 2026.</p>
+      <p>Prices from Yahoo Finance and may be delayed. Not investment advice.</p>
+      <p class="build" data-build></p>
+    </div>
+    <div class="credit">✦ idea from Rejooo ✦</div>
+  </div>
+</footer>
+
+<script type="module" src="js/race.js?v=9"></script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Albassam Fund · Measured against gold</title>
+<meta name="description" content="Our family fund's stock calls, every one on the record and measured against gold and the S&amp;P 500. Live.">
+<meta name="theme-color" content="#0E1514">
+<!-- DEPLOY STEP: og:url and og:image carry the live absolute URL (patch on promotion to the root) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Albassam Fund">
+<meta property="og:description" content="Every stock call we make, measured against gold and the S&amp;P 500.">
+<meta property="og:image" content="https://azezalbassam.github.io/albassam-fund/next/assets/og.jpg">
+<meta property="og:url" content="https://azezalbassam.github.io/albassam-fund/next/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230E1514'/%3E%3Cpath d='M19 20h26l9 26H10z' fill='none' stroke='%23E6B34E' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M32 27l5 6.5-5 6.5-5-6.5z' fill='%23E6B34E'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
+<!-- fonts load without blocking the page: text shows at once, the faces swap in -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,800;125,900&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@600&text=%D8%A7%D9%84%D8%A8%D8%B3%D8%A7%D9%85&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="css/site.css?v=9">
+<link rel="stylesheet" href="css/home.css?v=9">
+</head>
+<body class="home">
+<a class="skip" href="#main">Skip to content</a>
+<div class="env" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="Albassam Fund, home">
+      <svg class="mark" viewBox="0 0 40 28" aria-hidden="true"><path d="M9 3h22l7 22H2z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 8.5h16" stroke="currentColor" stroke-width="1.3" opacity=".55"/><path d="M20 12.5l3.6 4.3L20 21l-3.6-4.2z" fill="currentColor"/></svg>
+      <b>Albassam Fund</b><span class="ar" lang="ar" aria-hidden="true">البسام</span>
+    </a>
+    <nav aria-label="Main">
+      <ul class="nav-links">
+        <li><a href="race.html">The Race</a></li>
+        <li><a href="ledger.html">The Ledger</a></li>
+        <li class="wire-link"><a href="#wire">The Wire</a></li>
+      </ul>
+    </nav>
+    <span class="live-pill" title="Updates live"><span>Live</span></span>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+
+  <!-- ============ HERO: the pour, scrubbed by scroll ============ -->
+  <section class="hero" id="hero" aria-label="Introduction">
+    <div class="stage">
+      <div class="poster" aria-hidden="true"></div>
+      <div class="poster poster-end" aria-hidden="true"></div>
+      <video id="heroVideo" muted playsinline preload="none" aria-hidden="true" tabindex="-1"></video>
+      <div class="scrim" aria-hidden="true"></div>
+
+      <div class="band b1 left" data-a="0" data-b="0.22">
+        <p class="line drift" data-split="words">For generations, gold was the bar.</p>
+      </div>
+      <div class="band b2 right" data-a="0.26" data-b="0.48">
+        <p class="line punch"><span class="sr">Safe. Heavy. Slow.</span><span aria-hidden="true"><span class="w" style="--th:0">Safe.</span> <span class="w" style="--th:.16">Heavy.</span> <span class="w em" style="--th:.34">Slow.</span></span></p>
+      </div>
+      <div class="band b3 left" data-a="0.52" data-b="0.74" data-spread="0.5">
+        <p class="line scatter" data-split="chars">So we hold every call up to it.</p>
+        <p class="small">Wins and losses, in the open.</p>
+      </div>
+      <div class="band b4 settle" data-a="0.80" data-b="1" data-ramp="0.06">
+        <p class="kicker s-kick">Our family fund · since July 4, 2026</p>
+        <h1 class="rise" data-split="words">Albassam Fund</h1>
+        <p class="live-line s-sub" data-liveline>Since July 4: our fund <b class="jade" data-l="fund">…</b> · <span class="nw">gold <b class="gold" data-l="gold">…</b></span> · <span class="nw">S&amp;P&nbsp;500 <b class="pearl" data-l="spx">…</b></span></p>
+        <div class="btn-row s-cta">
+          <a class="btn" href="race.html">Watch the race</a>
+          <a class="btn ghost" href="ledger.html">See every call</a>
+        </div>
+      </div>
+
+      <div class="cue" aria-hidden="true"><span>Scroll</span><i></i></div>
+    </div>
+  </section>
+
+  <!-- ============ STATIC HERO: phones, portrait tablets, reduced motion ============ -->
+  <section class="static-hero" aria-label="Introduction">
+    <div class="wrap sh-inner">
+      <p class="kicker">Our family fund · since July 4, 2026</p>
+      <h1>Albassam Fund</h1>
+      <p class="sh-sub">For generations, gold was the bar. We hold every call up to it.</p>
+      <p class="live-line" data-liveline>Since July 4: our fund <b class="jade" data-l="fund">…</b> · <span class="nw">gold <b class="gold" data-l="gold">…</b></span> · <span class="nw">S&amp;P&nbsp;500 <b class="pearl" data-l="spx">…</b></span></p>
+      <div class="btn-row">
+        <a class="btn" href="race.html">Watch the race</a>
+        <a class="btn ghost" href="ledger.html">See every call</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 1. THE SCOREBOARD ============ -->
+  <section class="section score" id="score" aria-labelledby="scoreH">
+    <div class="wrap">
+      <p class="kicker" data-reveal>The scoreboard</p>
+      <h2 id="scoreH" data-reveal>Where we stand today.</h2>
+      <div class="score-grid">
+        <div class="score-big" data-reveal>
+          <p class="sb-label">What <span data-pot>$100K</span> became</p>
+          <p class="sb-value num" id="sbValue">$100,000</p>
+          <p class="sb-ret"><span class="jade num" id="sbRet">…</span> <span class="muted">since the first call</span></p>
+        </div>
+        <ul class="leads" data-stagger>
+          <li><span class="l-k" id="ldGoldK">vs gold</span><span class="l-v num" id="ldGold">…</span></li>
+          <li><span class="l-k" id="ldSpxK">vs the S&amp;P&nbsp;500</span><span class="l-v num" id="ldSpx">…</span></li>
+          <li><span class="l-k">Profit banked</span><span class="l-v num jade" id="ldBank">…</span></li>
+        </ul>
+      </div>
+      <hr class="molten">
+      <p class="score-foot mono" id="scoreFoot" data-reveal>Loading the record…</p>
+    </div>
+  </section>
+
+  <!-- ============ 2. THE RACE ============ -->
+  <section class="section race-sec" id="race-section" aria-labelledby="raceH">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <p class="kicker" data-reveal>The race</p>
+          <h2 id="raceH" data-reveal>Us against the bar.</h2>
+          <p class="lede" data-reveal>Every day since July 4. Same starting money, three paths.</p>
+        </div>
+        <div class="race-controls" id="raceControls" data-reveal>
+          <div class="seg" role="group" aria-label="Compare with">
+            <button type="button" data-bench="gold" aria-pressed="true">vs Gold</button>
+            <button type="button" data-bench="spx" aria-pressed="false">vs S&amp;P 500</button>
+            <button type="button" data-bench="both" aria-pressed="false">All three</button>
+          </div>
+          <div class="seg" role="group" aria-label="Time range">
+            <button type="button" data-range="1M" aria-pressed="false">1M</button>
+            <button type="button" data-range="3M" aria-pressed="false">3M</button>
+            <button type="button" data-range="ALL" aria-pressed="true">All</button>
+          </div>
+          <div class="seg" role="group" aria-label="Show as">
+            <button type="button" data-unit="pct" aria-pressed="true">%</button>
+            <button type="button" data-unit="usd" aria-pressed="false">$</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel race-panel" data-reveal>
+        <div id="raceChart" style="--race-h:clamp(300px,42vw,470px)"></div>
+        <div class="race-legend" id="raceLegend" aria-live="polite"></div>
+      </div>
+      <div class="race-foot">
+        <p class="muted small-note">Gold is tracked by GLD. Each call counts at its share of the pot.</p>
+        <a class="link-arrow" href="race.html">Full race and stats</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. ON THE BOOK ============ -->
+  <section class="section book" id="book" aria-labelledby="bookH">
+    <div class="wrap">
+      <p class="kicker" data-reveal>On the book</p>
+      <h2 id="bookH" data-reveal>What we hold right now.</h2>
+      <div id="bookList" class="book-list">
+        <div class="book-empty panel" data-reveal>
+          <p class="muted">Connecting to the fund…</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 4. THE RECORD ============ -->
+  <section class="section record" id="record" aria-labelledby="recordH">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <p class="kicker" data-reveal>The record</p>
+          <h2 id="recordH" data-reveal>Latest calls, closed and counted.</h2>
+        </div>
+        <a class="link-arrow" href="ledger.html" data-reveal>See every call</a>
+      </div>
+    </div>
+    <ol class="ingots" id="ingots" aria-label="Latest closed calls" tabindex="0"></ol>
+  </section>
+
+  <!-- ============ 5. POUR IT YOURSELF (the interactive moment) ============ -->
+  <section class="section pour" id="pour" aria-labelledby="pourH">
+    <div class="wrap pour-inner">
+      <p class="kicker" data-reveal>Pour it yourself</p>
+      <h2 id="pourH" data-reveal>Same money. Same day. Three results.</h2>
+      <p class="lede" id="pourHelp" data-reveal>Pick an amount, then hold the button. It fills three molds: our fund, gold, and the S&amp;P 500.</p>
+      <div class="seg amounts" role="group" aria-label="Amount" data-reveal>
+        <button type="button" data-amt="10000" aria-pressed="false">$10K</button>
+        <button type="button" data-amt="50000" aria-pressed="false">$50K</button>
+        <button type="button" data-amt="100000" aria-pressed="true">$100K</button>
+        <button type="button" data-amt="1000000" aria-pressed="false">$1M</button>
+      </div>
+      <div class="molds" id="molds" data-stagger></div>
+      <div class="pour-actions" data-reveal>
+        <button type="button" class="btn pour-btn" id="pourBtn" aria-describedby="pourHelp"><span>Hold to pour</span></button>
+        <p class="pour-done" id="pourDone" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 6. THE WIRE ============ -->
+  <section class="section wire" id="wire" aria-labelledby="wireH">
+    <div class="wrap wire-grid">
+      <div>
+        <p class="kicker" data-reveal>The wire</p>
+        <h2 id="wireH" data-reveal>News that moves our calls.</h2>
+        <p class="lede" data-reveal>Only real news and rumors on what we hold. No noise.</p>
+        <p class="wire-key" data-reveal><span class="chip material">Material</span><span class="chip rumor">Rumor</span></p>
+      </div>
+      <div id="newsList" class="news"><div class="empty">Checking the wire…</div></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div>
+      <a class="brand" href="./" aria-label="Albassam Fund, home">
+        <svg class="mark" viewBox="0 0 40 28" aria-hidden="true"><path d="M9 3h22l7 22H2z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 8.5h16" stroke="currentColor" stroke-width="1.3" opacity=".55"/><path d="M20 12.5l3.6 4.3L20 21l-3.6-4.2z" fill="currentColor"/></svg>
+        <b>Albassam Fund</b>
+      </a>
+      <p>Albassam Fund. A family record of every call since July 4, 2026.</p>
+      <p>Prices from Yahoo Finance and may be delayed. Not investment advice.</p>
+      <p class="build" data-build></p>
+    </div>
+    <div class="credit">✦ idea from Rejooo ✦</div>
+  </div>
+</footer>
+
+<script type="module" src="js/home.js?v=9"></script>
+</body>
+</html>
