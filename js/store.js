@@ -16,8 +16,20 @@
 //   createdAt server timestamp      (ordering)
 // ============================================================
 
-import { DEMO, firebaseConfig } from "./config.js?v=8";
-import { blendedPct, derive, today } from "./roi.js?v=8";
+import { DEMO, firebaseConfig } from "./config.js?v=9";
+import { blendedPct, derive, exitPx, today } from "./roi.js?v=9";
+
+const SYNCING = "Still syncing with the fund record. Try again in a moment.";
+
+// "Fix" forms prefill rounded prices. When the owner left the prices
+// alone, only dates and pot share change: the buy/sell history and the
+// locked result stay exactly as recorded.
+const samePx = (a, b) => Math.abs(a - b) < 0.005;
+function metaPatch(t, opened, wt, closed) {
+  const buys = (t.txns || []).filter(x => x.t === "buy");
+  const txns = buys.length === 1 ? t.txns.map(x => (x.t === "buy" ? { ...x, d: opened } : x)) : t.txns;
+  return closed === undefined ? { opened, wt, txns } : { opened, closed, wt, txns };
+}
 
 let impl;
 
@@ -57,6 +69,9 @@ async function firestoreStore() {
     subscribe(cb) {
       const q = fs.query(col, fs.orderBy("createdAt", "desc"));
       fs.onSnapshot(q, snap => {
+        // offline with nothing cached yet: the SDK reports an empty list.
+        // That is not the record, so keep what is on screen.
+        if (snap.metadata.fromCache && snap.empty) return;
         cache = snap.docs.map(norm);
         cb(cache);
       }, err => console.error("Firestore listen failed:", err));
@@ -96,21 +111,27 @@ async function firestoreStore() {
       });
     },
     async addTxn(id, txn) {
-      const t = find(id); if (!t) return;
+      const t = find(id); if (!t) throw new Error(SYNCING);
       await fs.updateDoc(fs.doc(db, "trades", id), { txns: [...(t.txns || []), txn] });
     },
     // Fix mistyped numbers without deleting. Active: buys are
     // replaced by one equivalent buy, partial sells stay intact.
     async editActive(id, { shares, price, date, wt = null }) {
-      const t = find(id); if (!t) return;
+      const t = find(id); if (!t) throw new Error(SYNCING);
+      const d = derive(t);
+      if (shares === d.boughtSh && samePx(price, d.avgCost))
+        return fs.updateDoc(fs.doc(db, "trades", id), metaPatch(t, date, wt));
       const sells = (t.txns || []).filter(x => x.t === "sell");
       await fs.updateDoc(fs.doc(db, "trades", id), {
         opened: date, wt, txns: [{ t: "buy", sh: shares, px: price, d: date }, ...sells],
       });
     },
     async editClosed(id, { buyPx, sellPx, opened, closed, wt = null }) {
-      const t = find(id); if (!t) return;
-      const sh = derive(t).boughtSh || 1;
+      const t = find(id); if (!t) throw new Error(SYNCING);
+      const d = derive(t);
+      if (samePx(buyPx, d.avgCost) && samePx(sellPx, exitPx(t) ?? 0))
+        return fs.updateDoc(fs.doc(db, "trades", id), metaPatch(t, opened, wt, closed));
+      const sh = d.boughtSh || 1;
       await fs.updateDoc(fs.doc(db, "trades", id), {
         opened, closed, closePx: sellPx, wt,
         finalPct: ((sellPx - buyPx) / buyPx) * 100,
@@ -118,7 +139,7 @@ async function firestoreStore() {
       });
     },
     async close(id, closePx) {
-      const t = find(id); if (!t) return;
+      const t = find(id); if (!t) throw new Error(SYNCING);
       const finalPct = blendedPct(t, closePx);
       await fs.updateDoc(fs.doc(db, "trades", id), {
         status: "closed", closed: today(), closePx, finalPct,
@@ -147,19 +168,19 @@ function demoStore() {
   let seq = 1;
   const uid = () => "demo" + seq++;
   let trades = [
-    { id: uid(), ticker: "RKLB", name: "Rocket Lab", logo: "", status: "active",
+    { id: uid(), ticker: "RKLB", name: "Rocket Lab", logo: "", status: "active", wt: 30,
       opened: d(40), closed: null, closePx: null, finalPct: null,
       txns: [{ t: "buy", sh: 100, px: 21.4, d: d(40) }, { t: "buy", sh: 50, px: 19.1, d: d(22) }] },
-    { id: uid(), ticker: "NVDA", name: "NVIDIA", logo: "", status: "active",
+    { id: uid(), ticker: "NVDA", name: "NVIDIA", logo: "", status: "active", wt: 25,
       opened: d(75), closed: null, closePx: null, finalPct: null,
       txns: [{ t: "buy", sh: 12, px: 118.6, d: d(75) }, { t: "sell", sh: 4, px: 141.2, d: d(12) }] },
-    { id: uid(), ticker: "TSLA", name: "Tesla", logo: "", status: "active",
+    { id: uid(), ticker: "TSLA", name: "Tesla", logo: "", status: "active", wt: 15,
       opened: d(18), closed: null, closePx: null, finalPct: null,
       txns: [{ t: "buy", sh: 10, px: 262.0, d: d(18) }] },
-    { id: uid(), ticker: "PLTR", name: "Palantir", logo: "", status: "closed",
+    { id: uid(), ticker: "PLTR", name: "Palantir", logo: "", status: "closed", wt: 20,
       opened: d(120), closed: d(9), closePx: 92.5, finalPct: 38.4,
       txns: [{ t: "buy", sh: 60, px: 66.8, d: d(120) }] },
-    { id: uid(), ticker: "SOFI", name: "SoFi Technologies", logo: "", status: "closed",
+    { id: uid(), ticker: "SOFI", name: "SoFi Technologies", logo: "", status: "closed", wt: 10,
       opened: d(90), closed: d(30), closePx: 12.1, finalPct: -7.9,
       txns: [{ t: "buy", sh: 200, px: 13.14, d: d(90) }] },
   ];
@@ -190,6 +211,8 @@ function demoStore() {
     },
     async editActive(id, { shares, price, date, wt = null }) {
       const t = trades.find(x => x.id === id); if (!t) return;
+      const d = derive(t);
+      if (shares === d.boughtSh && samePx(price, d.avgCost)) { Object.assign(t, metaPatch(t, date, wt)); return emit(); }
       const sells = t.txns.filter(x => x.t === "sell");
       t.opened = date; t.wt = wt;
       t.txns = [{ t: "buy", sh: shares, px: price, d: date }, ...sells];
@@ -197,7 +220,9 @@ function demoStore() {
     },
     async editClosed(id, { buyPx, sellPx, opened, closed, wt = null }) {
       const t = trades.find(x => x.id === id); if (!t) return;
-      const sh = derive(t).boughtSh || 1;
+      const d = derive(t);
+      if (samePx(buyPx, d.avgCost) && samePx(sellPx, exitPx(t) ?? 0)) { Object.assign(t, metaPatch(t, opened, wt, closed)); return emit(); }
+      const sh = d.boughtSh || 1;
       t.opened = opened; t.closed = closed; t.closePx = sellPx; t.wt = wt;
       t.finalPct = ((sellPx - buyPx) / buyPx) * 100;
       t.txns = [{ t: "buy", sh, px: buyPx, d: opened }];

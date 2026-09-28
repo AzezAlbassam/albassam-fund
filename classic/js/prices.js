@@ -10,7 +10,7 @@
 // to a letter badge if a logo doesn't exist.
 // ============================================================
 
-import { DEMO, FINNHUB_KEY, PRICE_REFRESH_MS } from "./config.js?v=9";
+import { DEMO, FINNHUB_KEY, PRICE_REFRESH_MS } from "./config.js?v=8";
 
 const USE_FINNHUB = !FINNHUB_KEY.startsWith("__");
 const FINNHUB = "https://finnhub.io/api/v1";
@@ -36,31 +36,8 @@ export function watchTickers(list) {
   if (tickers.length) timer = setInterval(refresh, PRICE_REFRESH_MS);
 }
 
-// Closes saved next to the site by .github/workflows/market-data.yml
-// (fetched server side twice a day). Re-read every 10 minutes.
-let saved = null, savedAt = 0;
-export function savedSeries() {
-  if (!saved || Date.now() - savedAt > 6e5) {
-    savedAt = Date.now();
-    saved = fetch(new URL("../data/market.json?t=" + Math.floor(savedAt / 6e5), import.meta.url))
-      .then(r => (r.ok ? r.json() : {})).then(j => j.series || {}).catch(() => ({}));
-  }
-  return saved;
-}
-
 async function refresh() {
   if (DEMO) return demoRefresh();
-  // ponytail: the last saved close stands in until a live quote lands
-  const s = await savedSeries();
-  let seeded = false;
-  for (const tk of tickers) {
-    const h = s[tk];
-    if (quotes[tk] || !h?.c?.length) continue;
-    const c = h.c[h.c.length - 1], pc = h.c[h.c.length - 2] ?? null;
-    quotes[tk] = { c, pc, dp: pc ? ((c - pc) / pc) * 100 : null, saved: true };
-    seeded = true;
-  }
-  if (seeded) onUpdate(quotes);
   await Promise.all(tickers.map(async (tk) => {
     const q = await getQuote(tk);
     if (q) quotes[tk] = q;
@@ -98,20 +75,17 @@ export async function checkTicker(ticker) {
 
 /* ----------------------- Yahoo Finance ----------------------- */
 // Public CORS mirrors, tried in order. Only the ticker symbol is
-// ever sent, no personal data. (corsproxy.io was dropped in Sept 2026:
-// it now answers 401 without a paid key.)
+// ever sent — no personal data.
 const PROXIES = [
+  (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  (u) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,   // wraps the body in {contents}
 ];
 
 export async function proxiedJson(url) {
   for (const wrap of PROXIES) {
     try {
-      const r = await fetch(wrap(url), { signal: AbortSignal.timeout(9000) });
-      if (!r.ok) continue;
-      const j = await r.json();
-      return typeof j?.contents === "string" ? JSON.parse(j.contents) : j;
+      const r = await fetch(wrap(url));
+      if (r.ok) return await r.json();
     } catch (e) { /* try next mirror */ }
   }
   return null;

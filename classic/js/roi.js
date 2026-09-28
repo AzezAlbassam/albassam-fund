@@ -16,13 +16,6 @@ export function derive(trade) {
   return { boughtSh, soldSh, heldSh, costBasis, proceeds, avgCost };
 }
 
-// Share-weighted average exit price of a closed call: sells at their
-// own prices, any shares still held at close at closePx.
-export function exitPx(t) {
-  const d = derive(t), rest = t.closePx != null ? d.heldSh : 0, n = d.soldSh + rest;
-  return n > 0 ? (d.proceeds + rest * t.closePx) / n : (t.closePx ?? null);
-}
-
 // Blended ROI % of an active trade at a given live price.
 // Falls back to null when there is no price yet.
 export function blendedPct(trade, livePx) {
@@ -119,13 +112,13 @@ export function fmtShortMoney(v) {
 }
 
 export function fmtPct(p, digits = 2) {
-  if (p == null || isNaN(p)) return "…";
+  if (p == null || isNaN(p)) return "—";
   const r = Math.round(p * 10 ** digits) / 10 ** digits;
   return (r > 0 ? "+" : "") + r.toFixed(digits) + "%";
 }
 
 export function fmtMoney(v) {
-  if (v == null || isNaN(v)) return "…";
+  if (v == null || isNaN(v)) return "—";
   return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 

@@ -6,8 +6,8 @@
 // same CORS mirrors the price feed uses.
 // ============================================================
 
-import { DEMO } from "./config.js?v=9";
-import { proxiedJson } from "./prices.js?v=9";
+import { DEMO } from "./config.js?v=8";
+import { proxiedJson } from "./prices.js?v=8";
 
 const NEWS_REFRESH_MS = 5 * 60 * 1000;   // headlines refresh every 5 min
 const MAX_PER_TICKER = 3, MAX_TOTAL = 12;
@@ -39,7 +39,6 @@ function timeAgo(unixSec) {
 
 let watchlist = [];   // [{tk, name}] for active positions
 let timer = null;
-let started = false;  // the first call always renders, even with nothing to watch
 
 const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -61,8 +60,7 @@ export function watchNews(list) {
   const sig = next.map(x => x.tk).join();
   const prev = watchlist.map(x => x.tk).join();
   watchlist = next;
-  if (sig === prev && started) return;
-  started = true;
+  if (sig === prev) return;
   refresh();
   clearInterval(timer);
   if (watchlist.length) timer = setInterval(refresh, NEWS_REFRESH_MS);
@@ -72,7 +70,7 @@ async function refresh() {
   const box = document.getElementById("newsList");
   if (!box) return;
   if (!watchlist.length) {
-    box.innerHTML = `<div class="empty">Quiet. The wire wakes up when we hold a position.</div>`;
+    box.innerHTML = `<div class="empty">No active calls — the wire lights up when a position opens.</div>`;
     return;
   }
   const items = DEMO ? demoItems() : await fetchAll();
@@ -105,7 +103,7 @@ async function fetchAll() {
 
 function render(box, items) {
   if (!items.length) {
-    box.innerHTML = `<div class="empty">Quiet. No real news or rumors on what we hold right now.</div>`;
+    box.innerHTML = `<div class="empty">Quiet skies — no material news or rumors on your active calls right now.</div>`;
     return;
   }
   box.innerHTML = items.map(n => `
