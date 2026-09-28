@@ -4,11 +4,11 @@
 // Everything re-renders from live(): trades, pot and quotes.
 // ============================================================
 
-import { initShell, observeReveals, countTo, usd0, signedUsd, pct1, pts1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=9";
-import { live, state } from "./live.js?v=9";
-import { statPct } from "./roi.js?v=9";
-import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=9";
-import { raceChart, bindRaceControls } from "./chart.js?v=9";
+import { initShell, observeReveals, countTo, usd0, signedUsd, pct1, pts1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=10";
+import { live, state } from "./live.js?v=10";
+import { statPct } from "./roi.js?v=10";
+import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=10";
+import { raceChart, bindRaceControls } from "./chart.js?v=10";
 
 const $ = (id) => document.getElementById(id);
 const FAIL = "The race could not load right now. Try again in a minute.";
@@ -111,7 +111,8 @@ function months() {
   // tint grows with size; sqrt keeps a +2% gold month visible next to a +40% fund month
   const tint = (v) => (0.07 + 0.35 * Math.sqrt(Math.min(1, Math.abs(v) / max))).toFixed(3);
   box.innerHTML = `<table class="hm">
-    <thead><tr><td></td>${M.map(m => `<th scope="col" style="width:${(100 / M.length).toFixed(3)}%">${month(m.m)}</th>`).join("")}</tr></thead>
+    <colgroup><col class="lab">${M.map(() => "<col>").join("")}</colgroup>
+    <thead><tr><td></td>${M.map(m => `<th scope="col">${month(m.m)}</th>`).join("")}</tr></thead>
     <tbody>${SERIES.map(([k, name]) => `<tr class="${k}"><th scope="row">${name}</th>${M.map(m =>
       `<td class="${m[k] < 0 ? "neg" : ""}" style="--a:${tint(m[k])}">${pct1(m[k])}</td>`).join("")}</tr>`).join("")}</tbody>
   </table>`;

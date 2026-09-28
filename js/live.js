@@ -4,9 +4,9 @@
 //   live(what => render(state))   what: "trades" | "settings" | "quotes"
 // ============================================================
 
-import { initStore } from "./store.js?v=9";
-import { startPrices, watchTickers, quotes } from "./prices.js?v=9";
-import { DEMO } from "./config.js?v=9";
+import { initStore } from "./store.js?v=10";
+import { startPrices, watchTickers, quotes } from "./prices.js?v=10";
+import { DEMO } from "./config.js?v=10";
 
 export const state = { trades: [], pot: 100000, quotes, ready: false, cached: false };
 

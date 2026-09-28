@@ -21,9 +21,8 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
 <!-- fonts load without blocking the page: text shows at once, the faces swap in -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,800;125,900&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@600&text=%D8%A7%D9%84%D8%A8%D8%B3%D8%A7%D9%85&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/site.css?v=9">
-<link rel="stylesheet" href="css/edit.css?v=9">
+<link rel="stylesheet" href="css/site.css?v=10">
+<link rel="stylesheet" href="css/edit.css?v=10">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -33,7 +32,7 @@
   <div class="wrap">
     <a class="brand" href="./" aria-label="Albassam Fund, home">
       <svg class="mark" viewBox="0 0 40 28" aria-hidden="true"><path d="M9 3h22l7 22H2z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 8.5h16" stroke="currentColor" stroke-width="1.3" opacity=".55"/><path d="M20 12.5l3.6 4.3L20 21l-3.6-4.2z" fill="currentColor"/></svg>
-      <b>Albassam Fund</b><span class="ar" lang="ar" aria-hidden="true">البسام</span>
+      <b>Albassam Fund</b>
     </a>
     <nav aria-label="Main">
       <ul class="nav-links">
@@ -80,6 +79,7 @@
           <p class="kpi-meta">On a <b id="kPot">$100K</b> pot
             <button class="act" id="potEdit" type="button" aria-label="Change the starting pot" hidden>✎ pot</button></p>
           <p class="kpi-sub" id="kMeta">Counting the calls.</p>
+          <p class="quick-add" id="quickAdd" hidden><a class="btn" href="#newTitle">+ New call</a><a class="btn ghost" href="#pastTitle">Log a past call</a></p>
           <div class="inline-form pot-form" id="potForm" hidden></div>
         </div>
         <dl class="kpi-stats">
@@ -103,7 +103,7 @@
 
       <aside class="desk-forms" id="forms" aria-label="Add calls">
         <section class="panel fpanel" aria-labelledby="newTitle" data-reveal>
-          <h2 id="newTitle">New call</h2>
+          <h2 id="newTitle" tabindex="-1">New call</h2>
           <p class="fhint">Opens a live position. Its result follows the market price.</p>
           <form id="addForm">
             <label class="fld"><span>Ticker (US market)</span>
@@ -125,7 +125,7 @@
         </section>
 
         <section class="panel fpanel" aria-labelledby="pastTitle" data-reveal>
-          <h2 id="pastTitle">Log past call</h2>
+          <h2 id="pastTitle" tabindex="-1">Log past call</h2>
           <p class="fhint">Already bought and sold. It lands in Closed with its result locked.</p>
           <form id="pastForm">
             <label class="fld"><span>Ticker</span>
@@ -185,6 +185,6 @@
   </div>
 </footer>
 
-<script type="module" src="js/edit.js?v=9"></script>
+<script type="module" src="js/edit.js?v=10"></script>
 </body>
 </html>

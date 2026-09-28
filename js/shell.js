@@ -4,7 +4,7 @@
 // build stamp and the "new version" bar. Plus small formatters.
 // ============================================================
 
-import { BUILD } from "./config.js?v=9";
+import { BUILD } from "./config.js?v=10";
 
 export const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 

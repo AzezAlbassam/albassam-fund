@@ -7,13 +7,13 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=9";
-import { store } from "./store.js?v=9";
-import { live, state } from "./live.js?v=9";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=9";
-import { watchNews } from "./news.js?v=9";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=9";
-import { initShell, countTo, esc, logoHtml, pctClass, usd0, usd2, signedUsd, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=9";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=10";
+import { store } from "./store.js?v=10";
+import { live, state } from "./live.js?v=10";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=10";
+import { watchNews } from "./news.js?v=10";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=10";
+import { initShell, countTo, esc, logoHtml, pctClass, usd0, usd2, signedUsd, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=10";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -49,10 +49,13 @@ function renderAll() {
   const closed = state.trades.filter(t => t.status === "closed");
 
   const w = writable();
-  $("#desk").classList.toggle("ro", !w);
-  $("#forms").hidden = !w;
-  $("#potEdit").hidden = !w;
-  if (!w) $("#potForm").hidden = true;
+  // adding a call or changing the pot never needs the synced copy of a
+  // call, so those show the moment the owner signs in
+  $("#desk").classList.toggle("ro", !canWrite);
+  $("#forms").hidden = !canWrite;
+  $("#quickAdd").hidden = !canWrite;
+  $("#potEdit").hidden = !canWrite;
+  if (!canWrite) $("#potForm").hidden = true;
   if (!state.ready) return;   // keep the loading skeletons until data lands
 
   $("#activeCount").textContent = active.length + " open";
@@ -369,6 +372,13 @@ async function busy(form, fn) {
 }
 
 $("#adDate").value = today();
+$("#quickAdd").addEventListener("click", (e) => {
+  const a = e.target.closest("a[href^='#']"); if (!a) return;
+  e.preventDefault();
+  const h = document.querySelector(a.getAttribute("href"));
+  h.scrollIntoView({ behavior: "smooth", block: "start" });
+  setTimeout(() => h.closest("section, .panel, form, div")?.querySelector("input")?.focus({ preventScroll: true }), 450);
+});
 $("#addForm").addEventListener("submit", (e) => {
   e.preventDefault();
   const form = e.currentTarget;

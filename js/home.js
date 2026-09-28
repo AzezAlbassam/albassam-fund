@@ -6,12 +6,12 @@
 // ============================================================
 
 import { initShell, observeReveals, countTo, reducedMotion, usd0, pct1, pts1, signedUsd, shortUsd,
-         day, esc, pctClass, logoHtml } from "./shell.js?v=9";
-import { live, state } from "./live.js?v=9";
-import { loadRace, raceSummary } from "./series.js?v=9";
-import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=9";
-import { simulate, statPct, derive, blendedPct } from "./roi.js?v=9";
-import { watchNews } from "./news.js?v=9";
+         day, esc, pctClass, logoHtml } from "./shell.js?v=10";
+import { live, state } from "./live.js?v=10";
+import { loadRace, raceSummary } from "./series.js?v=10";
+import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=10";
+import { simulate, statPct, derive, blendedPct } from "./roi.js?v=10";
+import { watchNews } from "./news.js?v=10";
 
 const $ = (s, r = document) => r.querySelector(s);
 initShell();

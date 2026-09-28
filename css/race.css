@@ -64,8 +64,9 @@
 /* ---------- month by month: heat grid ---------- */
 .mm h2{margin-bottom:clamp(24px,3.6vw,44px)}
 .hm{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:6px;font-variant-numeric:tabular-nums}
+.hm col.lab{width:132px}   /* the row labels keep their own column; months share the rest evenly */
 .hm thead th{padding:0 16px 4px;text-align:left;font:500 12px/1.3 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--text-secondary)}
-.hm tbody th{width:1%;padding-right:14px;text-align:left;white-space:nowrap;font:500 12px/1.3 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--text-secondary)}
+.hm tbody th{padding-right:14px;text-align:left;white-space:nowrap;font:500 12px/1.3 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--text-secondary)}
 .hm tbody th::before{content:"";display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:10px;vertical-align:middle;background:var(--c)}
 .hm td{--rgb:79,209,161;min-width:96px;padding:clamp(18px,2.6vw,30px) 16px;border-radius:12px;background:rgba(var(--rgb),var(--a));
   font:800 clamp(17px,2vw,26px)/1 var(--display);font-stretch:125%;color:var(--text-primary);white-space:nowrap}
@@ -127,6 +128,7 @@
   .nb-table tbody th{font-size:13px;min-width:92px}
   .nb-table td{font-size:14px}
   .hm{border-spacing:5px}
+  .hm col.lab{width:78px}
   .hm tbody th{position:sticky;left:0;z-index:1;background:var(--canvas);padding-right:6px;font-size:11px;letter-spacing:.08em}
   .hm tbody th::before{display:none}
   .hm thead th{padding:0 8px 2px}

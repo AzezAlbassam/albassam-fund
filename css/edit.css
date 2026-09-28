@@ -195,3 +195,6 @@
   .btn.sm,.act,.fld input{min-height:44px}
   .act{min-width:44px}
 }
+
+/* + New call, right under the fund value */
+.quick-add{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 0}

@@ -81,7 +81,6 @@ h3{font-size:clamp(18px,2vw,22px);letter-spacing:0}
 .brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text-primary)}
 .brand .mark{width:34px;height:24px;color:var(--gold);flex:none}
 .brand b{font:800 15px/1 var(--display);font-stretch:125%;letter-spacing:.01em}
-.brand .ar{font:600 15px/1 "Reem Kufi",var(--body);color:var(--gold);opacity:.85}
 .nav-links{display:flex;align-items:center;gap:4px;list-style:none;margin:0;padding:0}
 .nav-links a{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border-radius:10px;text-decoration:none;
   font:500 14px/1 var(--body);color:var(--text-secondary);transition:color .3s var(--ease-out),background .3s var(--ease-out)}
@@ -209,6 +208,8 @@ h3{font-size:clamp(18px,2vw,22px);letter-spacing:0}
 .foot p{margin:0 0 6px;max-width:60ch}
 .foot .credit{font:500 13px/1 var(--mono);letter-spacing:.14em;color:var(--gold);text-align:right;padding-top:6px}
 .foot .build{font:400 12px var(--mono);color:var(--text-muted)}
+.manager-link{color:var(--text-secondary);text-underline-offset:3px}
+.manager-link:hover{color:var(--jade)}
 @media (max-width:720px){.foot .wrap{grid-template-columns:1fr}.foot .credit{text-align:left}}
 
 /* ---------- toast (update bar, errors) ---------- */
