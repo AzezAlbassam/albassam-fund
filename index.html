@@ -19,8 +19,8 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin>
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/site.css?v=12">
-<link rel="stylesheet" href="css/home.css?v=12">
+<link rel="stylesheet" href="css/site.css?v=13">
+<link rel="stylesheet" href="css/home.css?v=13">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 </head>
 <body class="home">
@@ -186,6 +186,55 @@
     </div>
   </section>
 
+  <!-- ============ THE FORECAST: years as 3D towers ============ -->
+  <section class="section forecast" id="forecast" aria-labelledby="fcH">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <p class="kicker" data-reveal>The forecast</p>
+          <h2 id="fcH" data-reveal>If we keep this pace.</h2>
+          <p class="lede" data-reveal>What <span data-pot>$100K</span> could grow into, year by year. A projection, not a promise.</p>
+        </div>
+      </div>
+      <div class="fc-grid">
+        <div class="glass glow fc-card" data-reveal>
+          <div class="fc-controls">
+            <div class="seg" role="group" aria-label="Pace" id="fcPace">
+              <button type="button" data-rate="1" aria-pressed="true">Our pace</button>
+              <button type="button" data-rate="0.5" aria-pressed="false">Half our pace</button>
+              <button type="button" data-rate="0.25" aria-pressed="false">A quarter</button>
+            </div>
+            <div class="seg" role="group" aria-label="Years ahead" id="fcYears">
+              <button type="button" data-years="1" aria-pressed="false">1y</button>
+              <button type="button" data-years="3" aria-pressed="false">3y</button>
+              <button type="button" data-years="5" aria-pressed="true">5y</button>
+              <button type="button" data-years="10" aria-pressed="false">10y</button>
+            </div>
+          </div>
+          <div class="fc-stage" id="fcStage">
+            <canvas id="fcCanvas" role="img" aria-label="3D towers: what the pot could become each year"></canvas>
+            <div class="t3-labels" id="fcLabels" aria-hidden="true"></div>
+          </div>
+          <p class="fc-legend"><span><i style="background:var(--grad)"></i>Our fund</span><span><i style="background:var(--spx)"></i>S&amp;P 500, about 10% a year</span><span><i style="background:var(--gold)"></i>Gold, about 8% a year</span></p>
+        </div>
+        <div class="fc-side">
+          <div class="glass fc-big" data-reveal>
+            <p class="s-label">In <span id="fcN">5 years</span>, <span data-pot>$100K</span> could become</p>
+            <p class="fc-value"><span class="num grad-text" id="fcValue">…</span></p>
+            <p class="s-foot" id="fcRate">…</p>
+          </div>
+          <div class="glass fc-table-card" data-reveal>
+            <table class="fc-table">
+              <thead><tr><th scope="col"><span class="sr">Path</span></th><th scope="col">5 years</th><th scope="col">10 years</th></tr></thead>
+              <tbody id="fcRows"></tbody>
+            </table>
+          </div>
+          <p class="fc-note" id="fcNote" data-reveal></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ THE RECORD: latest calls ============ -->
   <section class="section record" id="record" aria-labelledby="recordH">
     <div class="wrap">
@@ -242,6 +291,6 @@
   </div>
 </footer>
 
-<script type="module" src="js/home.js?v=12"></script>
+<script type="module" src="js/home.js?v=13"></script>
 </body>
 </html>

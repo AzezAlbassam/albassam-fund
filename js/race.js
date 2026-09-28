@@ -4,11 +4,11 @@
 // Everything re-renders from live(): trades, pot and quotes.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, roll, countTo, usd0, signedUsd, pct1, pts1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=12";
-import { live, state } from "./live.js?v=12";
-import { statPct } from "./roi.js?v=12";
-import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=12";
-import { raceChart, bindRaceControls } from "./chart.js?v=12";
+import { initShell, observeReveals, onReveal, roll, countTo, usd0, signedUsd, pct1, pts1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=13";
+import { live, state } from "./live.js?v=13";
+import { statPct } from "./roi.js?v=13";
+import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=13";
+import { raceChart, bindRaceControls } from "./chart.js?v=13";
 
 const $ = (id) => document.getElementById(id);
 const FAIL = "The race could not load right now. Try again in a minute.";
@@ -44,9 +44,30 @@ async function onLive(what) {
 }
 
 function paint() {
-  strip(); legend(); numbers(); months();
+  strip(); legend(); numbers(); months(); podium();
   observeReveals(document);
 }
+
+/* ---------- the podium: three 3D towers ---------- */
+let towers = null;
+function podium() {
+  if (!towers || status !== "ok") return;
+  const s = raceSummary(race), n = race.days.length - 1;
+  const rows = [["fund", "Our fund", race.fund[n], 0xff7a45], ["gold", "Gold", race.gold[n], 0xffc24b], ["spx", "S&amp;P 500", race.spx[n], 0xa78bfa]];
+  const max = Math.max(...rows.map(r => r[2]));
+  towers.set(rows.map(([k, name, v, color], i) => ({ id: k, x: (i - 1) * 1.7, z: 0, h: 0.4 + v / max * 4, color, w: 1.05,
+    label: `${name} <b>${usd0(v)}</b>`, labelClass: k })));
+  document.querySelectorAll("[data-pot]").forEach(el => (el.textContent = shortUsd(race.pot)));
+}
+new IntersectionObserver(async ([e], obs) => {
+  if (!e.isIntersecting) return;
+  obs.disconnect();
+  try {
+    const { startTowers } = await import("./bars3d.js?v=13");
+    towers = await startTowers($("pdCanvas"), $("pdLabels"), { yaw0: -0.45, pitch: 0.35, spin: 0.06 });
+    podium();
+  } catch (err) { console.warn("3D podium unavailable:", err); $("pdStage").classList.add("fallback"); }
+}, { rootMargin: "500px 0px" }).observe($("pdStage"));
 
 const note = (msg) => `<p class="state-note${status === "loading" ? " busy" : ""}">${msg}</p>`;
 const stateMsg = () => status === "empty" ? EMPTY : status === "failed" ? FAIL : "Loading the race…";

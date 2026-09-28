@@ -4,7 +4,7 @@
 // build stamp and the "new version" bar. Plus small formatters.
 // ============================================================
 
-import { BUILD } from "./config.js?v=12";
+import { BUILD } from "./config.js?v=13";
 
 export const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -70,6 +70,12 @@ export function initShell() {
       if (c && !c.contains(e.relatedTarget)) c.style.transform = "";
     });
   }
+
+  // the owner's "+ New call" button, only on a device where the manager signed in
+  try {
+    if (localStorage.getItem("af:owner") === "1" && !document.getElementById("addForm"))
+      import("./owner.js?v=13").then(m => m.startOwner()).catch(e => console.warn("quick add unavailable:", e));
+  } catch (e) { /* storage blocked */ }
 
   // build stamp + update bar
   document.querySelectorAll("[data-build]").forEach(el => (el.textContent = "build " + BUILD));

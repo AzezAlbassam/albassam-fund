@@ -183,3 +183,34 @@ body.still .hero-title .ch,body.still .hero-in{animation:none;opacity:1;transfor
 @media (prefers-reduced-motion:reduce){
   .hero-title .ch,.hero-in{animation-duration:.01s!important;animation-delay:0s!important}
 }
+
+/* ---------- the forecast: years as 3D towers ---------- */
+.fc-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:stretch}
+.fc-card{display:flex;flex-direction:column;gap:12px}
+.fc-controls{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between}
+.fc-stage{position:relative;height:clamp(320px,38vw,460px);cursor:grab;touch-action:pan-y}
+.fc-stage:active{cursor:grabbing}
+.fc-stage canvas{width:100%;height:100%}
+.fc-stage.fallback{background:url("../assets/race-loop.jpg") 60% 50%/cover no-repeat;border-radius:16px}
+.t3-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.t3-label{position:absolute;left:0;top:0;padding:6px 11px;border-radius:999px;white-space:nowrap;transform-origin:0 0;
+  margin:0;background:rgba(10,8,14,.78);border:1px solid var(--line-strong);backdrop-filter:blur(8px);
+  font:600 12px/1 var(--mono);color:var(--text-secondary)}
+.t3-label b{margin-left:5px;color:var(--text-primary)}
+.t3-label.fund b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.t3-label.spx b{color:var(--spx)} .t3-label.gold b{color:var(--gold)}
+.fc-legend{display:flex;flex-wrap:wrap;gap:8px 20px;margin:0;font:600 13px/1.4 var(--body);color:var(--text-secondary)}
+.fc-legend span{display:inline-flex;align-items:center;gap:8px}
+.fc-legend i{width:16px;height:4px;border-radius:2px;display:inline-block}
+.fc-side{display:grid;gap:16px;align-content:start}
+.fc-value{margin:6px 0 4px;line-height:1}
+.fc-value .num{font-size:clamp(40px,4.6vw,64px);letter-spacing:-.04em}
+.fc-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.fc-table th{font:600 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);text-align:right;padding:0 0 10px}
+.fc-table td,.fc-table tbody th{padding:12px 0;border-top:1px solid var(--line);text-align:right;font:600 15px var(--mono)}
+.fc-table tbody th{text-align:left;font:700 14px var(--body);color:var(--text-secondary)}
+.fc-table tbody th i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:10px;vertical-align:0}
+.fc-table tr.fund td{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.fc-note{margin:0;color:var(--text-muted);font-size:13px;line-height:1.6}
+@media (max-width:1000px){.fc-grid{grid-template-columns:1fr}}
+@media (max-width:560px){.fc-controls .seg{width:100%}.fc-controls .seg button{flex:1}}

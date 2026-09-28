@@ -5,10 +5,10 @@
 // so expanded rows, sparklines and reveals survive every change.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, countTo, roll, usd0, usd2, signedUsd, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=12";
-import { live, state } from "./live.js?v=12";
-import { derive, blendedPct, today, exitPx } from "./roi.js?v=12";
-import { history } from "./history.js?v=12";
+import { initShell, observeReveals, onReveal, countTo, roll, usd0, usd2, signedUsd, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=13";
+import { live, state } from "./live.js?v=13";
+import { derive, blendedPct, today, exitPx } from "./roi.js?v=13";
+import { history } from "./history.js?v=13";
 
 initShell();
 

@@ -6,12 +6,12 @@
 // ============================================================
 
 import { initShell, observeReveals, onReveal, roll, countTo, reducedMotion, usd0, pct1, pts1, signedUsd, shortUsd,
-         day, esc, pctClass, logoHtml } from "./shell.js?v=12";
-import { live, state } from "./live.js?v=12";
-import { loadRace, raceSummary } from "./series.js?v=12";
-import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=12";
-import { simulate, statPct, derive, blendedPct } from "./roi.js?v=12";
-import { watchNews } from "./news.js?v=12";
+         day, esc, pctClass, logoHtml, daysBetween } from "./shell.js?v=13";
+import { live, state } from "./live.js?v=13";
+import { loadRace, raceSummary } from "./series.js?v=13";
+import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=13";
+import { simulate, statPct, derive, blendedPct } from "./roi.js?v=13";
+import { watchNews } from "./news.js?v=13";
 
 const $ = (s, r = document) => r.querySelector(s);
 initShell();
@@ -19,7 +19,7 @@ initShell();
 /* =================== HERO: the live 3D market =================== */
 const media = $("#heroMedia");
 let market = null;
-import("./market.js?v=12")
+import("./market.js?v=13")
   .then(m => m.startMarket($("#market"), $("#mkLabels")))
   .then(mk => { market = mk; if (race) market.setData(race, state.trades, pctOf); onHeroScroll(); })
   .catch(err => { console.warn("3D market unavailable:", err); media.classList.add("fallback"); });
@@ -54,7 +54,7 @@ async function refreshRace() {
   chart.set(race);
   market?.setData(race, state.trades, pctOf);
   if (raceFailed) chart.fail(RACE_FAIL);
-  legend(); renderScore(); renderBars();
+  legend(); renderScore(); renderBars(); renderForecast();
 }
 
 const pctOf = (t) => statPct(t, state.quotes);
@@ -227,7 +227,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startOrbit } = await import("./orbit.js?v=12");
+    const { startOrbit } = await import("./orbit.js?v=13");
     orbit = await startOrbit($("#orbit"), $("#orbitLabels"), renderOrbitCard);
     feedOrbit();
   } catch (err) {
@@ -235,6 +235,64 @@ new IntersectionObserver(async ([e], obs) => {
     stage.classList.add("fallback");
   }
 }, { rootMargin: "600px 0px" }).observe(stage);
+
+/* ---------- the forecast: what the pot could become ---------- */
+// "Our pace" = our return so far, repeated once a year. The literal
+// daily pace is shown in the note only: annualized it runs into the
+// billions within a few years, which no fund sustains.
+const FC_REF = [["spx", "S&amp;P 500", 0.10, 0xa78bfa, "var(--spx)"], ["gold", "Gold", 0.08, 0xffc24b, "var(--gold)"]];
+const fc = { share: 1, years: 5, towers: null };
+function renderForecast() {
+  if (!race) return;
+  const r0 = raceSummary(race).fund / 100, r = r0 * fc.share, pot = state.pot, N = fc.years;
+  const val = (rate, y) => pot * Math.pow(1 + rate, y);
+  const rows = [["fund", "Our fund", r, 0xff7a45, "var(--grad)"], ...FC_REF];
+  // the numbers
+  $("#fcN").textContent = N + (N === 1 ? " year" : " years");
+  countTo($("#fcValue"), val(r, N), (v) => (v >= 1e6 ? shortUsd(v) : usd0(v)), 1600);
+  $("#fcRate").textContent = `at ${pct1(r * 100)} a year${fc.share < 1 ? "" : ", the same as our run so far"}`;
+  $("#fcRows").innerHTML = rows.map(([k, name, rate, , css]) =>
+    `<tr class="${k}"><th scope="row"><i style="background:${css}"></i>${name}</th><td>${shortUsd(val(rate, 5))}</td><td>${shortUsd(val(rate, 10))}</td></tr>`).join("");
+  const days = Math.max(1, daysBetween(race.first, race.days[race.days.length - 1]));
+  const ann = Math.pow(1 + r0, 365 / days) - 1;
+  const toBillion = Math.log(1e9 / pot) / Math.log(1 + ann);
+  $("#fcNote").textContent = `Our fund made ${pct1(r0 * 100)} in ${days} days. Held to that exact speed, the math says about ${pct1(ann * 100)} a year` +
+    (ann > 0.5 && toBillion < 20 ? ` and a billion dollars in about ${Math.ceil(toBillion)} years, which nobody keeps up.` : ".") +
+    ` So these towers repeat our result once a year instead. Past results do not promise future ones.`;
+  // the towers: one per year, our fund in front, the S&P 500 and gold behind
+  if (!fc.towers) return;
+  const max = val(Math.max(r, 0.1), N), H = 4.4, gap = N > 5 ? 0.82 : N > 3 ? 1.05 : 1.3;
+  const specs = [];
+  rows.forEach(([k, name, rate, color], ri) => {
+    for (let i = 0; i < N; i++) specs.push({
+      id: k + i, x: (i - (N - 1) / 2) * gap, z: 1.1 - ri * 1.1, h: val(rate, i + 1) / max * H, color,
+      ghost: k !== "fund", w: k === "fund" ? 0.56 : 0.4,
+      label: i === N - 1 && (k === "fund" || N > 1) ? `${name} <b>${shortUsd(val(rate, N))}</b>` : null, labelClass: k,
+    });
+  });
+  fc.towers.set(specs);
+}
+$("#fcPace").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-rate]"); if (!b) return;
+  fc.share = +b.dataset.rate;
+  $("#fcPace").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  renderForecast();
+});
+$("#fcYears").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-years]"); if (!b) return;
+  fc.years = +b.dataset.years;
+  $("#fcYears").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  renderForecast();
+});
+new IntersectionObserver(async ([e], obs) => {
+  if (!e.isIntersecting) return;
+  obs.disconnect();
+  try {
+    const { startTowers } = await import("./bars3d.js?v=13");
+    fc.towers = await startTowers($("#fcCanvas"), $("#fcLabels"));
+    renderForecast();
+  } catch (err) { console.warn("3D forecast unavailable:", err); $("#fcStage").classList.add("fallback"); }
+}, { rootMargin: "600px 0px" }).observe($("#fcStage"));
 
 /* =================== LIVE FEED (last: the device cache calls back at once) =================== */
 live((what) => {

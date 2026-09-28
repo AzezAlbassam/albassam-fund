@@ -7,13 +7,13 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=12";
-import { store } from "./store.js?v=12";
-import { live, state } from "./live.js?v=12";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=12";
-import { watchNews } from "./news.js?v=12";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=12";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, signedUsd, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=12";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=13";
+import { store } from "./store.js?v=13";
+import { live, state } from "./live.js?v=13";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=13";
+import { watchNews } from "./news.js?v=13";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=13";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, signedUsd, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=13";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -466,7 +466,14 @@ if (DEMO) {
         $("#authRole").classList.toggle("ro", !owner);
       }
       if (user && !owner) toast("Signed in, but this account has no edit access. View only.", true);
+      // remember the owner on this device: every page then shows the "+ New call" button
+      try { owner ? localStorage.setItem("af:owner", "1") : localStorage.removeItem("af:owner"); } catch (e) {}
       renderAll();
+      // arriving from a "+ New call" link: go straight to the form
+      if (owner && location.hash === "#new" && !renderAll.jumped) {
+        renderAll.jumped = true;
+        setTimeout(() => { $("#newTitle").scrollIntoView({ behavior: "smooth", block: "start" }); setTimeout(() => $("#adTicker")?.focus({ preventScroll: true }), 500); }, 300);
+      }
     });
   })().catch(err => { console.error(err); toast("Could not load sign-in. Check the connection, then reload.", true); });
 }

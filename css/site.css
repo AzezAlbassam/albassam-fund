@@ -247,8 +247,10 @@ h3{font-size:clamp(18px,2vw,22px);letter-spacing:-.02em}
 .foot .credit{font:600 13px/1 var(--mono);letter-spacing:.14em;text-align:right;padding-top:6px;
   background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .foot .build{font:500 12px var(--mono);color:var(--text-muted)}
-.manager-link{color:var(--text-secondary);text-underline-offset:3px}
-.manager-link:hover{color:var(--orange)}
+.manager-link{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px;margin-top:6px;border-radius:999px;text-decoration:none;
+  border:1px solid var(--line-strong);color:var(--text-primary);font:700 13px/1 var(--body);background:rgba(255,255,255,.04)}
+.manager-link::before{content:"+";font:800 16px/1 var(--display);color:var(--orange)}
+.manager-link:hover{border-color:var(--orange)}
 .motion-toggle{margin-top:8px;background:none;border:1px solid var(--line);border-radius:999px;color:var(--text-muted);font:600 12px var(--body);padding:8px 14px;cursor:pointer}
 @media (max-width:720px){.foot .wrap{grid-template-columns:1fr}.foot .credit{text-align:left}}
 @media (pointer:coarse){.foot .brand{margin:-12px 0 0}}
@@ -273,3 +275,28 @@ body.still *,body.still *::before,body.still *::after{animation-play-state:pause
   .env b{animation-duration:120s!important}
   .btn:hover{transform:none}
 }
+
+/* ---------- the owner's quick add ---------- */
+.owner-fab{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:70;display:inline-flex;align-items:center;gap:8px;
+  min-height:54px;padding:0 22px;border:0;border-radius:999px;background:var(--grad);color:#1B0A06;font:800 15px/1 var(--body);cursor:pointer;
+  box-shadow:0 14px 44px -10px rgba(255,90,90,.8);animation:fabIn .6s var(--ease-out) both}
+.owner-fab span{font:800 22px/1 var(--display)}
+@keyframes fabIn{from{opacity:0;transform:translateY(20px) scale(.9)}}
+.owner-sheet{width:min(520px,calc(100vw - 24px));padding:0;border:1px solid var(--line-strong);border-radius:24px;color:var(--text-primary);
+  background:rgba(18,14,24,.94);backdrop-filter:blur(20px);box-shadow:0 40px 80px -30px #000}
+.owner-sheet::backdrop{background:rgba(4,3,6,.66);backdrop-filter:blur(4px)}
+.owner-sheet[open]{animation:sheetIn .45s var(--ease-out)}
+@keyframes sheetIn{from{opacity:0;transform:translateY(24px) scale(.97)}}
+.os-form{display:grid;gap:14px;padding:22px}
+.os-head{display:flex;justify-content:space-between;align-items:center}
+.os-head h2{font-size:26px}
+.os-x{width:44px;height:44px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--text-primary);font-size:22px;cursor:pointer}
+.os-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.os-f{display:grid;gap:6px;font:700 13px var(--body);color:var(--text-secondary)}
+.os-f input{min-height:50px;padding:0 14px;border-radius:14px;border:1px solid var(--line-strong);background:rgba(255,255,255,.05);color:var(--text-primary);font:600 16px var(--body)}
+.os-f input:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,122,69,.25)}
+.os-msg{margin:0;min-height:1.4em;font:600 14px var(--body)}
+.os-msg.err{color:var(--loss)} .os-msg.ok{color:var(--pos)}
+.os-go{width:100%}
+.os-more{color:var(--text-muted);font-size:13px;text-align:center;text-underline-offset:3px}
+@media (max-width:420px){.os-row{grid-template-columns:1fr}}
