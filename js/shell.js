@@ -4,14 +4,14 @@
 // build stamp and the "new version" bar. Plus small formatters.
 // ============================================================
 
-import { BUILD } from "./config.js?v=10";
+import { BUILD } from "./config.js?v=11";
 
 export const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
 export function initShell() {
   // environment: a few sparks drifting up (seeded, so identical every load)
   const env = document.querySelector(".env");
-  if (env && !env.children.length) {
+  if (env && !env.querySelector("i")) {
     let s = 20260704;
     const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
     for (let i = 0; i < 14; i++) {
@@ -41,6 +41,36 @@ export function initShell() {
   // reveal choreography
   observeReveals(document);
 
+  // the viewer's own "Pause motion" switch (remembered on this device)
+  const still = () => { try { return localStorage.getItem("af:still") === "1"; } catch (e) { return false; } };
+  const applyStill = (on) => {
+    document.body.classList.toggle("still", on);
+    document.querySelectorAll("video").forEach(v => (on ? v.pause() : v.play().catch(() => {})));
+    document.querySelectorAll("[data-motion-toggle]").forEach(b => { b.textContent = on ? "Play motion" : "Pause motion"; b.setAttribute("aria-pressed", String(on)); });
+    window.dispatchEvent(new CustomEvent("motion", { detail: { still: on } }));
+  };
+  document.querySelectorAll("[data-motion-toggle]").forEach(b => b.addEventListener("click", () => {
+    const on = !document.body.classList.contains("still");
+    try { localStorage.setItem("af:still", on ? "1" : "0"); } catch (e) {}
+    applyStill(on);
+  }));
+  if (still()) applyStill(true);
+
+  // cards lean toward the pointer (mouse only)
+  if (matchMedia("(pointer: fine)").matches && !reducedMotion.matches) {
+    document.addEventListener("pointermove", (e) => {
+      const c = e.target.closest?.(".tilt");
+      if (!c) return;
+      const r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+      const k = 8 * Math.min(1, 420 / r.width);   // wide rows lean less than small cards
+      c.style.transform = `perspective(900px) rotateY(${(x * k).toFixed(2)}deg) rotateX(${(-y * k).toFixed(2)}deg) translateY(-4px)`;
+    }, { passive: true });
+    document.addEventListener("pointerout", (e) => {
+      const c = e.target.closest?.(".tilt");
+      if (c && !c.contains(e.relatedTarget)) c.style.transform = "";
+    });
+  }
+
   // build stamp + update bar
   document.querySelectorAll("[data-build]").forEach(el => (el.textContent = "build " + BUILD));
   setTimeout(checkForUpdate, 10000);
@@ -65,12 +95,16 @@ export function observeReveals(root) {
 function show(el) {
   el.classList.add("in");
   if (el.hasAttribute("data-stagger")) setTimeout(() => el.classList.add("done"), 1400);
-  revealCbs.get(el)?.();
+  const fns = revealCbs.get(el);
+  revealCbs.delete(el);
+  fns?.forEach(fn => fn());
 }
 // Run fn the first time el is revealed (immediately if it already was).
 export function onReveal(el, fn) {
-  if (el.classList.contains("in")) fn();
-  else revealCbs.set(el, fn);
+  if (!el || el.classList.contains("in")) return fn();
+  const fns = revealCbs.get(el) || [];
+  fns.push(fn);
+  revealCbs.set(el, fns);
 }
 
 // Count a number up to its new value. fmt turns a number into text.
@@ -87,6 +121,32 @@ export function countTo(el, to, fmt, ms = 1100) {
     if (k < 1) el._raf = requestAnimationFrame(step);
   };
   el._raf = requestAnimationFrame(step);
+}
+
+// Rolling digits: each digit is a column of 0-9 that slides to its
+// value. Rebuilds when the shape of the text changes.
+export function roll(el, text) {
+  if (!el || text == null) return;
+  if (el._rolled === text) return;
+  el._rolled = text;
+  el.classList.add("odo");
+  el.setAttribute("aria-label", text);
+  const shape = text.replace(/\d/g, "0");
+  if (el._shape !== shape) {
+    el._shape = shape;
+    el.innerHTML = [...text].map(ch => /\d/.test(ch)
+      ? `<span class="col" aria-hidden="true"><span>${"0123456789".split("").map(d => `<span>${d}</span>`).join("")}</span></span>`
+      : `<span aria-hidden="true">${esc(ch)}</span>`).join("");
+    el.offsetWidth;   // commit the zero state so the first roll animates
+  }
+  const cols = el.querySelectorAll(".col > span");
+  let k = 0;
+  [...text].forEach(ch => {
+    if (!/\d/.test(ch)) return;
+    const col = cols[k++];
+    col.style.transitionDelay = (reducedMotion.matches ? 0 : k * 0.06) + "s";
+    col.style.transform = `translateY(-${+ch}em)`;
+  });
 }
 
 async function checkForUpdate() {

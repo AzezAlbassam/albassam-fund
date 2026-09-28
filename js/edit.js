@@ -7,13 +7,13 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=10";
-import { store } from "./store.js?v=10";
-import { live, state } from "./live.js?v=10";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=10";
-import { watchNews } from "./news.js?v=10";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=10";
-import { initShell, countTo, esc, logoHtml, pctClass, usd0, usd2, signedUsd, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=10";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=11";
+import { store } from "./store.js?v=11";
+import { live, state } from "./live.js?v=11";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=11";
+import { watchNews } from "./news.js?v=11";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=11";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, signedUsd, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=11";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -21,7 +21,7 @@ const money = (v) => (v == null || isNaN(v) ? WAIT : usd2(v));
 const pct2 = (p) => (p == null || isNaN(p) ? WAIT : fmtPct(p));
 const heldFor = (a, b) => { const n = daysBetween(a, b); return n ? `Held ${n} day${n === 1 ? "" : "s"}` : "Same day"; };
 const sh = (v) => (+v || 0).toLocaleString("en-US", { maximumFractionDigits: 4 });
-const MARK = `<svg class="ingot" viewBox="0 0 40 28" aria-hidden="true"><path d="M9 3h22l7 22H2z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M20 12.5l3.6 4.3L20 21l-3.6-4.2z" fill="currentColor"/></svg>`;
+const MARK = `<span class="orb" aria-hidden="true"></span>`;
 const emptyBox = (html, tag = "div") => `<${tag} class="empty-state">${MARK}<p>${html}</p></${tag}>`;
 const WIRE_EMPTY = `<div class="empty">Quiet. The wire wakes up when we hold a position.</div>`;
 
@@ -31,6 +31,14 @@ let canWrite = DEMO;   // demo: the desk is open without sign-in
 const writable = () => canWrite && !state.cached;
 
 initShell();
+
+// the title builds itself letter by letter
+let ci = 0;
+document.querySelectorAll("#deskTitle .hl").forEach(w => {
+  w.innerHTML = [...w.textContent].map(ch => `<span class="ch" style="--i:${ci++}">${esc(ch)}</span>`).join("");
+});
+// a rebuilt list plays its entrance again (cards stagger, rows rise as they scroll in)
+const restage = (el, html) => { el.classList.remove("in", "done"); el.innerHTML = html; observeReveals(el.parentElement); };
 
 /* ----------------------- toasts ----------------------- */
 let toastT;
@@ -59,13 +67,13 @@ function renderAll() {
   if (!state.ready) return;   // keep the loading skeletons until data lands
 
   $("#activeCount").textContent = active.length + " open";
-  $("#activeCards").innerHTML = active.length ? active.map(cardHtml).join("") :
+  restage($("#activeCards"), active.length ? active.map(cardHtml).join("") :
     emptyBox(`<b>All cash. Every gain is banked.</b> The next call shows up here the minute it opens.` +
-      (w ? ` <span class="muted">Launch it from New call.</span>` : ""));
+      (w ? ` <span class="muted">Launch it from New call.</span>` : "")));
 
   $("#closedCount").textContent = closed.length + " closed";
-  $("#closedList").innerHTML = closed.length ? closed.map(rowHtml).join("") :
-    emptyBox("Nothing closed yet. Closed calls land here with their result locked in.", "li");
+  restage($("#closedList"), closed.length ? closed.map(rowHtml).join("") :
+    emptyBox("Nothing closed yet. Closed calls land here with their result locked in.", "li"));
 
   updateLive();
 }
@@ -74,7 +82,7 @@ function cardHtml(t) {
   const d = derive(t);
   const n = (t.txns || []).length;
   const tk = esc(t.ticker);
-  return `<article class="call" data-id="${esc(t.id)}">
+  return `<article class="call glass tilt" data-id="${esc(t.id)}">
     <div class="call-top">
       ${logoHtml(t)}
       <div class="call-id"><h3>${tk}</h3><p>${esc(t.name || "")}</p></div>
@@ -100,15 +108,15 @@ function cardHtml(t) {
   </article>`;
 }
 
-function rowHtml(t) {
+function rowHtml(t, i) {
   const d = derive(t);
   const sellPx = exitPx(t);
   const p = t.finalPct;
   const tk = esc(t.ticker);
   const verdict = p > 0 ? "WIN" : p < 0 ? "LOSS" : "FLAT";
-  return `<li class="crow" data-id="${esc(t.id)}">
+  return `<li class="crow" data-id="${esc(t.id)}" data-reveal style="--i:${i % 4}">
     <div class="crow-main">
-      <span class="stamp${p < 0 ? " loss" : ""}">${p == null ? WAIT : pct1(p)}<small>${verdict}</small></span>
+      <span class="stamp${p < 0 ? " loss" : p === 0 ? " flat" : ""}">${p == null ? WAIT : pct1(p)}<small>${verdict}</small></span>
       <div class="crow-id">${logoHtml(t)}<div><b>${tk}</b><span>${esc(t.name || "")}</span></div></div>
       <div class="crow-info">
         <p><span>${esc(day(t.opened))} → ${esc(dayYear(t.closed))}</span><span class="muted">${heldFor(t.opened, t.closed || today())}</span></p>
@@ -158,7 +166,7 @@ function updateLive() {
   if (!state.ready) return;
   const sim = simulate(state.trades, quotes, state.pot);
   const st = computeStats(state.trades, quotes);
-  countTo($("#kValue"), sim.value, usd0);
+  roll($("#kValue"), usd0(sim.value));
   const ret = $("#kRet");
   countTo(ret, sim.totalPct, pct1);
   ret.className = "num " + pctClass(sim.totalPct);
@@ -166,9 +174,10 @@ function updateLive() {
   const unsized = state.trades.filter(t => !(t.wt > 0)).length;
   $("#kMeta").textContent = `Banked ${signedUsd(sim.realizedDollars)} · open ${pct1(sim.openPct)}` +
     (unsized ? ` · ${unsized} call${unsized > 1 ? "s" : ""} with no pot size yet` : "");
-  $("#kOpen").textContent = st.nOpen;
-  $("#kClosed").textContent = st.nClosed;
-  $("#kWin").textContent = st.winRate == null ? "n/a" : st.winRate + "%";
+  roll($("#kOpen"), String(st.nOpen));
+  roll($("#kClosed"), String(st.nClosed));
+  roll($("#kWin"), st.winRate == null ? "n/a" : st.winRate + "%");
+  $("#kWinTile").style.setProperty("--p", st.winRate ?? 0);
 }
 
 /* ----------------------- inline form plumbing ----------------------- */

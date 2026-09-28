@@ -9,7 +9,7 @@
 //   c.view({ bench: "gold"|"spx"|"both", range: "1M"|"3M"|"ALL", unit: "pct"|"usd" });
 // ============================================================
 
-import { onReveal, observeReveals, reducedMotion, day, shortUsd } from "./shell.js?v=10";
+import { onReveal, observeReveals, reducedMotion, day, shortUsd } from "./shell.js?v=11";
 
 const NS = "http://www.w3.org/2000/svg";
 const RANGES = { "1M": 22, "3M": 64 };
@@ -23,8 +23,8 @@ export function viewValues(race, { range = "ALL", unit = "pct" } = {}) {
   return { fund: v("fund"), gold: v("gold"), spx: v("spx"), from: race.days[i0], asOf: race.days[n] };
 }
 const NAMES = { fund: "Our fund", gold: "Gold", spx: "S&P 500" };
-const HEX = { fund: "#4FD1A1", gold: "#E6B34E", spx: "#9FB4C7" };
-const CLS = { fund: "jade", gold: "gold", spx: "pearl" };
+const HEX = { fund: "#FF7A59", gold: "#FFC24B", spx: "#A78BFA" };
+const CLS = { fund: "fund", gold: "gold", spx: "spx" };
 
 export function raceChart(el) {
   el.classList.add("race");
@@ -103,9 +103,12 @@ export function raceChart(el) {
     svg.innerHTML = `
       <defs>
         <linearGradient id="leadFill" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0" stop-color="${ahead ? "#4FD1A1" : "#EE6F5E"}" stop-opacity=".02"/>
-          <stop offset=".6" stop-color="${ahead ? "#4FD1A1" : "#EE6F5E"}" stop-opacity=".16"/>
-          <stop offset="1" stop-color="${ahead ? "#E6B34E" : "#EE6F5E"}" stop-opacity=".26"/>
+          <stop offset="0" stop-color="${ahead ? "#FF4F79" : "#FF5470"}" stop-opacity=".02"/>
+          <stop offset=".6" stop-color="${ahead ? "#FF7A45" : "#FF5470"}" stop-opacity=".18"/>
+          <stop offset="1" stop-color="${ahead ? "#FFB547" : "#FF5470"}" stop-opacity=".3"/>
+        </linearGradient>
+        <linearGradient id="fundStroke" gradientUnits="userSpaceOnUse" x1="${pad.l}" y1="0" x2="${W - pad.r}" y2="0">
+          <stop offset="0" stop-color="#FF4F79"/><stop offset=".55" stop-color="#FF7A45"/><stop offset="1" stop-color="#FFB547"/>
         </linearGradient>
       </defs>
       <g class="grid">${ticks.map(t => `<line x1="${pad.l}" x2="${W - pad.r}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/>`).join("")}</g>
@@ -114,9 +117,9 @@ export function raceChart(el) {
       ${opts.unit === "pct" ? `<line class="base" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}"/>` : ""}
       <path class="lead" d="${area}" fill="url(#leadFill)"/>
       ${keys.slice().reverse().map(k => `<path class="line ${k}" pathLength="1" d="${path(cut[k])}"/>`).join("")}
-      ${keys.map(k => `<circle class="end" cx="${X(n - 1).toFixed(1)}" cy="${Y(cut[k][n - 1]).toFixed(1)}" r="3.5" fill="${HEX[k]}"/>`).join("")}
+      ${keys.map(k => `<circle class="end ${k}" cx="${X(n - 1).toFixed(1)}" cy="${Y(cut[k][n - 1]).toFixed(1)}" r="3.5" fill="${HEX[k]}"/>`).join("")}
       <line class="cross" y1="${pad.t}" y2="${H - pad.b}"/>
-      ${keys.map(k => `<circle class="dot" data-k="${k}" r="4.5" fill="#0E1514" stroke-width="2" stroke="${HEX[k]}"/>`).join("")}`;
+      ${keys.map(k => `<circle class="dot" data-k="${k}" r="4.5" fill="#07060A" stroke-width="2" stroke="${HEX[k]}"/>`).join("")}`;
 
     // the lead readout, pinned between our end point and the benchmark's
     leadEl.className = "race-lead" + (ahead ? "" : " behind");

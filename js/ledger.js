@@ -5,14 +5,20 @@
 // so expanded rows, sparklines and reveals survive every change.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, countTo, usd0, usd2, signedUsd, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=10";
-import { live, state } from "./live.js?v=10";
-import { derive, blendedPct, today, exitPx } from "./roi.js?v=10";
-import { history } from "./history.js?v=10";
+import { initShell, observeReveals, onReveal, countTo, roll, usd0, usd2, signedUsd, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=11";
+import { live, state } from "./live.js?v=11";
+import { derive, blendedPct, today, exitPx } from "./roi.js?v=11";
+import { history } from "./history.js?v=11";
 
 initShell();
 
 const $ = (s) => document.querySelector(s);
+
+// the title flips up letter by letter
+let ci = 0;
+document.querySelectorAll(".lhead h1 .w").forEach(w => {
+  w.innerHTML = [...w.textContent].map(ch => `<span class="ch" style="--i:${ci++}">${esc(ch)}</span>`).join("");
+});
 const list = $("#calls"), tally = $("#tally"), emptyEl = $("#empty"), countEl = $("#count");
 const ui = { filter: "all", sort: "new", q: "" };
 const expanded = new Set();          // ids of open rows
@@ -65,7 +71,7 @@ function potHtml(t, p) {
   if (!(t.wt > 0)) return `<span class="sz muted">Unsized</span>`;
   const v = potUsd(t, p);
   return `<span class="sz">${+Number(t.wt).toFixed(1)}% of pot</span>` +
-    (v == null ? "" : `<span class="money ${v < 0 ? "loss" : "jade"}"><b>${signedUsd(v)}</b> on the pot</span>`);
+    (v == null ? "" : `<span class="money ${v < 0 ? "loss" : "pos"}"><b>${signedUsd(v)}</b> on the pot</span>`);
 }
 
 function txHtml(t) {
@@ -97,7 +103,7 @@ function rowHtml(t) {
 }
 
 /* ----------------------- sparklines (lazy) ----------------------- */
-const sparkKey = (t) => [t.ticker, t.opened, endOf(t), (pctOf(t) ?? 0) < 0].join("|");
+const sparkKey = (t) => [t.ticker, t.opened, endOf(t), isOpen(t), (pctOf(t) ?? 0) < 0].join("|");
 const earliest = () => state.trades.reduce((m, t) => (t.opened && t.opened < m ? t.opened : m), "9999-12-31");
 
 async function loadSpark(id) {
@@ -113,6 +119,7 @@ async function loadSpark(id) {
   if (cell) cell.innerHTML = html;
 }
 
+let gid = 0;   // unique gradient ids across rows
 function sparkSvg(t, h) {
   const end = endOf(t), pts = [];
   h.dates.forEach((d, i) => { if (d >= t.opened && d <= end && h.closes[i] != null) pts.push(h.closes[i]); });
@@ -126,19 +133,22 @@ function sparkSvg(t, h) {
     .map(n => +n.toFixed(1)));
   const d = xy.map(([x, y], i) => (i ? "L" : "M") + x + " " + y).join("");
   const [x0, y0] = xy[0], [x1, y1] = xy[xy.length - 1];
-  return `<svg class="spark ${(pctOf(t) ?? 0) < 0 ? "loss" : ""}" viewBox="0 0 ${W} ${H}" focusable="false">` +
-    `<path class="area" d="${d}L${x1} ${H}L${x0} ${H}Z"/><path class="ln" pathLength="1" d="${d}"/>` +
-    `<circle class="p0" cx="${x0}" cy="${y0}" r="3"/><circle class="p1" cx="${x1}" cy="${y1}" r="3"/></svg>`;
+  const g = "sg" + ++gid, cls = isOpen(t) ? "open" : (pctOf(t) ?? 0) < 0 ? "loss" : "";
+  return `<svg class="spark ${cls}" viewBox="0 0 ${W} ${H}" focusable="false">` +
+    `<defs><linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".32"/>` +
+    `<stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs>` +
+    `<path class="area" fill="url(#${g})" d="${d}L${x1} ${H}L${x0} ${H}Z"/><path class="ln" pathLength="1" d="${d}"/>` +
+    `<circle class="p0" cx="${x0}" cy="${y0}" r="3"/><circle class="halo" cx="${x1}" cy="${y1}" r="3"/><circle class="p1" cx="${x1}" cy="${y1}" r="3"/></svg>`;
 }
 
 /* ----------------------- summary tally ----------------------- */
-function stat(k, v, fmt, tail = "", cls = "") {
+function stat(k, v, fmt, tail = "", cls = "", grad = false) {
   const dd = tally.querySelector(`[data-s="${k}"]`);
   if (v == null) { dd.className = "none"; dd.textContent = "None yet"; return; }
   if (!dd._n || !dd.contains(dd._n)) { dd.innerHTML = "<span></span><small></small>"; dd._n = dd.firstChild; }
   dd.className = cls;
   dd.lastChild.textContent = tail;
-  countTo(dd._n, v, fmt);
+  grad ? countTo(dd._n, v, fmt, 1800) : roll(dd._n, String(fmt(v)));   // rolling digits break background-clip text
 }
 
 function paintSummary() {
@@ -151,9 +161,16 @@ function paintSummary() {
     stat("calls", calls, v => Math.round(v));
     stat("won", n ? won.length : null, v => Math.round(v), ` of ${n}`);
     stat("rate", n ? (won.length / n) * 100 : null, v => Math.round(v) + "%");
-    stat("avgw", won.length ? mean(won) : null, pct1);
+    stat("avgw", won.length ? mean(won) : null, pct1, "", "pos");
     stat("avgl", lost.length ? mean(lost) : null, pct1, "", "loss");
-    stat("bank", banked, usd0, "", banked < 0 ? "loss" : "jade");
+    stat("bank", banked, usd0, "", banked < 0 ? "loss" : "grad-text", true);
+    $("#rateBar").style.setProperty("--w", n ? won.length / n : 0);
+    const pips = closed.slice(0, 40).map(t => t.finalPct > 0).sort((a, b) => b - a);
+    const pk = pips.join();
+    if ($("#pips")._k !== pk) {
+      $("#pips")._k = pk;
+      $("#pips").innerHTML = pips.map((w, i) => `<i${w ? "" : ' class="l"'} style="--i:${i}"></i>`).join("");
+    }
   });
 }
 
@@ -165,25 +182,29 @@ function build() {
     let li = rows.get(t.id);
     if (!li) {
       li = document.createElement("li");
-      li.className = "call";
+      li.className = "call tilt";
       li.dataset.reveal = "";
       li.dataset.id = t.id;
       rows.set(t.id, li);
     }
     const focused = li.contains(document.activeElement);
     li.classList.toggle("open", expanded.has(t.id));
+    li.classList.toggle("glow", expanded.has(t.id));
     li.innerHTML = rowHtml(t);
     if (focused) li.querySelector(".call-head").focus({ preventScroll: true });
   }
   for (const [id, li] of rows) if (!byId.has(id)) { li.remove(); rows.delete(id); expanded.delete(id); }
   apply(false);
-  for (const [id, li] of rows) onReveal(li, () => loadSpark(id));
+  for (const [id, li] of rows) onReveal(li, () => {
+    loadSpark(id);
+    setTimeout(() => li.style.setProperty("--d", 0), 1600);   // entrance done: hover and tilt react at once
+  });
   observeReveals(list);
   paintSummary();
 }
 
 // Filter, sort and search: reorder mounted rows, hide the rest.
-function apply(announce = true) {
+function apply(announce = true, deal = announce) {
   if (!state.ready) return;
   const q = ui.q;
   const vis = state.trades.filter(t => FILTERS[ui.filter](t) &&
@@ -195,11 +216,13 @@ function apply(announce = true) {
   for (const t of vis) {
     const li = rows.get(t.id);
     if (!li.classList.contains("in")) li.style.setProperty("--d", i < 6 ? i : 0);
+    li.style.setProperty("--i", Math.min(i, 10));
     i++;
   }
   // hidden rows stay mounted so the reveal observer still sees them later
   list.append(...vis.map(t => rows.get(t.id)), ...[...rows.values()].filter(li => li.hidden));
   emptyEl.hidden = vis.length > 0;
+  if (deal) { list.classList.remove("re"); void list.offsetWidth; list.classList.add("re"); }
   countEl.textContent = announce ? `${vis.length} of ${state.trades.length} calls shown` : "";
 }
 
@@ -222,6 +245,7 @@ list.addEventListener("click", (e) => {
   const li = b.closest(".call"), id = li.dataset.id, on = !expanded.has(id);
   on ? expanded.add(id) : expanded.delete(id);
   li.classList.toggle("open", on);
+  li.classList.toggle("glow", on);
   b.setAttribute("aria-expanded", on);
   li.querySelector(".call-body").inert = !on;
 });
@@ -234,7 +258,7 @@ $("#filter").addEventListener("click", (e) => {
   apply();
 });
 $("#sort").addEventListener("change", (e) => { ui.sort = e.target.value; apply(); });
-$("#q").addEventListener("input", (e) => { ui.q = e.target.value.trim().toLowerCase(); apply(); });
+$("#q").addEventListener("input", (e) => { ui.q = e.target.value.trim().toLowerCase(); apply(true, false); });
 
 /* ----------------------- live data ----------------------- */
 const slowTimer = setTimeout(() => { if (!state.ready) $("#slow").hidden = false; }, 12000);

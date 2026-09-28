@@ -4,16 +4,17 @@
 // Everything re-renders from live(): trades, pot and quotes.
 // ============================================================
 
-import { initShell, observeReveals, countTo, usd0, signedUsd, pct1, pts1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=10";
-import { live, state } from "./live.js?v=10";
-import { statPct } from "./roi.js?v=10";
-import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=10";
-import { raceChart, bindRaceControls } from "./chart.js?v=10";
+import { initShell, observeReveals, onReveal, roll, countTo, usd0, signedUsd, pct1, pts1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=11";
+import { live, state } from "./live.js?v=11";
+import { statPct } from "./roi.js?v=11";
+import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=11";
+import { raceChart, bindRaceControls } from "./chart.js?v=11";
 
 const $ = (id) => document.getElementById(id);
 const FAIL = "The race could not load right now. Try again in a minute.";
 const EMPTY = "The race starts with the first sized call.";
-const SERIES = [["fund", "Our fund", "jade"], ["gold", "Gold", "gold"], ["spx", "S&amp;P 500", "pearl"]];
+// [key, name, text class, swatch]: our fund is the gradient, gold amber, the S&P lavender
+const SERIES = [["fund", "Our fund", "grad-text", "var(--grad)"], ["gold", "Gold", "gold", "var(--gold)"], ["spx", "S&amp;P 500", "spx", "var(--spx)"]];
 const RANGES = { "1M": 22, "3M": 64 };   // ponytail: mirrors chart.js RANGES (the chart does not expose its slice)
 
 initShell();
@@ -57,10 +58,12 @@ function strip() {
   if (status !== "ok") { $("since").textContent = stateMsg(); return; }
   const s = raceSummary(race);
   $("since").textContent = `Since ${dayYear(race.first)}`;
+  const top = Math.max(...SERIES.map(([k]) => s[k]), 1e-9);
   for (const [k] of SERIES) {
     const dd = el.querySelector(`[data-k="${k}"]`);
     dd.classList.toggle("neg", s[k] < 0);
-    countTo(dd, s[k], pct1);
+    countTo(dd, s[k], pct1, 1800);
+    dd.parentElement.style.setProperty("--w", Math.min(1, Math.max(0.03, s[k] / top)).toFixed(3));   // the lane's runner
   }
 }
 
@@ -74,8 +77,8 @@ function legend() {
   const val = (k) => unit === "pct"
     ? pct1((race[k][n] / race[k][i0] - 1) * 100)
     : usd0(k === "fund" ? race.fund[n] : race[k][n] / race[k][i0] * race.fund[i0]);
-  el.innerHTML = SERIES.filter(([k]) => keys.includes(k)).map(([k, name, c]) =>
-    `<span><i style="background:var(--${c})"></i>${name} <b class="${c}">${val(k)}</b></span>`).join("") +
+  el.innerHTML = SERIES.filter(([k]) => keys.includes(k)).map(([k, name, c, sw]) =>
+    `<span><i style="background:${sw}"></i>${name} <b class="${c}">${val(k)}</b></span>`).join("") +
     `<span class="asof">Through ${dayYear(race.days[n])}</span>`;
 }
 
@@ -85,20 +88,22 @@ function numbers() {
   if (status !== "ok") { box.innerHTML = note(stateMsg()); $("nbSpan").textContent = ""; return; }
   const S = Object.fromEntries(SERIES.map(([k]) => [k, seriesStats(race.days, race[k])]));
   $("nbSpan").textContent = `${dayYear(race.first)} to ${dayYear(race.days[race.days.length - 1])}`;
-  const pc = (v) => `<span class="${v < 0 ? "neg" : ""}">${Math.abs(v) < 0.05 ? "0.0%" : pct1(v)}</span>`;
+  const pc = (v) => Math.abs(v) < 0.05 ? `<span class="v">0.0%</span>` : `<span class="v ${v < 0 ? "neg" : "pos"}">${pct1(v)}</span>`;
   const dayCell = (x) => x ? `${pc(x.pct)}<small>${day(x.d)}</small>` : `<span class="muted">Too early</span>`;
   const rows = [
     ["Return", k => pc(S[k].ret)],
-    ["What " + shortUsd(race.pot) + " became", k => usd0(S[k].end)],
+    ["What " + shortUsd(race.pot) + " became", k => `<span class="v">${usd0(S[k].end)}</span>`],
     ["Deepest drop", k => pc(S[k].maxDD)],
     ["Best day", k => dayCell(S[k].best)],
     ["Worst day", k => dayCell(S[k].worst)],
   ];
   box.innerHTML = `<table class="nb-table">
-    <thead><tr><td></td>${SERIES.map(([k, name]) => `<th scope="col" class="${k === "fund" ? "us" : ""}">${name}</th>`).join("")}</tr></thead>
-    <tbody>${rows.map(([label, f]) => `<tr><th scope="row">${label}</th>${SERIES.map(([k]) =>
+    <thead><tr><td></td>${SERIES.map(([k, name]) => k === "fund"
+      ? `<th scope="col" class="us"><span class="grad-text">${name}</span></th>` : `<th scope="col" class="${k}">${name}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(([label, f], i) => `<tr style="--i:${i}"><th scope="row">${label}</th>${SERIES.map(([k]) =>
       `<td class="${k === "fund" ? "us" : ""}">${f(k)}</td>`).join("")}</tr>`).join("")}</tbody>
   </table>`;
+  playOnce(box.closest("[data-reveal]"), ".v");
 }
 
 /* ---------- month by month ---------- */
@@ -113,9 +118,10 @@ function months() {
   box.innerHTML = `<table class="hm">
     <colgroup><col class="lab">${M.map(() => "<col>").join("")}</colgroup>
     <thead><tr><td></td>${M.map(m => `<th scope="col">${month(m.m)}</th>`).join("")}</tr></thead>
-    <tbody>${SERIES.map(([k, name]) => `<tr class="${k}"><th scope="row">${name}</th>${M.map(m =>
-      `<td class="${m[k] < 0 ? "neg" : ""}" style="--a:${tint(m[k])}">${pct1(m[k])}</td>`).join("")}</tr>`).join("")}</tbody>
+    <tbody>${SERIES.map(([k, name], r) => `<tr class="${k}"><th scope="row">${name}</th>${M.map((m, c) =>
+      `<td class="${m[k] < 0 ? "neg" : ""}" style="--a:${tint(m[k])};--i:${r + c}">${pct1(m[k])}</td>`).join("")}</tr>`).join("")}</tbody>
   </table>`;
+  playOnce(box.closest("[data-reveal]"));
 }
 
 /* ---------- where our lead came from ---------- */
@@ -131,12 +137,26 @@ function bars() {
   const span = pos + neg || 1;
   el.style.setProperty("--z", (neg / span * 100).toFixed(2) + "%");   // the zero line
   el.innerHTML = rows.map((r, i) => `
-    <li class="lb-row${r.pts < 0 ? " loss" : ""}">
+    <li class="lb-row${r.pts < 0 ? " loss" : ""}" style="--i:${Math.min(i, 12)}">
       <div class="lb-name">${logoHtml(r.t)}<span><b>${esc(r.t.ticker)}</b>
         <small>${pct1(r.p)} × ${+(+r.t.wt).toFixed(1)}% of pot${r.t.status === "active" ? " · open" : ""}</small></span></div>
       <div class="lb-track" aria-hidden="true"><i class="lb-bar" style="width:${(Math.abs(r.pts) / span * 100).toFixed(2)}%;--d:${Math.min(i, 12) * 70}ms"></i></div>
       <div class="lb-val"><b>${pts1(r.pts)}</b><small>${signedUsd(r.pts * state.pot / 100)}</small></div>
     </li>`).join("");
+  playOnce(el, ".lb-val b");
+}
+
+// First reveal with real content only: rows/tiles enter and numbers roll.
+// Live re-renders after that (price ticks) swap in quietly, never replay.
+function playOnce(el, rollSel) {
+  if (!el || el._played) return;
+  onReveal(el, () => {
+    if (el._played) return;
+    el._played = true;
+    el.classList.add("play");
+    if (rollSel) el.querySelectorAll(rollSel).forEach(x => roll(x, x.textContent));
+    setTimeout(() => el.classList.remove("play"), 2600);
+  });
 }
 
 live(onLive).catch(e => {   // last: demo mode calls back synchronously, so every helper above must exist first

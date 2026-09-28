@@ -2,35 +2,35 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The Ledger · Albassam Fund</title>
 <meta name="description" content="Every Albassam Fund call on the record. Wins and losses, sized and dated. Nothing deleted.">
-<meta name="theme-color" content="#0E1514">
+<meta name="theme-color" content="#07060A">
 <!-- og:url and og:image carry the live absolute URL -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="Albassam Fund">
 <meta property="og:description" content="Every stock call we make, measured against gold and the S&amp;P 500.">
 <meta property="og:image" content="https://azezalbassam.github.io/albassam-fund/assets/og.jpg">
 <meta property="og:url" content="https://azezalbassam.github.io/albassam-fund/ledger.html">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230E1514'/%3E%3Cpath d='M19 20h26l9 26H10z' fill='none' stroke='%23E6B34E' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M32 27l5 6.5-5 6.5-5-6.5z' fill='%23E6B34E'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='1' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23FF4F79'/%3E%3Cstop offset='.55' stop-color='%23FF7A45'/%3E%3Cstop offset='1' stop-color='%23FFB547'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='1' y='1' width='30' height='30' rx='9' fill='url(%23g)'/%3E%3Cpath d='M8.5 24 16 8l7.5 16' fill='none' stroke='%231B0A06' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M11.6 18.6l3-2.6 2.2 1.8 3.4-3.4' fill='none' stroke='%231B0A06' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://firestore.googleapis.com">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin>
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
 <!-- fonts load without blocking the page: text shows at once, the faces swap in -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,800;125,900&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/site.css?v=10">
-<link rel="stylesheet" href="css/ledger.css?v=10">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="css/site.css?v=11">
+<link rel="stylesheet" href="css/ledger.css?v=11">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<div class="env" aria-hidden="true"></div>
+<div class="env" aria-hidden="true"><b></b><b></b><b></b></div>
 
 <header class="nav">
   <div class="wrap">
     <a class="brand" href="./" aria-label="Albassam Fund, home">
-      <svg class="mark" viewBox="0 0 40 28" aria-hidden="true"><path d="M9 3h22l7 22H2z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 8.5h16" stroke="currentColor" stroke-width="1.3" opacity=".55"/><path d="M20 12.5l3.6 4.3L20 21l-3.6-4.2z" fill="currentColor"/></svg>
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="mk" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FF4F79"/><stop offset=".55" stop-color="#FF7A45"/><stop offset="1" stop-color="#FFB547"/></linearGradient></defs><rect x="1" y="1" width="30" height="30" rx="9" fill="url(#mk)"/><path d="M8.5 24 16 8l7.5 16" fill="none" stroke="#1B0A06" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.6 18.6l3-2.6 2.2 1.8 3.4-3.4" fill="none" stroke="#1B0A06" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <b>Albassam Fund</b>
     </a>
     <nav aria-label="Main">
@@ -46,10 +46,10 @@
 
 <main id="main" tabindex="-1">
   <section class="lhead" aria-labelledby="ledger-title">
-    <img class="lhead-bg" src="assets/ledger-bars.jpg" alt="" fetchpriority="high" decoding="async">
+    <div class="vbg" aria-hidden="true"><video autoplay muted loop playsinline preload="auto" poster="assets/ledger-loop.jpg" src="assets/ledger-loop.mp4" aria-hidden="true"></video></div>
     <div class="wrap lhead-copy" data-stagger>
       <p class="kicker">The Ledger</p>
-      <h1 id="ledger-title">Every call, <span class="nw">on the record.</span></h1>
+      <h1 id="ledger-title" aria-label="Every call, on the record."><span class="w" aria-hidden="true">Every</span> <span class="w" aria-hidden="true">call,</span> <span class="nw"><span class="w" aria-hidden="true">on</span> <span class="w" aria-hidden="true">the</span> <span class="w" aria-hidden="true">record.</span></span></h1>
       <p class="lede">Wins and losses, sized and dated. Nothing deleted.</p>
     </div>
   </section>
@@ -57,15 +57,15 @@
   <section class="tally-sec" aria-labelledby="tally-h">
     <div class="wrap">
       <h2 id="tally-h" class="sr">Summary</h2>
-      <div class="molten" aria-hidden="true"></div>
       <dl class="tally" id="tally" data-stagger>
-        <div><dt>Calls</dt><dd data-s="calls"><span class="sk"></span></dd></div>
-        <div><dt>Won</dt><dd data-s="won"><span class="sk"></span></dd></div>
-        <div><dt>Win rate</dt><dd data-s="rate"><span class="sk"></span></dd></div>
-        <div><dt>Average win</dt><dd data-s="avgw"><span class="sk"></span></dd></div>
-        <div><dt>Average loss</dt><dd data-s="avgl"><span class="sk"></span></dd></div>
-        <div><dt>Banked</dt><dd data-s="bank"><span class="sk"></span></dd></div>
+        <div class="glass glow tilt t-bank"><dt>Banked</dt><dd data-s="bank"><span class="sk"></span></dd><dd class="t-foot">Locked in from closed calls</dd></div>
+        <div class="glass tilt"><dt>Calls</dt><dd data-s="calls"><span class="sk"></span></dd></div>
+        <div class="glass tilt"><dt>Won</dt><dd data-s="won"><span class="sk"></span></dd><dd class="pips" id="pips" aria-hidden="true"></dd></div>
+        <div class="glass tilt"><dt>Win rate</dt><dd data-s="rate"><span class="sk"></span></dd><dd class="meter" aria-hidden="true"><i id="rateBar"></i></dd></div>
+        <div class="glass tilt"><dt>Average win</dt><dd data-s="avgw"><span class="sk"></span></dd></div>
+        <div class="glass tilt"><dt>Average loss</dt><dd data-s="avgl"><span class="sk"></span></dd></div>
       </dl>
+      <hr class="molten">
     </div>
   </section>
 
@@ -115,18 +115,19 @@
   <div class="wrap">
     <div>
       <a class="brand" href="./" aria-label="Albassam Fund, home">
-        <svg class="mark" viewBox="0 0 40 28" aria-hidden="true"><path d="M9 3h22l7 22H2z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 8.5h16" stroke="currentColor" stroke-width="1.3" opacity=".55"/><path d="M20 12.5l3.6 4.3L20 21l-3.6-4.2z" fill="currentColor"/></svg>
+        <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="9" fill="url(#mk)"/><path d="M8.5 24 16 8l7.5 16" fill="none" stroke="#1B0A06" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.6 18.6l3-2.6 2.2 1.8 3.4-3.4" fill="none" stroke="#1B0A06" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <b>Albassam Fund</b>
       </a>
       <p>Albassam Fund. A family record of every call since July 4, 2026.</p>
       <p>Prices from Yahoo Finance and may be delayed. Not investment advice.</p>
       <p><a class="manager-link" href="edit.html">Manager: add or edit calls</a></p>
       <p class="build" data-build></p>
+      <button class="motion-toggle" type="button" data-motion-toggle>Pause motion</button>
     </div>
     <div class="credit">✦ idea from Rejooo ✦</div>
   </div>
 </footer>
 
-<script type="module" src="js/ledger.js?v=10"></script>
+<script type="module" src="js/ledger.js?v=11"></script>
 </body>
 </html>

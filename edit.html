@@ -2,36 +2,35 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mission control · Albassam Fund</title>
 <meta name="description" content="The fund manager's desk for the Albassam Fund record.">
 <meta name="robots" content="noindex,nofollow">
-<meta name="theme-color" content="#0E1514">
+<meta name="theme-color" content="#07060A">
 <!-- og:url and og:image carry the live absolute URL -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="Albassam Fund">
 <meta property="og:description" content="Every stock call we make, measured against gold and the S&amp;P 500.">
 <meta property="og:image" content="https://azezalbassam.github.io/albassam-fund/assets/og.jpg">
 <meta property="og:url" content="https://azezalbassam.github.io/albassam-fund/edit.html">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230E1514'/%3E%3Cpath d='M19 20h26l9 26H10z' fill='none' stroke='%23E6B34E' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M32 27l5 6.5-5 6.5-5-6.5z' fill='%23E6B34E'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='1' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23FF4F79'/%3E%3Cstop offset='.55' stop-color='%23FF7A45'/%3E%3Cstop offset='1' stop-color='%23FFB547'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='1' y='1' width='30' height='30' rx='9' fill='url(%23g)'/%3E%3Cpath d='M8.5 24 16 8l7.5 16' fill='none' stroke='%231B0A06' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M11.6 18.6l3-2.6 2.2 1.8 3.4-3.4' fill='none' stroke='%231B0A06' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://firestore.googleapis.com">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin>
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
-<!-- fonts load without blocking the page: text shows at once, the faces swap in -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,800;125,900&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/site.css?v=10">
-<link rel="stylesheet" href="css/edit.css?v=10">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="css/site.css?v=11">
+<link rel="stylesheet" href="css/edit.css?v=11">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<div class="env" aria-hidden="true"></div>
+<div class="env" aria-hidden="true"><b></b><b></b><b></b></div>
 
 <header class="nav">
   <div class="wrap">
     <a class="brand" href="./" aria-label="Albassam Fund, home">
-      <svg class="mark" viewBox="0 0 40 28" aria-hidden="true"><path d="M9 3h22l7 22H2z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 8.5h16" stroke="currentColor" stroke-width="1.3" opacity=".55"/><path d="M20 12.5l3.6 4.3L20 21l-3.6-4.2z" fill="currentColor"/></svg>
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="mk" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FF4F79"/><stop offset=".55" stop-color="#FF7A45"/><stop offset="1" stop-color="#FFB547"/></linearGradient></defs><rect x="1" y="1" width="30" height="30" rx="9" fill="url(#mk)"/><path d="M8.5 24 16 8l7.5 16" fill="none" stroke="#1B0A06" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.6 18.6l3-2.6 2.2 1.8 3.4-3.4" fill="none" stroke="#1B0A06" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <b>Albassam Fund</b>
     </a>
     <nav aria-label="Main">
@@ -47,11 +46,14 @@
 
 <main id="main" tabindex="-1">
   <section class="desk-head wrap" aria-labelledby="deskTitle">
-    <div data-reveal>
-      <p class="kicker">MISSION CONTROL</p>
-      <h1 id="deskTitle">Fund desk.</h1>
+    <div class="dh-title">
+      <div>
+        <p class="kicker dh-in">MISSION CONTROL</p>
+        <h1 id="deskTitle" aria-label="Fund desk."><span class="hl" aria-hidden="true">Fund</span> <span class="hl" aria-hidden="true">desk.</span></h1>
+      </div>
+      <span class="gyro dh-in" style="--d:.5s" aria-hidden="true"><span class="gyro-in"><i></i><i></i><i></i></span><b class="gyro-core"></b></span>
     </div>
-    <div class="dh-side">
+    <div class="dh-side dh-in" style="--d:.35s">
       <p class="chip demo-chip" id="demoChip" hidden>Demo data. Practice mode, not the live fund.</p>
       <div class="auth" id="authBox" hidden>
         <span class="avatar" id="authPhoto" aria-hidden="true"></span>
@@ -62,8 +64,8 @@
   </section>
 
   <section class="gate wrap" id="gate" aria-label="Sign in">
-    <div class="panel gate-card" data-reveal>
-      <svg class="gate-mark" viewBox="0 0 40 28" aria-hidden="true"><path d="M9 3h22l7 22H2z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.5h16" stroke="currentColor" stroke-width="1" opacity=".55"/><path d="M20 12.5l3.6 4.3L20 21l-3.6-4.2z" fill="currentColor"/></svg>
+    <div class="glass glow gate-card" data-reveal>
+      <span class="gyro gate-gyro" aria-hidden="true"><span class="gyro-in"><i></i><i></i><i></i></span><b class="gyro-core"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="9" fill="url(#mk)"/><path d="M8.5 24 16 8l7.5 16" fill="none" stroke="#1B0A06" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.6 18.6l3-2.6 2.2 1.8 3.4-3.4" fill="none" stroke="#1B0A06" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></b></span>
       <p class="gate-copy">Only the fund manager can make changes. Sign in with the manager's Google account.</p>
       <button class="btn" id="signInBtn" type="button">Sign in with Google</button>
       <p class="gate-small">Family: use <a href="./">the main link</a>. No sign-in needed.</p>
@@ -72,20 +74,21 @@
 
   <div id="dash" hidden>
     <section class="kpi wrap" aria-label="The fund today">
-      <div class="panel kpi-card" data-reveal>
+      <div class="glass glow kpi-card" data-reveal>
+        <span class="radar" aria-hidden="true"></span>
         <div class="kpi-main">
           <p class="klabel">Fund value</p>
           <p class="kpi-value"><b class="num" id="kValue"><span class="skel w-big"></span></b><span class="num" id="kRet"></span></p>
+          <p class="quick-add" id="quickAdd" hidden><a class="btn" href="#newTitle">+ New call</a><a class="btn ghost" href="#pastTitle">Log a past call</a></p>
           <p class="kpi-meta">On a <b id="kPot">$100K</b> pot
             <button class="act" id="potEdit" type="button" aria-label="Change the starting pot" hidden>✎ pot</button></p>
           <p class="kpi-sub" id="kMeta">Counting the calls.</p>
-          <p class="quick-add" id="quickAdd" hidden><a class="btn" href="#newTitle">+ New call</a><a class="btn ghost" href="#pastTitle">Log a past call</a></p>
           <div class="inline-form pot-form" id="potForm" hidden></div>
         </div>
         <dl class="kpi-stats">
-          <div><dt>Open</dt><dd class="num" id="kOpen"><span class="skel w-num"></span></dd></div>
-          <div><dt>Closed</dt><dd class="num" id="kClosed"><span class="skel w-num"></span></dd></div>
-          <div><dt>Win rate</dt><dd class="num" id="kWin"><span class="skel w-num"></span></dd></div>
+          <div class="tile t-open tilt"><dt>Open</dt><dd class="num" id="kOpen"><span class="skel w-num"></span></dd></div>
+          <div class="tile t-closed tilt"><dt>Closed</dt><dd class="num" id="kClosed"><span class="skel w-num"></span></dd></div>
+          <div class="tile t-win tilt" id="kWinTile"><dt>Win rate</dt><dd class="num" id="kWin"><span class="skel w-num"></span></dd></div>
         </dl>
       </div>
     </section>
@@ -94,15 +97,15 @@
 
     <div class="desk wrap" id="desk">
       <section class="desk-active" aria-labelledby="activeTitle">
-        <div class="desk-h"><h2 id="activeTitle" tabindex="-1">Active calls</h2><span class="chip" id="activeCount">Loading</span></div>
+        <div class="desk-h" data-reveal><h2 id="activeTitle" tabindex="-1">Active calls</h2><span class="chip" id="activeCount">Loading</span></div>
         <div class="cards" id="activeCards" data-stagger>
-          <div class="call skel-card" aria-hidden="true"><span class="skel w40"></span><span class="skel w70"></span><span class="skel w55"></span></div>
-          <div class="call skel-card" aria-hidden="true"><span class="skel w40"></span><span class="skel w70"></span><span class="skel w55"></span></div>
+          <div class="call glass skel-card" aria-hidden="true"><span class="skel w40"></span><span class="skel w70"></span><span class="skel w55"></span></div>
+          <div class="call glass skel-card" aria-hidden="true"><span class="skel w40"></span><span class="skel w70"></span><span class="skel w55"></span></div>
         </div>
       </section>
 
       <aside class="desk-forms" id="forms" aria-label="Add calls">
-        <section class="panel fpanel" aria-labelledby="newTitle" data-reveal>
+        <section class="glass fpanel" aria-labelledby="newTitle" data-reveal>
           <h2 id="newTitle" tabindex="-1">New call</h2>
           <p class="fhint">Opens a live position. Its result follows the market price.</p>
           <form id="addForm">
@@ -124,7 +127,7 @@
           </form>
         </section>
 
-        <section class="panel fpanel" aria-labelledby="pastTitle" data-reveal>
+        <section class="glass fpanel" aria-labelledby="pastTitle" data-reveal>
           <h2 id="pastTitle" tabindex="-1">Log past call</h2>
           <p class="fhint">Already bought and sold. It lands in Closed with its result locked.</p>
           <form id="pastForm">
@@ -142,15 +145,15 @@
             </div>
             <label class="fld"><span>% of pot (optional)</span>
               <input id="pcWt" type="number" step="any" min="0" max="100" inputmode="decimal" placeholder="e.g. 25"></label>
-            <button class="btn ghost" type="submit">Log closed call</button>
+            <button class="btn" type="submit">Log closed call</button>
           </form>
         </section>
       </aside>
     </div>
 
     <section class="closed wrap" aria-labelledby="closedTitle">
-      <div class="desk-h"><h2 id="closedTitle" tabindex="-1">Closed calls</h2><span class="chip" id="closedCount">Loading</span></div>
-      <ol class="crows" id="closedList" data-stagger>
+      <div class="desk-h" data-reveal><h2 id="closedTitle" tabindex="-1">Closed calls</h2><span class="chip" id="closedCount">Loading</span></div>
+      <ol class="crows" id="closedList">
         <li class="crow skel-row" aria-hidden="true"><span class="skel w-stamp"></span><span class="skel w40"></span><span class="skel w70"></span></li>
         <li class="crow skel-row" aria-hidden="true"><span class="skel w-stamp"></span><span class="skel w40"></span><span class="skel w70"></span></li>
         <li class="crow skel-row" aria-hidden="true"><span class="skel w-stamp"></span><span class="skel w40"></span><span class="skel w70"></span></li>
@@ -163,7 +166,7 @@
         <h2 id="wireTitle">News that moves our calls.</h2>
         <p class="lede">Only real news and rumors on what we hold. No noise.</p>
       </div>
-      <div class="news" id="newsList"><div class="empty">Scanning the wire.</div></div>
+      <div class="news glass" id="newsList" data-reveal><div class="empty">Scanning the wire.</div></div>
     </section>
   </div>
 </main>
@@ -174,17 +177,19 @@
   <div class="wrap">
     <div>
       <a class="brand" href="./" aria-label="Albassam Fund, home">
-        <svg class="mark" viewBox="0 0 40 28" aria-hidden="true"><path d="M9 3h22l7 22H2z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 8.5h16" stroke="currentColor" stroke-width="1.3" opacity=".55"/><path d="M20 12.5l3.6 4.3L20 21l-3.6-4.2z" fill="currentColor"/></svg>
+        <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="9" fill="url(#mk)"/><path d="M8.5 24 16 8l7.5 16" fill="none" stroke="#1B0A06" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.6 18.6l3-2.6 2.2 1.8 3.4-3.4" fill="none" stroke="#1B0A06" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <b>Albassam Fund</b>
       </a>
       <p>Albassam Fund. A family record of every call since July 4, 2026.</p>
       <p>Prices from Yahoo Finance and may be delayed. Not investment advice.</p>
+      <p><a class="manager-link" href="edit.html">Manager: add or edit calls</a></p>
       <p class="build" data-build></p>
+      <button class="motion-toggle" type="button" data-motion-toggle>Pause motion</button>
     </div>
     <div class="credit">✦ idea from Rejooo ✦</div>
   </div>
 </footer>
 
-<script type="module" src="js/edit.js?v=10"></script>
+<script type="module" src="js/edit.js?v=11"></script>
 </body>
 </html>
