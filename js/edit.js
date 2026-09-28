@@ -7,13 +7,13 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=11";
-import { store } from "./store.js?v=11";
-import { live, state } from "./live.js?v=11";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=11";
-import { watchNews } from "./news.js?v=11";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=11";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, signedUsd, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=11";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=12";
+import { store } from "./store.js?v=12";
+import { live, state } from "./live.js?v=12";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=12";
+import { watchNews } from "./news.js?v=12";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=12";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, signedUsd, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=12";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";

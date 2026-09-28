@@ -19,8 +19,8 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin>
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/site.css?v=11">
-<link rel="stylesheet" href="css/home.css?v=11">
+<link rel="stylesheet" href="css/site.css?v=12">
+<link rel="stylesheet" href="css/home.css?v=12">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 </head>
 <body class="home">
@@ -48,8 +48,9 @@
 
   <!-- ============ HERO: a Higgsfield loop that plays on its own ============ -->
   <section class="hero" aria-label="Introduction">
-    <div class="hero-media" aria-hidden="true">
-      <video id="heroVideo" autoplay muted loop playsinline preload="auto"></video>
+    <div class="hero-media" id="heroMedia" aria-hidden="true">
+      <canvas id="market"></canvas>
+      <div class="mk-labels" id="mkLabels"></div>
     </div>
     <div class="hero-shade" aria-hidden="true"></div>
     <div class="wrap hero-inner">
@@ -241,6 +242,6 @@
   </div>
 </footer>
 
-<script type="module" src="js/home.js?v=11"></script>
+<script type="module" src="js/home.js?v=12"></script>
 </body>
 </html>

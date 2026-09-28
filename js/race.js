@@ -4,11 +4,11 @@
 // Everything re-renders from live(): trades, pot and quotes.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, roll, countTo, usd0, signedUsd, pct1, pts1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=11";
-import { live, state } from "./live.js?v=11";
-import { statPct } from "./roi.js?v=11";
-import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=11";
-import { raceChart, bindRaceControls } from "./chart.js?v=11";
+import { initShell, observeReveals, onReveal, roll, countTo, usd0, signedUsd, pct1, pts1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=12";
+import { live, state } from "./live.js?v=12";
+import { statPct } from "./roi.js?v=12";
+import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=12";
+import { raceChart, bindRaceControls } from "./chart.js?v=12";
 
 const $ = (id) => document.getElementById(id);
 const FAIL = "The race could not load right now. Try again in a minute.";

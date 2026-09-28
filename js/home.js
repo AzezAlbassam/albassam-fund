@@ -6,50 +6,26 @@
 // ============================================================
 
 import { initShell, observeReveals, onReveal, roll, countTo, reducedMotion, usd0, pct1, pts1, signedUsd, shortUsd,
-         day, esc, pctClass, logoHtml } from "./shell.js?v=11";
-import { live, state } from "./live.js?v=11";
-import { loadRace, raceSummary } from "./series.js?v=11";
-import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=11";
-import { simulate, statPct, derive, blendedPct } from "./roi.js?v=11";
-import { watchNews } from "./news.js?v=11";
+         day, esc, pctClass, logoHtml } from "./shell.js?v=12";
+import { live, state } from "./live.js?v=12";
+import { loadRace, raceSummary } from "./series.js?v=12";
+import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=12";
+import { simulate, statPct, derive, blendedPct } from "./roi.js?v=12";
+import { watchNews } from "./news.js?v=12";
 
 const $ = (s, r = document) => r.querySelector(s);
 initShell();
 
-/* =================== HERO =================== */
-// one video per screen shape, so phones never download the wide cut
-const video = $("#heroVideo"), media = $(".hero-media");
-const phoneMQ = matchMedia("(max-width: 720px), (orientation: portrait) and (max-width: 1024px)");
-function pickVideo() {
-  const base = phoneMQ.matches ? "assets/hero-loop-phone" : "assets/hero-loop";
-  if (video.dataset.base === base) return;
-  video.dataset.base = base;
-  media.style.backgroundImage = `url('${base}.jpg')`;
-  video.classList.remove("on");
-  video.poster = base + ".jpg";
-  video.src = base + ".mp4";
-  video.play().catch(() => {});
-}
-video.addEventListener("playing", () => video.classList.add("on"));
-video.addEventListener("error", () => video.classList.remove("on"));
-phoneMQ.addEventListener("change", pickVideo);
-pickVideo();
-
-// the video leans with the mouse, a little depth for free
-if (matchMedia("(pointer: fine)").matches && !reducedMotion.matches) {
-  let tx = 0, ty = 0, x = 0, y = 0, raf = null;
-  const step = () => {
-    x += (tx - x) * 0.06; y += (ty - y) * 0.06;
-    video.style.setProperty("--px", x.toFixed(2) + "px");
-    video.style.setProperty("--py", y.toFixed(2) + "px");
-    raf = Math.abs(tx - x) + Math.abs(ty - y) > 0.1 ? requestAnimationFrame(step) : null;
-  };
-  addEventListener("pointermove", (e) => {
-    if (scrollY > innerHeight) return;
-    tx = (e.clientX / innerWidth - 0.5) * -28; ty = (e.clientY / innerHeight - 0.5) * -18;
-    raf ??= requestAnimationFrame(step);
-  }, { passive: true });
-}
+/* =================== HERO: the live 3D market =================== */
+const media = $("#heroMedia");
+let market = null;
+import("./market.js?v=12")
+  .then(m => m.startMarket($("#market"), $("#mkLabels")))
+  .then(mk => { market = mk; if (race) market.setData(race, state.trades, pctOf); onHeroScroll(); })
+  .catch(err => { console.warn("3D market unavailable:", err); media.classList.add("fallback"); });
+const hero = $(".hero");
+function onHeroScroll() { market?.setScroll(Math.min(1, Math.max(0, scrollY / (hero.offsetHeight || 1)))); }
+addEventListener("scroll", onHeroScroll, { passive: true });
 
 // the title builds itself letter by letter
 let ci = 0;
@@ -76,6 +52,7 @@ async function refreshRace() {
   race = r;
   raceFailed = !race && state.trades.some(t => t.wt > 0);
   chart.set(race);
+  market?.setData(race, state.trades, pctOf);
   if (raceFailed) chart.fail(RACE_FAIL);
   legend(); renderScore(); renderBars();
 }
@@ -250,7 +227,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startOrbit } = await import("./orbit.js?v=11");
+    const { startOrbit } = await import("./orbit.js?v=12");
     orbit = await startOrbit($("#orbit"), $("#orbitLabels"), renderOrbitCard);
     feedOrbit();
   } catch (err) {

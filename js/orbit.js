@@ -9,9 +9,9 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
-const RADII = [2.35, 3.2, 4.05];
+const RADII = [2.1, 2.75, 3.4];
 const TILTS = [[0.0, 0.0], [0.28, 0.35], [-0.22, -0.4]];
-const COL = { win: 0x4ade9a, loss: 0xff5470, open: 0xffb547 };
+const COL = { win: 0x22d38a, loss: 0xff4668, open: 0xffb02e };
 
 function dotTexture() {
   const c = document.createElement("canvas"); c.width = c.height = 64;
@@ -29,7 +29,7 @@ export async function startOrbit(canvas, labelsEl, onPick) {
   const scene = new THREE.Scene();
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.45;   // keep the sunset colors rich, not washed out
+  scene.environmentIntensity = 0.25;   // keep the colors rich, not washed out
 
   const cam = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
   cam.position.set(0, 2.4, 10.2);
@@ -70,7 +70,7 @@ export async function startOrbit(canvas, labelsEl, onPick) {
     const g = new THREE.Group();
     g.rotation.x = TILTS[i][0]; g.rotation.z = TILTS[i][1];
     const ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.01, 8, 220),
-      new THREE.MeshBasicMaterial({ color: i === 0 ? 0xff7a45 : i === 1 ? 0xff4f79 : 0xffb547, transparent: true, opacity: 0.42, blending: THREE.AdditiveBlending, depthWrite: false }));
+      new THREE.MeshBasicMaterial({ color: i === 0 ? 0xff7a45 : i === 1 ? 0xff4f79 : 0xffb547, transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false }));
     ring.rotation.x = Math.PI / 2;
     g.add(ring);
     world.add(g);
@@ -102,7 +102,7 @@ export async function startOrbit(canvas, labelsEl, onPick) {
       const pct = pctOf(t), kind = t.status === "active" ? "open" : (pct ?? 0) < 0 ? "loss" : "win";
       const ri = i % 3, r = RADII[ri];
       const size = 0.13 + Math.sqrt(Math.max(t.wt || 4, 4)) * 0.034;
-      const mat = new THREE.MeshPhysicalMaterial({ color: COL[kind], emissive: COL[kind], emissiveIntensity: 0.6, metalness: 0.2, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.05 });
+      const mat = new THREE.MeshPhysicalMaterial({ color: COL[kind], emissive: COL[kind], emissiveIntensity: 0.85, metalness: 0.15, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.08 });
       const mesh = new THREE.Mesh(planetGeo, mat);
       mesh.scale.setScalar(size);
       const g = new THREE.Sprite(new THREE.SpriteMaterial({ map: dot, color: COL[kind], transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
@@ -156,7 +156,7 @@ export async function startOrbit(canvas, labelsEl, onPick) {
     if (!w || !h) return;
     renderer.setSize(w, h, false);
     cam.aspect = w / h;
-    cam.position.z = w / h < 0.9 ? 12.4 : 10.2;
+    cam.position.z = w / h < 0.9 ? 15 : 12.6;   // the outer orbit always fits inside the frame
     cam.updateProjectionMatrix();
   }
   new ResizeObserver(size).observe(canvas);
@@ -183,7 +183,8 @@ export async function startOrbit(canvas, labelsEl, onPick) {
       const x = (v.x * 0.5 + 0.5) * W, y = (-v.y * 0.5 + 0.5) * H;
       p.label.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,-170%)`;
       const behind = camDist > cam.position.length() + 0.4 && Math.hypot(v.x, v.y) < 0.2;
-      p.label.style.opacity = behind ? "0" : p === selected || p === hovered ? "1" : ".82";
+      const outside = x < 40 || x > W - 40 || y < 30 || y > H - 10;   // never let a label hang off the frame
+      p.label.style.opacity = behind || outside ? "0" : p === selected || p === hovered ? "1" : ".85";
     }
     renderer.render(scene, cam);
   }
