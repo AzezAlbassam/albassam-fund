@@ -4,11 +4,11 @@
 // Everything re-renders from live(): trades, pot and quotes.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, roll, countTo, usd0, signedUsd, pct1, pts1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=13";
-import { live, state } from "./live.js?v=13";
-import { statPct } from "./roi.js?v=13";
-import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=13";
-import { raceChart, bindRaceControls } from "./chart.js?v=13";
+import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=14";
+import { live, state } from "./live.js?v=14";
+import { statPct } from "./roi.js?v=14";
+import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=14";
+import { raceChart, bindRaceControls } from "./chart.js?v=14";
 
 const $ = (id) => document.getElementById(id);
 const FAIL = "The race could not load right now. Try again in a minute.";
@@ -63,7 +63,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=13");
+    const { startTowers } = await import("./bars3d.js?v=14");
     towers = await startTowers($("pdCanvas"), $("pdLabels"), { yaw0: -0.45, pitch: 0.35, spin: 0.06 });
     podium();
   } catch (err) { console.warn("3D podium unavailable:", err); $("pdStage").classList.add("fallback"); }
@@ -162,7 +162,7 @@ function bars() {
       <div class="lb-name">${logoHtml(r.t)}<span><b>${esc(r.t.ticker)}</b>
         <small>${pct1(r.p)} × ${+(+r.t.wt).toFixed(1)}% of pot${r.t.status === "active" ? " · open" : ""}</small></span></div>
       <div class="lb-track" aria-hidden="true"><i class="lb-bar" style="width:${(Math.abs(r.pts) / span * 100).toFixed(2)}%;--d:${Math.min(i, 12) * 70}ms"></i></div>
-      <div class="lb-val"><b>${pts1(r.pts)}</b><small>${signedUsd(r.pts * state.pot / 100)}</small></div>
+      <div class="lb-val"><b>${pct1(r.pts)}</b><small>on the pot</small></div>
     </li>`).join("");
   playOnce(el, ".lb-val b");
 }

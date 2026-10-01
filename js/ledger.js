@@ -5,10 +5,10 @@
 // so expanded rows, sparklines and reveals survive every change.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, countTo, roll, usd0, usd2, signedUsd, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=13";
-import { live, state } from "./live.js?v=13";
-import { derive, blendedPct, today, exitPx } from "./roi.js?v=13";
-import { history } from "./history.js?v=13";
+import { initShell, observeReveals, onReveal, countTo, roll, usd2, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=14";
+import { live, state } from "./live.js?v=14";
+import { derive, blendedPct, today, exitPx } from "./roi.js?v=14";
+import { history } from "./history.js?v=14";
 
 initShell();
 
@@ -29,7 +29,7 @@ let byId = new Map();
 /* ----------------------- per-call numbers ----------------------- */
 const isOpen = (t) => t.status !== "closed";
 const pctOf = (t) => isOpen(t) ? blendedPct(t, state.quotes[t.ticker]?.c ?? null) : (t.finalPct ?? null);
-const potUsd = (t, p) => (t.wt > 0 && p != null ? (t.wt / 100) * (p / 100) * state.pot : null);
+const potPts = (t, p) => (t.wt > 0 && p != null ? (t.wt * p) / 100 : null);   // % the call added to the pot
 const endOf = (t) => (isOpen(t) ? today() : t.closed || t.opened || "");
 const money = (v) => (v == null || isNaN(v) ? "…" : usd2(Number(v)));
 const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
@@ -46,7 +46,7 @@ const SORTS = {
   new: (a, b) => cmp(endOf(b), endOf(a)) || cmp(b.opened || "", a.opened || ""),
   gain: (a, b) => (pctOf(b) ?? LOW) - (pctOf(a) ?? LOW),
   size: (a, b) => (b.wt > 0 ? b.wt : LOW) - (a.wt > 0 ? a.wt : LOW) || (pctOf(b) ?? LOW) - (pctOf(a) ?? LOW),
-  profit: (a, b) => (potUsd(b, pctOf(b)) ?? LOW) - (potUsd(a, pctOf(a)) ?? LOW),
+  profit: (a, b) => (potPts(b, pctOf(b)) ?? LOW) - (potPts(a, pctOf(a)) ?? LOW),
 };
 
 /* ----------------------- row markup ----------------------- */
@@ -69,9 +69,9 @@ function pxHtml(t) {
 
 function potHtml(t, p) {
   if (!(t.wt > 0)) return `<span class="sz muted">Unsized</span>`;
-  const v = potUsd(t, p);
+  const v = potPts(t, p);
   return `<span class="sz">${+Number(t.wt).toFixed(1)}% of pot</span>` +
-    (v == null ? "" : `<span class="money ${v < 0 ? "loss" : "pos"}"><b>${signedUsd(v)}</b> on the pot</span>`);
+    (v == null ? "" : `<span class="money ${v < 0 ? "loss" : "pos"}"><b>${pct1(v)}</b> on the pot</span>`);
 }
 
 function txHtml(t) {
@@ -155,7 +155,7 @@ function paintSummary() {
   const closed = state.trades.filter(t => !isOpen(t) && t.finalPct != null);
   const won = closed.filter(t => t.finalPct > 0), lost = closed.filter(t => t.finalPct < 0);
   const mean = (a) => (a.length ? a.reduce((s, t) => s + t.finalPct, 0) / a.length : null);
-  const banked = closed.reduce((s, t) => s + (t.wt > 0 ? (t.wt / 100) * (t.finalPct / 100) * state.pot : 0), 0);
+  const banked = closed.reduce((s, t) => s + (t.wt > 0 ? (t.wt * t.finalPct) / 100 : 0), 0);
   const n = closed.length, calls = state.trades.length;
   onReveal(tally, () => {
     stat("calls", calls, v => Math.round(v));
@@ -163,7 +163,7 @@ function paintSummary() {
     stat("rate", n ? (won.length / n) * 100 : null, v => Math.round(v) + "%");
     stat("avgw", won.length ? mean(won) : null, pct1, "", "pos");
     stat("avgl", lost.length ? mean(lost) : null, pct1, "", "loss");
-    stat("bank", banked, usd0, "", banked < 0 ? "loss" : "grad-text", true);
+    stat("bank", banked, pct1, "", banked < 0 ? "loss" : "grad-text", true);
     $("#rateBar").style.setProperty("--w", n ? won.length / n : 0);
     const pips = closed.slice(0, 40).map(t => t.finalPct > 0).sort((a, b) => b - a);
     const pk = pips.join();

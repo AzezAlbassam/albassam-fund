@@ -7,13 +7,13 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=13";
-import { store } from "./store.js?v=13";
-import { live, state } from "./live.js?v=13";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=13";
-import { watchNews } from "./news.js?v=13";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=13";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, signedUsd, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=13";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=14";
+import { store } from "./store.js?v=14";
+import { live, state } from "./live.js?v=14";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=14";
+import { watchNews } from "./news.js?v=14";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=14";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=14";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -137,8 +137,8 @@ function rowHtml(t, i) {
 
 /* ----------------------- render: live numbers only ----------------------- */
 function setOnPot(el, wtTimesPct, suffix = "") {
-  const v = wtTimesPct == null ? null : (wtTimesPct * state.pot) / 1e4;
-  el.textContent = v == null ? WAIT : signedUsd(v) + suffix;
+  const v = wtTimesPct == null ? null : wtTimesPct / 100;   // % the call adds to the pot
+  el.textContent = v == null ? WAIT : pct1(v) + suffix;
   el.className = pctClass(v);
 }
 
@@ -172,7 +172,7 @@ function updateLive() {
   ret.className = "num " + pctClass(sim.totalPct);
   $("#kPot").textContent = shortUsd(state.pot);
   const unsized = state.trades.filter(t => !(t.wt > 0)).length;
-  $("#kMeta").textContent = `Banked ${signedUsd(sim.realizedDollars)} · open ${pct1(sim.openPct)}` +
+  $("#kMeta").textContent = `Banked ${pct1(sim.realizedPct)} · open ${pct1(sim.openPct)}` +
     (unsized ? ` · ${unsized} call${unsized > 1 ? "s" : ""} with no pot size yet` : "");
   roll($("#kOpen"), String(st.nOpen));
   roll($("#kClosed"), String(st.nClosed));
@@ -440,6 +440,7 @@ if (DEMO) {
   $("#gate").hidden = true;
   $("#dash").hidden = false;
   $("#demoChip").hidden = false;
+  queueMicrotask(() => familyAdmin(true));   // after this module has finished loading
 } else {
   (async () => {
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
@@ -469,6 +470,7 @@ if (DEMO) {
       // remember the owner on this device: every page then shows the "+ New call" button
       try { owner ? localStorage.setItem("af:owner", "1") : localStorage.removeItem("af:owner"); } catch (e) {}
       renderAll();
+      familyAdmin(owner);
       // arriving from a "+ New call" link: go straight to the form
       if (owner && location.hash === "#new" && !renderAll.jumped) {
         renderAll.jumped = true;
@@ -477,6 +479,55 @@ if (DEMO) {
     });
   })().catch(err => { console.error(err); toast("Could not load sign-in. Check the connection, then reload.", true); });
 }
+
+/* ----------------------- the family race: who is let in ----------------------- */
+// The manager approves each family member once. Names and emails only:
+// nobody's holdings are readable from here (firestore.rules). Shown only
+// while the manager is signed in; signing out clears it from the page.
+let famApi = null, famStop = null, famAsks = [], famMems = [], famSeq = 0;
+function familyAdmin(on = true) {
+  $("#famAdmin").hidden = !on;
+  if (!on) {
+    famSeq++; famStop?.(); famStop = null; famAsks = []; famMems = [];
+    $("#faAsks").innerHTML = $("#faMembers").innerHTML = "";
+    return;
+  }
+  if (famStop) return;
+  const my = ++famSeq;
+  famStop = () => {};   // starting
+  import("./folio.js?v=14").then(m => m.backend()).then((api) => {
+    if (my !== famSeq) return;   // signed out while it loaded
+    famApi = api;
+    famStop = api.watchFamily(({ requests, members }) => { famAsks = requests; famMems = members; paintFamily(); },
+      (err) => { console.error(err); $("#famAdminCount").textContent = "Offline"; });
+  }).catch(err => { console.error(err); famStop = null; $("#famAdminCount").textContent = "Unavailable"; });
+}
+function paintFamily() {
+  const row = (who, btns) => `<li class="fa-row"><span class="fa-who"><b>${esc(who.name || who.email || who.id)}</b><small>${esc(who.email || who.id)}</small></span><span class="fa-btns">${btns}</span></li>`;
+  $("#famAdminCount").textContent = `${famMems.length} in · ${famAsks.length} waiting`;
+  $("#faAsks").innerHTML = famAsks.length ? famAsks.map((r, i) => row(r,
+    `<button class="act" type="button" data-fa="approve" data-i="${i}">Let in</button><button class="act del" type="button" data-fa="decline" data-i="${i}">Decline</button>`)).join("")
+    : `<li class="fa-none">Nobody is waiting.</li>`;
+  $("#faMembers").innerHTML = famMems.length ? famMems.map((r, i) => row({ ...r, email: r.id },
+    `<button class="act del" type="button" data-fa="remove" data-i="${i}">Remove</button>`)).join("")
+    : `<li class="fa-none">No one yet. Send the family the Family page link.</li>`;
+}
+$("#famAdmin").addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-fa]");
+  if (!b || !famApi) return;
+  const act = b.dataset.fa, who = (act === "remove" ? famMems : famAsks)[+b.dataset.i];
+  if (!who) return;
+  if (act === "remove" && !b.classList.contains("warn")) {   // two taps: removing also takes them off the board
+    b.classList.add("warn"); b.textContent = "Sure?";
+    setTimeout(() => { b.classList.remove("warn"); b.textContent = "Remove"; }, 3500);
+    return;
+  }
+  b.disabled = true;
+  try {
+    await (act === "approve" ? famApi.approve(who) : act === "decline" ? famApi.decline(who) : famApi.removeMember(who));
+    toast(act === "approve" ? `${who.name || who.email} is in the race.` : act === "decline" ? "Request declined." : `${who.name || who.id} is out of the race.`);
+  } catch (err) { console.error(err); toast("Could not update the family list. Try again.", true); b.disabled = false; }
+});
 
 /* ----------------------- data (last: demo data arrives synchronously) ----------------------- */
 function offline() {

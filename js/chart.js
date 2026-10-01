@@ -9,7 +9,7 @@
 //   c.view({ bench: "gold"|"spx"|"both", range: "1M"|"3M"|"ALL", unit: "pct"|"usd" });
 // ============================================================
 
-import { onReveal, observeReveals, reducedMotion, day, shortUsd } from "./shell.js?v=13";
+import { onReveal, observeReveals, reducedMotion, day, shortUsd } from "./shell.js?v=14";
 
 const NS = "http://www.w3.org/2000/svg";
 const RANGES = { "1M": 22, "3M": 64 };
@@ -170,7 +170,7 @@ export function raceChart(el) {
 }
 
 // Round tick values across [lo, hi].
-function niceTicks(lo, hi, count) {
+export function niceTicks(lo, hi, count) {
   const raw = (hi - lo) / count, mag = Math.pow(10, Math.floor(Math.log10(raw)));
   const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw) || 10 * mag;
   const out = [];

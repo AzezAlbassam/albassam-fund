@@ -4,7 +4,7 @@
 // build stamp and the "new version" bar. Plus small formatters.
 // ============================================================
 
-import { BUILD } from "./config.js?v=13";
+import { BUILD } from "./config.js?v=14";
 
 export const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -74,8 +74,17 @@ export function initShell() {
   // the owner's "+ New call" button, only on a device where the manager signed in
   try {
     if (localStorage.getItem("af:owner") === "1" && !document.getElementById("addForm"))
-      import("./owner.js?v=13").then(m => m.startOwner()).catch(e => console.warn("quick add unavailable:", e));
+      import("./owner.js?v=14").then(m => m.startOwner()).catch(e => console.warn("quick add unavailable:", e));
   } catch (e) { /* storage blocked */ }
+
+  // a family member's line on the board refreshes whenever they open any page
+  try {
+    if (localStorage.getItem("af:racer") === "1" && !document.getElementById("mineDesk"))
+      setTimeout(() => import("./folio.js?v=14").then(m => m.syncMine()).catch(e => console.warn("board refresh skipped:", e)), 4000);
+  } catch (e) { /* storage blocked */ }
+
+  // "Get the app": install on the phone's home screen
+  installer();
 
   // build stamp + update bar
   document.querySelectorAll("[data-build]").forEach(el => (el.textContent = "build " + BUILD));
@@ -152,6 +161,42 @@ export function roll(el, text) {
     const col = cols[k++];
     col.style.transitionDelay = (reducedMotion.matches ? 0 : k * 0.06) + "s";
     col.style.transform = `translateY(-${+ch}em)`;
+  });
+}
+
+// The site installs like an app: Android gets the browser's own install
+// prompt; iPhone gets the two Safari steps (Apple offers no prompt).
+let deferred = null;
+addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferred = e; });
+function installer() {
+  const btn = document.querySelector("[data-install]");
+  if (!btn) return;
+  if (matchMedia("(display-mode: standalone)").matches || navigator.standalone) { btn.hidden = true; return; }
+  btn.addEventListener("click", async () => {
+    if (deferred) {
+      const e = deferred; deferred = null;
+      try { await e.prompt(); return; } catch (err) { /* the browser said no: show the steps instead */ }
+    }
+    let d = document.querySelector(".install-sheet");
+    if (!d) {
+      const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      d = document.createElement("dialog");
+      d.className = "install-sheet glass";
+      d.setAttribute("aria-labelledby", "instTitle");
+      d.innerHTML = `<h2 id="instTitle">Put the fund on your home screen</h2>
+        <ol>${ios
+          ? "<li>Open this page in <b>Safari</b>.</li><li>Tap <b>Share</b> <span aria-hidden=\"true\">(the square with an arrow)</span>.</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li>"
+          : "<li>Open this page in <b>Chrome</b>.</li><li>Tap the <b>⋮</b> menu.</li><li>Tap <b>Install app</b> or <b>Add to Home screen</b>.</li>"}</ol>
+        <p>It opens full screen with its own icon, like any app. Only people with the link can get it.</p>
+        <button class="btn" type="button">Got it</button>`;
+      d.querySelector("button").addEventListener("click", () => d.close());
+      d.addEventListener("click", (e) => {   // a tap outside the sheet closes it (not one on its own padding)
+        const r = d.getBoundingClientRect();
+        if (e.target === d && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) d.close();
+      });
+      document.body.appendChild(d);
+    }
+    d.showModal();
   });
 }
 

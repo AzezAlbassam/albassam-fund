@@ -6,6 +6,13 @@
 <title>The Ledger · Albassam Fund</title>
 <meta name="description" content="Every Albassam Fund call on the record. Wins and losses, sized and dated. Nothing deleted.">
 <meta name="theme-color" content="#07060A">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Albassam">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <!-- og:url and og:image carry the live absolute URL -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="Albassam Fund">
@@ -20,8 +27,8 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
 <!-- fonts load without blocking the page: text shows at once, the faces swap in -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/site.css?v=13">
-<link rel="stylesheet" href="css/ledger.css?v=13">
+<link rel="stylesheet" href="css/site.css?v=14">
+<link rel="stylesheet" href="css/ledger.css?v=14">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -37,6 +44,7 @@
       <ul class="nav-links">
         <li><a href="race.html">The Race</a></li>
         <li><a href="ledger.html" aria-current="page">The Ledger</a></li>
+        <li><a href="family.html">Family</a></li>
         <li class="wire-link"><a href="./#wire">The Wire</a></li>
       </ul>
     </nav>
@@ -120,6 +128,7 @@
       </a>
       <p>Albassam Fund. A family record of every call since July 4, 2026.</p>
       <p>Prices from Yahoo Finance and may be delayed. Not investment advice.</p>
+      <p><button class="install-link" type="button" data-install>Get the app on your phone</button></p>
       <p><a class="manager-link" href="edit.html">Manager: add or edit calls</a></p>
       <p class="build" data-build></p>
       <button class="motion-toggle" type="button" data-motion-toggle>Pause motion</button>
@@ -128,6 +137,6 @@
   </div>
 </footer>
 
-<script type="module" src="js/ledger.js?v=13"></script>
+<script type="module" src="js/ledger.js?v=14"></script>
 </body>
 </html>

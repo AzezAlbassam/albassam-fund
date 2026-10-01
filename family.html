@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Family Race · Albassam Fund</title>
+<meta name="description" content="Every family portfolio, racing by its return in %. Holdings stay private.">
+<meta name="theme-color" content="#07060A">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Albassam">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- og:url and og:image carry the live absolute URL -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Albassam Fund">
+<meta property="og:description" content="Every stock call we make, measured against gold and the S&amp;P 500.">
+<meta property="og:image" content="https://azezalbassam.github.io/albassam-fund/assets/og.jpg">
+<meta property="og:url" content="https://azezalbassam.github.io/albassam-fund/family.html">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='1' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23FF4F79'/%3E%3Cstop offset='.55' stop-color='%23FF7A45'/%3E%3Cstop offset='1' stop-color='%23FFB547'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='1' y='1' width='30' height='30' rx='9' fill='url(%23g)'/%3E%3Cpath d='M8.5 24 16 8l7.5 16' fill='none' stroke='%231B0A06' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M11.6 18.6l3-2.6 2.2 1.8 3.4-3.4' fill='none' stroke='%231B0A06' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="css/site.css?v=14">
+<link rel="stylesheet" href="css/family.css?v=14">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="env" aria-hidden="true"><b></b><b></b><b></b></div>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="Albassam Fund, home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="mk" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FF4F79"/><stop offset=".55" stop-color="#FF7A45"/><stop offset="1" stop-color="#FFB547"/></linearGradient></defs><rect x="1" y="1" width="30" height="30" rx="9" fill="url(#mk)"/><path d="M8.5 24 16 8l7.5 16" fill="none" stroke="#1B0A06" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.6 18.6l3-2.6 2.2 1.8 3.4-3.4" fill="none" stroke="#1B0A06" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <b>Albassam Fund</b>
+    </a>
+    <nav aria-label="Main">
+      <ul class="nav-links">
+        <li><a href="race.html">The Race</a></li>
+        <li><a href="ledger.html">The Ledger</a></li>
+        <li><a href="family.html" aria-current="page">Family</a></li>
+        <li class="wire-link"><a href="./#wire">The Wire</a></li>
+      </ul>
+    </nav>
+    <span class="live-pill" title="Updates live"><span>Live</span></span>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+
+  <!-- header: the podium, every family portfolio as a 3D tower -->
+  <section class="fh" aria-labelledby="fhTitle">
+    <div class="wrap fh-grid">
+      <div class="fh-copy" data-stagger>
+        <p class="kicker">The family race</p>
+        <h1 id="fhTitle">Our portfolios, <span class="grad-text">racing.</span></h1>
+        <p class="lede">Everyone adds their own stocks. The board shows only each person's return in %, so you can hold it up against your own. Your shares and prices stay private: nobody else can see them, not even the manager.</p>
+        <div class="btn-row">
+          <a class="btn" href="#mine">Add my portfolio</a>
+          <a class="btn ghost" href="#board">See the standings</a>
+        </div>
+      </div>
+      <div class="glass glow fh-card">
+        <div class="pd-stage" id="podStage">
+          <canvas id="podCanvas" role="img" aria-label="3D podium: every family portfolio as a tower, the leader in the middle"></canvas>
+          <div class="t3-labels" id="podLabels" aria-hidden="true"></div>
+        </div>
+        <p class="fh-hint" aria-hidden="true">Drag to spin</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- the standings: one line per portfolio, our fund as the pace setter -->
+  <section class="section fb" id="board" aria-labelledby="boardTitle">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <p class="kicker" data-reveal>The standings</p>
+          <h2 id="boardTitle" data-reveal>Who is ahead.</h2>
+          <p class="lede" data-reveal>Each line is one portfolio's return on what it cost, recorded day by day from the day its owner joined. Our fund runs alongside as the pace setter.</p>
+        </div>
+      </div>
+      <div class="fb-grid">
+        <div class="glass glow fb-chart" data-reveal>
+          <div class="race-controls" id="famControls">
+            <div class="seg" role="group" aria-label="Range">
+              <button type="button" data-range="1M" aria-pressed="true">1M</button>
+              <button type="button" data-range="3M" aria-pressed="false">3M</button>
+              <button type="button" data-range="ALL" aria-pressed="false">All</button>
+            </div>
+          </div>
+          <div id="famChart" style="--race-h:clamp(300px,40vw,460px)"></div>
+        </div>
+        <ol class="glass fb-list" id="famList" data-reveal aria-label="Standings, best return first">
+          <li class="state-note busy">Loading the board…</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- my portfolio: private to the signed-in member -->
+  <section class="section mine" id="mine" aria-labelledby="mineTitle">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <p class="kicker" data-reveal>My portfolio</p>
+          <h2 id="mineTitle" data-reveal>Yours, and only yours.</h2>
+          <p class="lede" data-reveal>Add each stock with the shares you hold and your average buy price, the same numbers your broker app shows. The race only ever sees the % that comes out.</p>
+        </div>
+      </div>
+
+      <div class="glass glow mine-gate" id="mineGate" data-reveal>
+        <p class="mine-gate-copy">Sign in with Google to add your portfolio.</p>
+        <button class="btn" id="mineIn" type="button">Sign in with Google</button>
+        <ul class="mine-promise">
+          <li>Only you can see your stocks, shares and prices.</li>
+          <li>The board shows your name and your % only.</li>
+          <li>Family only: the manager lets each person in once.</li>
+          <li>Leave any time: one button deletes it all.</li>
+        </ul>
+        <p class="mine-msg" id="gateMsg" role="status"></p>
+      </div>
+
+      <div class="glass glow mine-gate" id="mineJoin" hidden>
+        <p class="mine-gate-copy">Ask to join the family race.</p>
+        <p class="mine-join-copy" id="joinCopy">Checking the family list…</p>
+        <div class="btn-row">
+          <button class="btn" id="joinAsk" type="button" hidden>Ask to join</button>
+          <button class="btn ghost" id="joinOut" type="button">Sign out</button>
+        </div>
+        <p class="mine-msg" id="joinMsg" role="status"></p>
+      </div>
+
+      <div class="mine-grid" id="mineDesk" hidden>
+        <div class="glass glow mine-main">
+          <div class="mine-top">
+            <div>
+              <p class="mine-label">Your return</p>
+              <p class="mine-pct num" id="minePct">…</p>
+              <p class="mine-sub" id="mineSub">Only you see this card.</p>
+            </div>
+            <div class="mine-who">
+              <span class="mine-photo" id="minePhoto" aria-hidden="true"></span>
+              <span class="mine-id"><b id="mineName"></b><small id="mineEmail"></small></span>
+              <button class="btn ghost sm" id="mineOut" type="button">Sign out</button>
+            </div>
+          </div>
+          <div class="tscroll" tabindex="0" role="region" aria-label="My holdings">
+            <table class="hold">
+              <thead><tr><th scope="col">Stock</th><th scope="col">Shares</th><th scope="col">Avg price</th><th scope="col">Now</th><th scope="col">Return</th><th scope="col"><span class="sr">Actions</span></th></tr></thead>
+              <tbody id="holdRows"></tbody>
+            </table>
+          </div>
+          <p class="hold-empty" id="holdEmpty">No stocks yet. Add your first one.</p>
+        </div>
+
+        <div class="mine-side">
+          <form class="glass mine-form" id="holdForm" novalidate>
+            <h3 id="formTitle">Add a stock</h3>
+            <label class="fld"><span>Ticker (US market)</span><input name="tk" type="text" placeholder="e.g. MU" maxlength="10" autocomplete="off" autocapitalize="characters" spellcheck="false" required></label>
+            <div class="fld-row">
+              <label class="fld"><span>Shares</span><input name="sh" type="number" step="any" min="0" inputmode="decimal" placeholder="e.g. 40"></label>
+              <label class="fld"><span>Avg buy price $</span><input name="avg" type="number" step="any" min="0" inputmode="decimal" placeholder="e.g. 96.50"></label>
+            </div>
+            <p class="mine-msg" id="formMsg" role="status"></p>
+            <div class="btn-row">
+              <button class="btn" type="submit" id="formGo">Add to my portfolio</button>
+              <button class="btn ghost" type="button" id="formCancel" hidden>Cancel</button>
+            </div>
+          </form>
+
+          <div class="glass mine-opts">
+            <label class="fld"><span>Your name on the board</span><input id="boardName" type="text" maxlength="24" autocomplete="nickname" placeholder="e.g. Aziz"></label>
+            <label class="toggle"><input id="boardShow" type="checkbox" checked> <span>Show me in the family race</span></label>
+            <p class="mine-msg" id="optsMsg" role="status"></p>
+            <button class="leave" id="mineLeave" type="button">Leave the race and delete my portfolio</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div>
+      <a class="brand" href="./" aria-label="Albassam Fund, home">
+        <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="9" fill="url(#mk)"/><path d="M8.5 24 16 8l7.5 16" fill="none" stroke="#1B0A06" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.6 18.6l3-2.6 2.2 1.8 3.4-3.4" fill="none" stroke="#1B0A06" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <b>Albassam Fund</b>
+      </a>
+      <p>Albassam Fund. A family record of every call since July 4, 2026.</p>
+      <p>Prices from Yahoo Finance and may be delayed. Not investment advice.</p>
+      <p><button class="install-link" type="button" data-install>Get the app on your phone</button></p>
+      <p><a class="manager-link" href="edit.html">Manager: add or edit calls</a></p>
+      <p class="build" data-build></p>
+      <button class="motion-toggle" type="button" data-motion-toggle>Pause motion</button>
+    </div>
+    <div class="credit">✦ idea from Rejooo ✦</div>
+  </div>
+</footer>
+
+<script type="module" src="js/family.js?v=14"></script>
+</body>
+</html>

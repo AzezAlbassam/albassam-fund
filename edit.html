@@ -7,6 +7,12 @@
 <meta name="description" content="The fund manager's desk for the Albassam Fund record.">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#07060A">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Albassam">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <!-- og:url and og:image carry the live absolute URL -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="Albassam Fund">
@@ -20,8 +26,8 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin>
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/site.css?v=13">
-<link rel="stylesheet" href="css/edit.css?v=13">
+<link rel="stylesheet" href="css/site.css?v=14">
+<link rel="stylesheet" href="css/edit.css?v=14">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -37,6 +43,7 @@
       <ul class="nav-links">
         <li><a href="race.html">The Race</a></li>
         <li><a href="ledger.html">The Ledger</a></li>
+        <li><a href="family.html">Family</a></li>
         <li class="wire-link"><a href="./#wire">The Wire</a></li>
       </ul>
     </nav>
@@ -160,6 +167,17 @@
       </ol>
     </section>
 
+    <section class="famadmin wrap" id="famAdmin" aria-labelledby="famAdminTitle" hidden>
+      <div class="desk-h"><h2 id="famAdminTitle" tabindex="-1">Family race</h2><span class="chip" id="famAdminCount">Loading</span></div>
+      <div class="glass fa-box">
+        <p class="fhint">Family ask to join from the Family page, then you let them in here. You only ever see names, never anyone's stocks.</p>
+        <h3 class="fa-h">Asking to join</h3>
+        <ul class="fa-list" id="faAsks"><li class="fa-none">Loading…</li></ul>
+        <h3 class="fa-h">In the race</h3>
+        <ul class="fa-list" id="faMembers"><li class="fa-none">Loading…</li></ul>
+      </div>
+    </section>
+
     <section class="wire wrap" aria-labelledby="wireTitle">
       <div class="wire-head" data-reveal>
         <p class="kicker">THE WIRE</p>
@@ -182,6 +200,7 @@
       </a>
       <p>Albassam Fund. A family record of every call since July 4, 2026.</p>
       <p>Prices from Yahoo Finance and may be delayed. Not investment advice.</p>
+      <p><button class="install-link" type="button" data-install>Get the app on your phone</button></p>
       <p><a class="manager-link" href="edit.html">Manager: add or edit calls</a></p>
       <p class="build" data-build></p>
       <button class="motion-toggle" type="button" data-motion-toggle>Pause motion</button>
@@ -190,6 +209,6 @@
   </div>
 </footer>
 
-<script type="module" src="js/edit.js?v=13"></script>
+<script type="module" src="js/edit.js?v=14"></script>
 </body>
 </html>

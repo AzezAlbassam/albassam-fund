@@ -5,13 +5,13 @@
 // racing what-if bars, the record, the book and the wire.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, roll, countTo, reducedMotion, usd0, pct1, pts1, signedUsd, shortUsd,
-         day, esc, pctClass, logoHtml, daysBetween } from "./shell.js?v=13";
-import { live, state } from "./live.js?v=13";
-import { loadRace, raceSummary } from "./series.js?v=13";
-import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=13";
-import { simulate, statPct, derive, blendedPct } from "./roi.js?v=13";
-import { watchNews } from "./news.js?v=13";
+import { initShell, observeReveals, onReveal, roll, countTo, reducedMotion, usd0, pct1, pts1, shortUsd,
+         day, esc, pctClass, logoHtml, daysBetween } from "./shell.js?v=14";
+import { live, state } from "./live.js?v=14";
+import { loadRace, raceSummary } from "./series.js?v=14";
+import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=14";
+import { simulate, statPct, derive, blendedPct } from "./roi.js?v=14";
+import { watchNews } from "./news.js?v=14";
 
 const $ = (s, r = document) => r.querySelector(s);
 initShell();
@@ -19,7 +19,7 @@ initShell();
 /* =================== HERO: the live 3D market =================== */
 const media = $("#heroMedia");
 let market = null;
-import("./market.js?v=13")
+import("./market.js?v=14")
   .then(m => m.startMarket($("#market"), $("#mkLabels")))
   .then(mk => { market = mk; if (race) market.setData(race, state.trades, pctOf); onHeroScroll(); })
   .catch(err => { console.warn("3D market unavailable:", err); media.classList.add("fallback"); });
@@ -70,7 +70,7 @@ function renderScore() {
   if (!state.ready) return;
   countTo($("#heroPct"), sim.totalPct, pct1, 2200);   // gradient text: a plain count-up (rolling digits break background-clip)
   roll($("#sbValue"), usd0(sim.value));
-  roll($("#ldBank"), usd0(sim.realizedDollars));
+  roll($("#ldBank"), pct1(sim.realizedPct));
   const ret = $("#sbRet"); ret.textContent = pct1(sim.totalPct); ret.className = pctClass(sim.totalPct);
   if (s) {
     for (const [k, id, name] of [["leadGold", "ldGold", "gold"], ["leadSpx", "ldSpx", "the S&P 500"]]) {
@@ -171,7 +171,7 @@ function renderRecord() {
       <div class="cc-top">${logoHtml(t)}<div><b>${esc(t.ticker)}</b><small>${esc(t.name || "")}</small></div></div>
       <p class="cc-pct" style="color:${c}">${pct1(t.finalPct)}</p>
       <p class="cc-meta">${day(t.opened)} → ${day(t.closed)}${t.wt > 0 ? " · " + t.wt + "% of pot" : ""}</p>
-      <p class="cc-gain ${pctClass(t.finalPct)}">${t.wt > 0 ? signedUsd(t.wt / 100 * t.finalPct / 100 * state.pot) + " on the pot" : "Unsized"}</p></li>`;
+      <p class="cc-gain ${pctClass(t.finalPct)}">${t.wt > 0 ? pct1(t.wt * t.finalPct / 100) + " on the pot" : "Unsized"}</p></li>`;
   }).join("") || `<li class="muted">Closed calls land here with their result locked in.</li>`;
   row.setAttribute("data-stagger", "");
   observeReveals(row.parentElement);
@@ -214,7 +214,7 @@ function renderOrbitCard(t) {
       <span class="oc-pct ${pctClass(p)}">${pct1(p)}</span></div>
     <dl><div><dt>Dates</dt><dd>${day(t.opened)} → ${t.status === "active" ? "now" : day(t.closed)}</dd></div>
       <div><dt>Pot share</dt><dd>${t.wt > 0 ? t.wt + "%" : "Unsized"}</dd></div>
-      <div><dt>On the pot</dt><dd class="${pctClass(p)}">${t.wt > 0 && p != null ? signedUsd(t.wt / 100 * p / 100 * state.pot) : "…"}</dd></div></dl>`;
+      <div><dt>On the pot</dt><dd class="${pctClass(p)}">${t.wt > 0 && p != null ? pct1(t.wt * p / 100) : "…"}</dd></div></dl>`;
 }
 function feedOrbit() {
   if (!orbit || !state.ready) return;
@@ -227,7 +227,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startOrbit } = await import("./orbit.js?v=13");
+    const { startOrbit } = await import("./orbit.js?v=14");
     orbit = await startOrbit($("#orbit"), $("#orbitLabels"), renderOrbitCard);
     feedOrbit();
   } catch (err) {
@@ -288,7 +288,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=13");
+    const { startTowers } = await import("./bars3d.js?v=14");
     fc.towers = await startTowers($("#fcCanvas"), $("#fcLabels"));
     renderForecast();
   } catch (err) { console.warn("3D forecast unavailable:", err); $("#fcStage").classList.add("fallback"); }

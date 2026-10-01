@@ -10,7 +10,7 @@
 // to a letter badge if a logo doesn't exist.
 // ============================================================
 
-import { DEMO, FINNHUB_KEY, PRICE_REFRESH_MS } from "./config.js?v=13";
+import { DEMO, FINNHUB_KEY, PRICE_REFRESH_MS } from "./config.js?v=14";
 
 const USE_FINNHUB = !FINNHUB_KEY.startsWith("__");
 const FINNHUB = "https://finnhub.io/api/v1";
@@ -20,15 +20,17 @@ const names = {};           // ticker -> company name (from Yahoo meta)
 let onUpdate = () => {};
 let tickers = [];
 let timer = null;
+const lists = {};           // who -> tickers it needs (open calls, a member's portfolio)
 
 export function startPrices(cb) {
   onUpdate = cb;
 }
 
-// Called whenever the trade list changes; keeps polling only
+// Called whenever a ticker list changes; keeps polling only
 // the tickers that are on screen.
-export function watchTickers(list) {
-  const next = [...new Set(list)].sort();
+export function watchTickers(list, who = "calls") {
+  lists[who] = list;
+  const next = [...new Set(Object.values(lists).flat())].sort();
   if (next.join() === tickers.join()) return;
   tickers = next;
   refresh();

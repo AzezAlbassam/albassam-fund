@@ -67,12 +67,13 @@ export async function startTowers(canvas, labelsEl, { yaw0 = -0.55, pitch = 0.42
         c = { group, mesh, mat, cap, h: 0.001, label: null };
         cols.set(s.id, c);
       }
+      else { c.mat.color.set(s.color); c.mat.emissive.set(s.color); c.cap.material.color.set(s.color); }   // a gain can turn into a loss
       c.target = Math.max(0.02, s.h); c.w = s.w || 0.62;
       c.group.position.set(s.x, 0, s.z || 0);
       if (s.label) {
         if (!c.label) { c.label = document.createElement("span"); labelsEl.appendChild(c.label); }
         c.label.className = "t3-label" + (s.labelClass ? " " + s.labelClass : "");
-        if (c.label.innerHTML !== s.label) { c.label.innerHTML = s.label; c.lw = 0; }
+        if (c.label.innerHTML !== s.label) { c.label.innerHTML = s.label; c.lw = c.lh = 0; }
       } else if (c.label) { c.label.remove(); c.label = null; }
       maxX = Math.max(maxX, Math.abs(s.x) + 0.6); maxH = Math.max(maxH, s.h); maxZ = Math.max(maxZ, Math.abs(s.z || 0) + 0.6);
     }
@@ -109,7 +110,7 @@ export async function startTowers(canvas, labelsEl, { yaw0 = -0.55, pitch = 0.42
     cam.position.set(Math.sin(yaw) * r, extent.h * 0.5 + r * Math.sin(pitch) * 0.45, Math.cos(yaw) * r);
     cam.lookAt(0, extent.h * 0.47, 0);
     let moving = false;
-    const W = canvas.clientWidth, H = canvas.clientHeight;
+    const W = canvas.clientWidth, H = canvas.clientHeight, placed = [];
     for (const c of cols.values()) {
       const d = c.target - c.h;
       if (Math.abs(d) > 0.002) { c.h += d * (reduced.matches || still ? 1 : 1 - Math.pow(0.9, dt * 60)); moving = true; } else c.h = c.target;
@@ -117,9 +118,16 @@ export async function startTowers(canvas, labelsEl, { yaw0 = -0.55, pitch = 0.42
       c.cap.position.y = c.h; c.cap.scale.setScalar(c.w * 2.2);
       if (c.label) {
         v.set(0, c.h, 0); c.group.localToWorld(v); v.project(cam);
-        const lw = (c.lw ||= c.label.offsetWidth || 110), lift = c.label.classList.contains("spx") ? 70 : 42;   // S&P sits a row above gold
-        const x = Math.min(W - lw - 8, Math.max(8, (v.x * 0.5 + 0.5) * W - lw / 2));
-        c.label.style.transform = `translate(${x.toFixed(1)}px,${Math.max(4, (-v.y * 0.5 + 0.5) * H - lift).toFixed(1)}px)`;
+        const lw = (c.lw ||= c.label.offsetWidth || 110), lift = c.label.matches(".spx,.alt") ? 70 : 42;   // S&P (and every other racer) sits a row higher, so neighbours never collide
+        const x = Math.min(W - lw - 8, Math.max(8, (v.x * 0.5 + 0.5) * W - lw / 2)), lh = (c.lh ||= c.label.offsetHeight || 26);
+        const hit = (yy) => placed.find(b => x < b.x + b.w + 4 && b.x < x + lw + 4 && yy < b.y + b.h + 4 && b.y < yy + lh + 4);
+        const y0 = Math.max(4, (-v.y * 0.5 + 0.5) * H - lift);
+        let y = y0;
+        for (let b; (b = hit(y));) y = b.y - lh - 6;               // stack above a label it would cover…
+        if (y < 4) { y = y0; for (let b; (b = hit(y));) y = b.y + b.h + 6; }   // …or below, when the top runs out
+        y = Math.max(4, Math.min(H - lh - 4, y));
+        placed.push({ x, y, w: lw, h: lh });
+        c.label.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;
       }
     }
     renderer.render(scene, cam);
