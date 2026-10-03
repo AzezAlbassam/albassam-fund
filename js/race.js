@@ -4,11 +4,11 @@
 // Everything re-renders from live(): trades, pot and quotes.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=16";
-import { live, state } from "./live.js?v=16";
-import { statPct } from "./roi.js?v=16";
-import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=16";
-import { raceChart, bindRaceControls } from "./chart.js?v=16";
+import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=18";
+import { live, state } from "./live.js?v=18";
+import { statPct } from "./roi.js?v=18";
+import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=18";
+import { raceChart, bindRaceControls } from "./chart.js?v=18";
 
 const $ = (id) => document.getElementById(id);
 const FAIL = "The race could not load right now. Try again in a minute.";
@@ -28,7 +28,7 @@ let race = null, status = "loading", key = "", seq = 0;
 /* ---------- header: the line maze, our fund's path climbing out of it ---------- */
 let maze = null;
 const phone = innerWidth < 720;
-import("./maze.js?v=16")
+import("./maze.js?v=18")
   .then(m => m.startMaze($("rhMaze"), { labelsEl: $("rhLabels"), cols: phone ? 8 : 12, rows: phone ? 7 : 9, seed: 20260712, spin: 0.035, fit: phone ? 0.92 : 1 }))
   .then(mz => { maze = mz; feedMaze(); })
   .catch(err => console.warn("3D maze unavailable:", err));
@@ -67,14 +67,14 @@ function podium() {
   const rows = [["fund", "Our fund", race.fund[n], 0x0b0b0c], ["gold", "Gold", race.gold[n], 0x6b6b74], ["spx", "S&amp;P 500", race.spx[n], 0xa1a1aa]];
   const max = Math.max(...rows.map(r => r[2]));
   towers.set(rows.map(([k, name, v, color], i) => ({ id: k, x: (i - 1) * 1.7, z: 0, h: 0.4 + v / max * 4, color, w: 1.05,
-    label: `${name} <b>${usd0(v)}</b>`, labelClass: k })));
+    label: `${name} <b>${pct1((v / race.pot - 1) * 100)}</b>`, labelClass: k })));
   document.querySelectorAll("[data-pot]").forEach(el => (el.textContent = shortUsd(race.pot)));
 }
 new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=16");
+    const { startTowers } = await import("./bars3d.js?v=18");
     towers = await startTowers($("pdCanvas"), $("pdLabels"), { yaw0: -0.45, pitch: 0.35, spin: 0.06 });
     podium();
   } catch (err) { console.warn("3D podium unavailable:", err); $("pdStage").classList.add("fallback"); }
@@ -123,8 +123,7 @@ function numbers() {
   const pc = (v) => Math.abs(v) < 0.05 ? `<span class="v">0.0%</span>` : `<span class="v ${v < 0 ? "neg" : "pos"}">${pct1(v)}</span>`;
   const dayCell = (x) => x ? `${pc(x.pct)}<small>${day(x.d)}</small>` : `<span class="muted">Too early</span>`;
   const rows = [
-    ["Return", k => pc(S[k].ret)],
-    ["What " + shortUsd(race.pot) + " became", k => `<span class="v">${usd0(S[k].end)}</span>`],
+    ["Return", k => `${pc(S[k].ret)}<small>${shortUsd(race.pot)} → ${usd0(S[k].end)}</small>`],   // the money only as an example
     ["Deepest drop", k => pc(S[k].maxDD)],
     ["Best day", k => dayCell(S[k].best)],
     ["Worst day", k => dayCell(S[k].worst)],

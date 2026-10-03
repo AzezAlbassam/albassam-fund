@@ -21,8 +21,8 @@
 // add &join=1 to practise the "ask to join" step.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=16";
-import { checkTicker, quotes, savedSeries } from "./prices.js?v=16";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=18";
+import { checkTicker, quotes, savedSeries } from "./prices.js?v=18";
 
 export const START = "2026-07-03";   // nothing on the board predates the fund's baseline day
 export const MAX_HOLDINGS = 60;      // mirrors firestore.rules

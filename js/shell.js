@@ -4,7 +4,7 @@
 // build stamp and the "new version" bar. Plus small formatters.
 // ============================================================
 
-import { BUILD } from "./config.js?v=16";
+import { BUILD } from "./config.js?v=18";
 
 export const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -74,13 +74,13 @@ export function initShell() {
   // the owner's "+ New call" button, only on a device where the manager signed in
   try {
     if (localStorage.getItem("af:owner") === "1" && !document.getElementById("addForm"))
-      import("./owner.js?v=16").then(m => m.startOwner()).catch(e => console.warn("quick add unavailable:", e));
+      import("./owner.js?v=18").then(m => m.startOwner()).catch(e => console.warn("quick add unavailable:", e));
   } catch (e) { /* storage blocked */ }
 
   // a family member's line on the board refreshes whenever they open any page
   try {
     if (localStorage.getItem("af:racer") === "1" && !document.getElementById("mineDesk"))
-      setTimeout(() => import("./folio.js?v=16").then(m => m.syncMine()).catch(e => console.warn("board refresh skipped:", e)), 4000);
+      setTimeout(() => import("./folio.js?v=18").then(m => m.syncMine()).catch(e => console.warn("board refresh skipped:", e)), 4000);
   } catch (e) { /* storage blocked */ }
 
   // "Get the app": install on the phone's home screen
@@ -225,6 +225,8 @@ export const usd2 = (v) => v == null || isNaN(v) ? "…" :
   "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const signedUsd = (v) => (v >= 0 ? "+" : "-") + "$" + Math.round(Math.abs(v)).toLocaleString("en-US");
 export const pct1 = (p) => p == null || isNaN(p) ? "…" : (p >= 0 ? "+" : "-") + Math.abs(p).toFixed(1) + "%";
+export const pctBig = (p) => p == null || isNaN(p) ? "…" : Math.abs(p) < 1000 ? pct1(p)
+  : (p >= 0 ? "+" : "-") + Math.round(Math.abs(p)).toLocaleString("en-US") + "%";
 export const pts1 = (p) => (p >= 0 ? "+" : "-") + Math.abs(p).toFixed(1) + " pts";
 export const shortUsd = (v) => v >= 1e6 ? "$" + +(v / 1e6).toFixed(2) + "M" : v >= 1e3 ? "$" + +(v / 1e3).toFixed(1) + "K" : "$" + Math.round(v);
 export const day = (d) => d ? MON[+d.slice(5, 7) - 1] + " " + +d.slice(8, 10) : "";

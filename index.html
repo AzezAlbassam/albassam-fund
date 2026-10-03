@@ -26,8 +26,8 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin>
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/site.css?v=16">
-<link rel="stylesheet" href="css/home.css?v=16">
+<link rel="stylesheet" href="css/site.css?v=18">
+<link rel="stylesheet" href="css/home.css?v=18">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 </head>
 <body class="home">
@@ -109,15 +109,15 @@
 
         <article class="glass b-stat b-value">
           <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M15 7h6v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-          <p class="s-label">What <span data-pot>$100K</span> became</p>
-          <p class="s-value num odo" id="sbValue">$0</p>
-          <p class="s-foot"><b class="pos" id="sbRet">…</b> since the first call</p>
+          <p class="s-label">Our return since the first call</p>
+          <p class="s-value num odo" id="sbValue">+0.0%</p>
+          <p class="s-foot">On <span data-pot>$100K</span>, that is <b id="sbRet">…</b></p>
         </article>
 
         <article class="glass b-stat b-bank">
           <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v18M17 7.5c0-1.9-2.2-3-5-3s-5 1.1-5 3 2.2 2.6 5 3.3 5 1.6 5 3.6-2.2 3.1-5 3.1-5-1.1-5-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
           <p class="s-label">Profit banked</p>
-          <p class="s-value num odo" id="ldBank">$0</p>
+          <p class="s-value num odo" id="ldBank">+0.0%</p>
           <p class="s-foot">Locked in from closed calls</p>
         </article>
 
@@ -176,8 +176,8 @@
       <div class="section-head">
         <div>
           <p class="kicker" data-reveal>What if</p>
-          <h2 id="wifH" data-reveal>Same money. Same day. Three results.</h2>
-          <p class="lede" data-reveal>Pick an amount and watch it grow three ways since July 4.</p>
+          <h2 id="wifH" data-reveal>Same day. Three results.</h2>
+          <p class="lede" data-reveal>Each bar is the return since July 4. Pick an amount to see it in money too.</p>
         </div>
         <div class="seg amounts" role="group" aria-label="Amount" data-reveal>
           <button type="button" data-amt="10000" aria-pressed="false">$10K</button>
@@ -187,9 +187,9 @@
         </div>
       </div>
       <div class="bars glass" id="bars" data-reveal>
-        <div class="bar-col" data-k="fund"><div class="bar-val num" data-v>$0</div><div class="bar-track"><i></i></div><p>Our fund <b data-r>…</b></p></div>
-        <div class="bar-col" data-k="gold"><div class="bar-val num" data-v>$0</div><div class="bar-track"><i></i></div><p>Gold <b data-r>…</b></p></div>
-        <div class="bar-col" data-k="spx"><div class="bar-val num" data-v>$0</div><div class="bar-track"><i></i></div><p>S&amp;P&nbsp;500 <b data-r>…</b></p></div>
+        <div class="bar-col" data-k="fund"><div class="bar-val num" data-v>+0.0%</div><div class="bar-track"><i></i></div><p>Our fund <b data-r>…</b></p></div>
+        <div class="bar-col" data-k="gold"><div class="bar-val num" data-v>+0.0%</div><div class="bar-track"><i></i></div><p>Gold <b data-r>…</b></p></div>
+        <div class="bar-col" data-k="spx"><div class="bar-val num" data-v>+0.0%</div><div class="bar-track"><i></i></div><p>S&amp;P&nbsp;500 <b data-r>…</b></p></div>
       </div>
     </div>
   </section>
@@ -201,7 +201,7 @@
         <div>
           <p class="kicker" data-reveal>The forecast</p>
           <h2 id="fcH" data-reveal>If we keep this pace.</h2>
-          <p class="lede" data-reveal>What <span data-pot>$100K</span> could grow into, year by year. A projection, not a promise.</p>
+          <p class="lede" data-reveal>How much the fund could grow, in %, year by year. Hold it up against your own money. A projection, not a promise.</p>
         </div>
       </div>
       <div class="fc-grid">
@@ -227,7 +227,7 @@
         </div>
         <div class="fc-side">
           <div class="glass fc-big" data-reveal>
-            <p class="s-label">In <span id="fcN">5 years</span>, <span data-pot>$100K</span> could become</p>
+            <p class="s-label">In <span id="fcN">5 years</span>, the fund could grow</p>
             <p class="fc-value"><span class="num grad-text" id="fcValue">…</span></p>
             <p class="s-foot" id="fcRate">…</p>
           </div>
@@ -300,6 +300,6 @@
   </div>
 </footer>
 
-<script type="module" src="js/home.js?v=16"></script>
+<script type="module" src="js/home.js?v=18"></script>
 </body>
 </html>

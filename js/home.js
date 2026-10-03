@@ -5,13 +5,13 @@
 // book and the wire.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, roll, countTo, reducedMotion, usd0, pct1, pts1, shortUsd,
-         day, esc, pctClass, logoHtml, daysBetween } from "./shell.js?v=16";
-import { live, state } from "./live.js?v=16";
-import { loadRace, raceSummary } from "./series.js?v=16";
-import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=16";
-import { simulate, statPct, derive, blendedPct } from "./roi.js?v=16";
-import { watchNews } from "./news.js?v=16";
+import { initShell, observeReveals, onReveal, roll, countTo, reducedMotion, usd0, pct1, pctBig, pts1, shortUsd,
+         day, esc, pctClass, logoHtml, daysBetween } from "./shell.js?v=18";
+import { live, state } from "./live.js?v=18";
+import { loadRace, raceSummary } from "./series.js?v=18";
+import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=18";
+import { simulate, statPct, derive, blendedPct } from "./roi.js?v=18";
+import { watchNews } from "./news.js?v=18";
 
 const $ = (s, r = document) => r.querySelector(s);
 initShell();
@@ -20,7 +20,7 @@ initShell();
 const media = $("#heroMedia");
 let maze = null;
 const phone = innerWidth < 720;
-import("./maze.js?v=16")
+import("./maze.js?v=18")
   .then(m => m.startMaze($("#maze"), { labelsEl: $("#mzLabels"), cols: phone ? 9 : 16, rows: phone ? 11 : 11, fit: phone ? 1.12 : 1 }))
   .then(mz => { maze = mz; feedMaze(); onHeroScroll(); })
   .catch(err => { console.warn("3D maze unavailable:", err); media.classList.add("fallback"); });
@@ -75,9 +75,9 @@ function renderScore() {
   document.querySelectorAll("[data-pot]").forEach(el => (el.textContent = shortUsd(pot)));
   if (!state.ready) return;
   countTo($("#heroPct"), sim.totalPct, pct1, 2200);   // gradient text: a plain count-up (rolling digits break background-clip)
-  roll($("#sbValue"), usd0(sim.value));
+  roll($("#sbValue"), pct1(sim.totalPct));
   roll($("#ldBank"), pct1(sim.realizedPct));
-  const ret = $("#sbRet"); ret.textContent = pct1(sim.totalPct); ret.className = pctClass(sim.totalPct);
+  $("#sbRet").textContent = usd0(sim.value);   // the money, only as an example
   if (s) {
     for (const [k, id, name] of [["leadGold", "ldGold", "gold"], ["leadSpx", "ldSpx", "the S&P 500"]]) {
       const v = s[k], el = $("#" + id);
@@ -145,13 +145,14 @@ function renderBars() {
   if (!race) return;
   const s = raceSummary(race);
   const fin = { fund: amt * (1 + s.fund / 100), gold: amt * (1 + s.gold / 100), spx: amt * (1 + s.spx / 100) };
-  const max = Math.max(...Object.values(fin));
+  const max = Math.max(1, ...["fund", "gold", "spx"].map(k => s[k]));   // bar heights follow the % (a loss stays a sliver)
   onReveal(box, () => {
     for (const col of box.querySelectorAll(".bar-col")) {
       const k = col.dataset.k;
-      col.querySelector(".bar-track i").style.height = (fin[k] / max * 100).toFixed(2) + "%";   // height, not scale: the hatching keeps its angle
-      countTo(col.querySelector("[data-v]"), fin[k], innerWidth < 560 && fin[k] >= 1e6 ? shortUsd : usd0, 1800);
-      col.querySelector("[data-r]").textContent = pct1(s[k]);
+      col.querySelector(".bar-track i").style.height = Math.max(1.5, s[k] / max * 100).toFixed(2) + "%";   // height, not scale: the hatching keeps its angle
+      col.querySelector("[data-v]").classList.toggle("neg", s[k] < 0);
+      countTo(col.querySelector("[data-v]"), s[k], pct1, 1800);
+      col.querySelector("[data-r]").textContent = `${shortUsd(amt)} → ${innerWidth < 560 && fin[k] >= 1e6 ? shortUsd(fin[k]) : usd0(fin[k])}`;
     }
   });
 }
@@ -232,7 +233,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startOrbit } = await import("./orbit.js?v=16");
+    const { startOrbit } = await import("./orbit.js?v=18");
     orbit = await startOrbit($("#orbit"), $("#orbitLabels"), renderOrbitCard);
     feedOrbit();
   } catch (err) {
@@ -251,18 +252,20 @@ function renderForecast() {
   if (!race) return;
   const r0 = raceSummary(race).fund / 100, r = r0 * fc.share, pot = state.pot, N = fc.years;
   const val = (rate, y) => pot * Math.pow(1 + rate, y);
+  const grow = (rate, y) => (Math.pow(1 + rate, y) - 1) * 100;   // total growth in %: what each person applies to their own money
   const rows = [["fund", "Our fund", r, 0x0b0b0c], ...FC_REF];
   // the numbers
   $("#fcN").textContent = N + (N === 1 ? " year" : " years");
-  countTo($("#fcValue"), val(r, N), (v) => (v >= 1e6 ? shortUsd(v) : usd0(v)), 1600);
-  $("#fcRate").textContent = `at ${pct1(r * 100)} a year${fc.share < 1 ? "" : ", the same as our run so far"}`;
+  countTo($("#fcValue"), grow(r, N), pctBig, 1600);
+  $("#fcRate").textContent = `at ${pct1(r * 100)} a year${fc.share < 1 ? "" : ", the same as our run so far"} · ${shortUsd(pot)} would become ${val(r, N) >= 1e6 ? shortUsd(val(r, N)) : usd0(val(r, N))}`;
   $("#fcRows").innerHTML = rows.map(([k, name, rate]) =>
-    `<tr class="${k}"><th scope="row"><i class="sw ${k}"></i>${name}</th><td>${shortUsd(val(rate, 5))}</td><td>${shortUsd(val(rate, 10))}</td></tr>`).join("");
+    `<tr class="${k}"><th scope="row"><i class="sw ${k}"></i>${name}</th>` +
+    [5, 10].map(y => `<td>${pctBig(grow(rate, y))}<small>${shortUsd(pot)} → ${shortUsd(val(rate, y))}</small></td>`).join("") + `</tr>`).join("");
   const days = Math.max(1, daysBetween(race.first, race.days[race.days.length - 1]));
   const ann = Math.pow(1 + r0, 365 / days) - 1;
   const toBillion = Math.log(1e9 / pot) / Math.log(1 + ann);
   $("#fcNote").textContent = `Our fund made ${pct1(r0 * 100)} in ${days} days. Held to that exact speed, the math says about ${pct1(ann * 100)} a year` +
-    (ann > 0.5 && toBillion < 20 ? ` and a billion dollars in about ${Math.ceil(toBillion)} years, which nobody keeps up.` : ".") +
+    (ann > 0.5 && toBillion < 20 ? ` and ${Math.round(1e9 / pot).toLocaleString("en-US")} times the money in about ${Math.ceil(toBillion)} years, which nobody keeps up.` : ".") +
     ` So these towers repeat our result once a year instead. Past results do not promise future ones.`;
   // the towers: one per year, our fund in front, the S&P 500 and gold behind
   if (!fc.towers) return;
@@ -272,7 +275,7 @@ function renderForecast() {
     for (let i = 0; i < N; i++) specs.push({
       id: k + i, x: (i - (N - 1) / 2) * gap, z: 1.1 - ri * 1.1, h: val(rate, i + 1) / max * H, color,
       ghost: k !== "fund", w: k === "fund" ? 0.56 : 0.4,
-      label: i === N - 1 && (k === "fund" || N > 1) ? `${name} <b>${shortUsd(val(rate, N))}</b>` : null, labelClass: k,
+      label: i === N - 1 && (k === "fund" || N > 1) ? `${name} <b>${pctBig(grow(rate, N))}</b>` : null, labelClass: k,
     });
   });
   fc.towers.set(specs);
@@ -293,7 +296,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=16");
+    const { startTowers } = await import("./bars3d.js?v=18");
     fc.towers = await startTowers($("#fcCanvas"), $("#fcLabels"));
     renderForecast();
   } catch (err) { console.warn("3D forecast unavailable:", err); $("#fcStage").classList.add("fallback"); }
