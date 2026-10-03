@@ -1,73 +1,75 @@
 // ============================================================
-// Glossy 3D towers (Three.js) that grow to their values, on a
-// streaming grid floor. Used for the forecast (years as towers)
-// and the Race podium (our fund vs gold vs the S&P 500).
+// 3D towers as a line drawing (Three.js): white boxes with crisp
+// ink edges that grow to their values, on a thin grid floor that
+// fades into the paper. Used for the forecast (years as towers),
+// the Race podium and the Family podium.
 //   const t = await startTowers(canvas, labelsEl);
-//   t.set([{ id, x, z, h, color, label, ghost }])   // h in world units
+//   t.set([{ id, x, z, h, color, label, labelClass, ghost, w }])   // h in world units
+// color = the edge color (ink, greys, red for a loss). ghost = lighter
+// edges. A labelClass with "fund" makes the tower solid (filled with
+// its color, white edges): our fund reads as the one black tower.
 // ============================================================
 
 import * as THREE from "three";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { LineSegments2 } from "three/addons/lines/LineSegments2.js";
+import { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js";
+import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 
 const GRID_VS = `varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`;
 const GRID_FS = `uniform float uTime; varying vec3 vW;
 float line(vec2 p, float s){ vec2 q = p / s; vec2 g = abs(fract(q - 0.5) - 0.5) / fwidth(q); return 1.0 - min(min(g.x, g.y), 1.0); }
-void main(){ vec2 p = vW.xz + vec2(uTime * 0.35, 0.0);
-  float g = line(p, 1.0) * 0.5 + line(p, 4.0) * 0.5;
-  float fade = smoothstep(16.0, 2.0, length(vW.xz));
-  gl_FragColor = vec4(mix(vec3(1.0, .31, .47), vec3(1.0, .71, .28), clamp(vW.x / 14.0 + .5, 0., 1.)) * g * fade * .7, 1.0); }`;
-
-function glowTexture() {
-  const c = document.createElement("canvas"); c.width = c.height = 64;
-  const g = c.getContext("2d"), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-  gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.3, "rgba(255,255,255,.45)"); gr.addColorStop(1, "rgba(255,255,255,0)");
-  g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
-  return new THREE.CanvasTexture(c);
-}
+void main(){ vec2 p = vW.xz + vec2(uTime * 0.12, 0.0);
+  float g = max(line(p, 1.0) * 0.45, line(p, 4.0));
+  float fade = smoothstep(14.0, 1.5, length(vW.xz));
+  gl_FragColor = vec4(vec3(0.043, 0.043, 0.047), g * fade * 0.22); }`;
 
 export async function startTowers(canvas, labelsEl, { yaw0 = -0.55, pitch = 0.42, spin = 0.08 } = {}) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const scene = new THREE.Scene();
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.35;
+  scene.fog = new THREE.Fog(0xffffff, 10, 40);   // the far towers fade into the paper
   const cam = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
   const world = new THREE.Group(); scene.add(world);
-  const glowTex = glowTexture();
 
   const gridMat = new THREE.ShaderMaterial({ vertexShader: GRID_VS, fragmentShader: GRID_FS, uniforms: { uTime: { value: 0 } },
-    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    transparent: true, depthWrite: false });
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), gridMat);
   floor.rotation.x = -Math.PI / 2; floor.position.y = -0.01;
   world.add(floor);
-  scene.add(new THREE.AmbientLight(0xffffff, 0.45));
-  const key = new THREE.PointLight(0xff9a6a, 60, 40, 2); key.position.set(3, 8, 6); scene.add(key);
-  const rim = new THREE.DirectionalLight(0xb9a6ff, 1.1); rim.position.set(-6, 6, -6); scene.add(rim);
 
   const box = new THREE.BoxGeometry(1, 1, 1);
   box.translate(0, 0.5, 0);   // grows up from the floor
+  const edges = new LineSegmentsGeometry().fromEdgesGeometry(new THREE.EdgesGeometry(box));
+  const res = new THREE.Vector2(1, 1);
   const cols = new Map();
   let extent = { x: 4, h: 4, z: 2 };
 
+  // fill hides the edges behind it (a hidden-line drawing); edges sit a hair in front
+  function paint(c, s) {
+    const solid = /\bfund\b/.test(s.labelClass || "");
+    c.fill.color.set(solid ? s.color : 0xffffff);
+    c.line.color.set(solid ? 0xffffff : s.color);
+    c.line.opacity = solid ? 0.55 : s.ghost ? 0.8 : 1;
+    c.line.linewidth = solid ? 1 : s.ghost ? 1 : 1.5;
+  }
+
   function set(specs) {
     const keep = new Set(specs.map(s => s.id));
-    for (const [id, c] of cols) if (!keep.has(id)) { world.remove(c.group); c.mat.dispose(); c.label?.remove(); cols.delete(id); }
+    for (const [id, c] of cols) if (!keep.has(id)) { world.remove(c.group); c.fill.dispose(); c.line.dispose(); c.label?.remove(); cols.delete(id); }
     let maxX = 1, maxH = 1, maxZ = 1;
     for (const s of specs) {
       let c = cols.get(s.id);
       if (!c) {
-        const mat = new THREE.MeshPhysicalMaterial({ color: s.color, emissive: s.color, emissiveIntensity: s.ghost ? 0.25 : 0.55,
-          metalness: 0.25, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.08, transparent: !!s.ghost, opacity: s.ghost ? 0.5 : 1 });
-        const mesh = new THREE.Mesh(box, mat);
-        const cap = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: s.color, transparent: true, opacity: s.ghost ? 0.35 : 0.8,
-          blending: THREE.AdditiveBlending, depthWrite: false }));
-        const group = new THREE.Group(); group.add(mesh, cap); world.add(group);
-        c = { group, mesh, mat, cap, h: 0.001, label: null };
+        const fill = new THREE.MeshBasicMaterial({ color: 0xffffff, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+        const line = new LineMaterial({ color: 0x0b0b0c, linewidth: 1.5, transparent: true, fog: true });
+        line.resolution.copy(res);
+        const body = new THREE.Group();
+        body.add(new THREE.Mesh(box, fill), new LineSegments2(edges, line));
+        const group = new THREE.Group(); group.add(body); world.add(group);
+        c = { group, body, fill, line, h: 0.001, label: null };
         cols.set(s.id, c);
       }
-      else { c.mat.color.set(s.color); c.mat.emissive.set(s.color); c.cap.material.color.set(s.color); }   // a gain can turn into a loss
+      paint(c, s);   // a gain can turn into a loss
       c.target = Math.max(0.02, s.h); c.w = s.w || 0.62;
       c.group.position.set(s.x, 0, s.z || 0);
       if (s.label) {
@@ -94,7 +96,10 @@ export async function startTowers(canvas, labelsEl, { yaw0 = -0.55, pitch = 0.42
   function size() {
     const w = canvas.clientWidth, h = canvas.clientHeight;
     if (!w || !h) return;
-    renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); kick();
+    renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
+    res.set(w, h);
+    for (const c of cols.values()) c.line.resolution.copy(res);
+    kick();
   }
 
   const clock = new THREE.Clock(), v = new THREE.Vector3();
@@ -109,13 +114,12 @@ export async function startTowers(canvas, labelsEl, { yaw0 = -0.55, pitch = 0.42
     const r = Math.max(dH, dW, 5) * 1.22 + extent.z;   // the whole of every tower stays in frame
     cam.position.set(Math.sin(yaw) * r, extent.h * 0.5 + r * Math.sin(pitch) * 0.45, Math.cos(yaw) * r);
     cam.lookAt(0, extent.h * 0.47, 0);
-    let moving = false;
+    scene.fog.near = r - extent.z; scene.fog.far = r + extent.x * 2 + 8;
     const W = canvas.clientWidth, H = canvas.clientHeight, placed = [];
     for (const c of cols.values()) {
       const d = c.target - c.h;
-      if (Math.abs(d) > 0.002) { c.h += d * (reduced.matches || still ? 1 : 1 - Math.pow(0.9, dt * 60)); moving = true; } else c.h = c.target;
-      c.mesh.scale.set(c.w, c.h, c.w);
-      c.cap.position.y = c.h; c.cap.scale.setScalar(c.w * 2.2);
+      if (Math.abs(d) > 0.002) c.h += d * (reduced.matches || still ? 1 : 1 - Math.pow(0.9, dt * 60)); else c.h = c.target;
+      c.body.scale.set(c.w, c.h, c.w);
       if (c.label) {
         v.set(0, c.h, 0); c.group.localToWorld(v); v.project(cam);
         const lw = (c.lw ||= c.label.offsetWidth || 110), lift = c.label.matches(".spx,.alt") ? 70 : 42;   // S&P (and every other racer) sits a row higher, so neighbours never collide

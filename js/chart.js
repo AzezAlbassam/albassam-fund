@@ -1,15 +1,16 @@
 // ============================================================
-// The Race chart: our fund (jade) against gold and the S&P 500,
-// as a self-drawing SVG. The signature: the gap between our line
-// and the benchmark glows ("the lead"), with a live readout at the
-// right edge. Hover or touch shows all three values on that day.
+// The Race chart: our fund (solid ink) against gold (dashed grey)
+// and the S&P 500 (dotted grey), as a self-drawing SVG. The gap
+// between our line and the benchmark is washed in ("the lead"),
+// with a live readout at the right edge. Hover or touch shows all
+// three values on that day.
 //
 //   const c = raceChart(el);
 //   c.set(race);                          // from series.js loadRace()
 //   c.view({ bench: "gold"|"spx"|"both", range: "1M"|"3M"|"ALL", unit: "pct"|"usd" });
 // ============================================================
 
-import { onReveal, observeReveals, reducedMotion, day, shortUsd } from "./shell.js?v=14";
+import { onReveal, observeReveals, reducedMotion, day, shortUsd } from "./shell.js?v=15";
 
 const NS = "http://www.w3.org/2000/svg";
 const RANGES = { "1M": 22, "3M": 64 };
@@ -23,7 +24,7 @@ export function viewValues(race, { range = "ALL", unit = "pct" } = {}) {
   return { fund: v("fund"), gold: v("gold"), spx: v("spx"), from: race.days[i0], asOf: race.days[n] };
 }
 const NAMES = { fund: "Our fund", gold: "Gold", spx: "S&P 500" };
-const HEX = { fund: "#FF7A59", gold: "#FFC24B", spx: "#A78BFA" };
+const HEX = { fund: "#0B0B0C", gold: "#6B6B74", spx: "#A1A1AA" };
 const CLS = { fund: "fund", gold: "gold", spx: "spx" };
 
 export function raceChart(el) {
@@ -97,18 +98,17 @@ export function raceChart(el) {
     }
     else { const every = Math.max(1, Math.round(n / (narrow ? 3 : 5))); for (let i = 0; i < n; i += every) xl.push([i, day(cut.days[i])]); }
 
+    const tint = ahead ? HEX.fund : "#D92D20";   // the lead: a light ink wash; behind: a light red one
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     svg.setAttribute("aria-label", `Since ${day(opts.range === "ALL" ? race.first : cut.days[0])}: ` +
       keys.map(k => `${NAMES[k]} ${fmtV(cut[k][n - 1])}`).join(", "));
+    // only our line draws itself (pathLength="1"); gold and the S&P keep real
+    // lengths so their dash and dot patterns (site.css) stay dashes and dots
     svg.innerHTML = `
       <defs>
         <linearGradient id="leadFill" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0" stop-color="${ahead ? "#FF4F79" : "#FF5470"}" stop-opacity=".02"/>
-          <stop offset=".6" stop-color="${ahead ? "#FF7A45" : "#FF5470"}" stop-opacity=".18"/>
-          <stop offset="1" stop-color="${ahead ? "#FFB547" : "#FF5470"}" stop-opacity=".3"/>
-        </linearGradient>
-        <linearGradient id="fundStroke" gradientUnits="userSpaceOnUse" x1="${pad.l}" y1="0" x2="${W - pad.r}" y2="0">
-          <stop offset="0" stop-color="#FF4F79"/><stop offset=".55" stop-color="#FF7A45"/><stop offset="1" stop-color="#FFB547"/>
+          <stop offset="0" stop-color="${tint}" stop-opacity=".01"/>
+          <stop offset="1" stop-color="${tint}" stop-opacity="${ahead ? ".09" : ".14"}"/>
         </linearGradient>
       </defs>
       <g class="grid">${ticks.map(t => `<line x1="${pad.l}" x2="${W - pad.r}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/>`).join("")}</g>
@@ -116,10 +116,10 @@ export function raceChart(el) {
         ${xl.map(([i, s, anchor]) => `<text x="${X(i).toFixed(1)}" y="${H - 8}" text-anchor="${anchor || "middle"}">${s}</text>`).join("")}</g>
       ${opts.unit === "pct" ? `<line class="base" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}"/>` : ""}
       <path class="lead" d="${area}" fill="url(#leadFill)"/>
-      ${keys.slice().reverse().map(k => `<path class="line ${k}" pathLength="1" d="${path(cut[k])}"/>`).join("")}
+      ${keys.slice().reverse().map(k => `<path class="line ${k}"${k === "fund" ? ' pathLength="1"' : ""} d="${path(cut[k])}"/>`).join("")}
       ${keys.map(k => `<circle class="end ${k}" cx="${X(n - 1).toFixed(1)}" cy="${Y(cut[k][n - 1]).toFixed(1)}" r="3.5" fill="${HEX[k]}"/>`).join("")}
       <line class="cross" y1="${pad.t}" y2="${H - pad.b}"/>
-      ${keys.map(k => `<circle class="dot" data-k="${k}" r="4.5" fill="#07060A" stroke-width="2" stroke="${HEX[k]}"/>`).join("")}`;
+      ${keys.map(k => `<circle class="dot" data-k="${k}" r="4.5" fill="#FFFFFF" stroke-width="2" stroke="${HEX[k]}"/>`).join("")}`;
 
     // the lead readout, pinned between our end point and the benchmark's
     leadEl.className = "race-lead" + (ahead ? "" : " behind");

@@ -4,17 +4,17 @@
 // Everything re-renders from live(): trades, pot and quotes.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=14";
-import { live, state } from "./live.js?v=14";
-import { statPct } from "./roi.js?v=14";
-import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=14";
-import { raceChart, bindRaceControls } from "./chart.js?v=14";
+import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=15";
+import { live, state } from "./live.js?v=15";
+import { statPct } from "./roi.js?v=15";
+import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=15";
+import { raceChart, bindRaceControls } from "./chart.js?v=15";
 
 const $ = (id) => document.getElementById(id);
 const FAIL = "The race could not load right now. Try again in a minute.";
 const EMPTY = "The race starts with the first sized call.";
-// [key, name, text class, swatch]: our fund is the gradient, gold amber, the S&P lavender
-const SERIES = [["fund", "Our fund", "grad-text", "var(--grad)"], ["gold", "Gold", "gold", "var(--gold)"], ["spx", "S&amp;P 500", "spx", "var(--spx)"]];
+// [key, name]: our fund is drawn solid ink, gold dashed grey, the S&P dotted grey (site.css)
+const SERIES = [["fund", "Our fund"], ["gold", "Gold"], ["spx", "S&amp;P 500"]];
 const RANGES = { "1M": 22, "3M": 64 };   // ponytail: mirrors chart.js RANGES (the chart does not expose its slice)
 
 initShell();
@@ -24,6 +24,17 @@ bindRaceControls(controls, chart);
 controls.addEventListener("click", () => race && legend());   // runs after the chart has taken the new view
 
 let race = null, status = "loading", key = "", seq = 0;
+
+/* ---------- header: the line maze, our fund's path climbing out of it ---------- */
+let maze = null;
+const phone = innerWidth < 720;
+import("./maze.js?v=15")
+  .then(m => m.startMaze($("rhMaze"), { labelsEl: $("rhLabels"), cols: phone ? 8 : 12, rows: phone ? 7 : 9, seed: 20260712, spin: 0.035, fit: phone ? 0.92 : 1 }))
+  .then(mz => { maze = mz; feedMaze(); })
+  .catch(err => console.warn("3D maze unavailable:", err));
+function feedMaze() {
+  if (maze && status === "ok") maze.setPath(race.fund, `<b>${pct1(raceSummary(race).fund)}</b>our fund`);
+}
 
 async function onLive(what) {
   if (!state.ready) return;                         // settings can land before the first trades
@@ -44,7 +55,7 @@ async function onLive(what) {
 }
 
 function paint() {
-  strip(); legend(); numbers(); months(); podium();
+  strip(); legend(); numbers(); months(); podium(); feedMaze();
   observeReveals(document);
 }
 
@@ -53,7 +64,7 @@ let towers = null;
 function podium() {
   if (!towers || status !== "ok") return;
   const s = raceSummary(race), n = race.days.length - 1;
-  const rows = [["fund", "Our fund", race.fund[n], 0xff7a45], ["gold", "Gold", race.gold[n], 0xffc24b], ["spx", "S&amp;P 500", race.spx[n], 0xa78bfa]];
+  const rows = [["fund", "Our fund", race.fund[n], 0x0b0b0c], ["gold", "Gold", race.gold[n], 0x6b6b74], ["spx", "S&amp;P 500", race.spx[n], 0xa1a1aa]];
   const max = Math.max(...rows.map(r => r[2]));
   towers.set(rows.map(([k, name, v, color], i) => ({ id: k, x: (i - 1) * 1.7, z: 0, h: 0.4 + v / max * 4, color, w: 1.05,
     label: `${name} <b>${usd0(v)}</b>`, labelClass: k })));
@@ -63,7 +74,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=14");
+    const { startTowers } = await import("./bars3d.js?v=15");
     towers = await startTowers($("pdCanvas"), $("pdLabels"), { yaw0: -0.45, pitch: 0.35, spin: 0.06 });
     podium();
   } catch (err) { console.warn("3D podium unavailable:", err); $("pdStage").classList.add("fallback"); }
@@ -98,8 +109,8 @@ function legend() {
   const val = (k) => unit === "pct"
     ? pct1((race[k][n] / race[k][i0] - 1) * 100)
     : usd0(k === "fund" ? race.fund[n] : race[k][n] / race[k][i0] * race.fund[i0]);
-  el.innerHTML = SERIES.filter(([k]) => keys.includes(k)).map(([k, name, c, sw]) =>
-    `<span><i style="background:${sw}"></i>${name} <b class="${c}">${val(k)}</b></span>`).join("") +
+  el.innerHTML = SERIES.filter(([k]) => keys.includes(k)).map(([k, name]) =>
+    `<span><i class="${k}"></i>${name} <b>${val(k)}</b></span>`).join("") +
     `<span class="asof">Through ${dayYear(race.days[n])}</span>`;
 }
 
@@ -134,9 +145,9 @@ function months() {
   const M = monthly(race);
   if (!M.length) { box.innerHTML = note("The first month is still running."); return; }
   const max = Math.max(...M.flatMap(m => [m.fund, m.gold, m.spx].map(Math.abs)), 1e-9);
-  // tint grows with size; sqrt keeps a +2% gold month visible next to a +40% fund month
-  const tint = (v) => (0.07 + 0.35 * Math.sqrt(Math.min(1, Math.abs(v) / max))).toFixed(3);
-  box.innerHTML = `<table class="hm">
+  // ink (or red, for a loss) in four steps; sqrt keeps a +2% gold month visible next to a +40% fund month
+  const tint = (v) => (0.03 + 0.07 * Math.ceil(4 * Math.sqrt(Math.min(1, Math.abs(v) / max)))).toFixed(2);
+  box.innerHTML = `<table class="hm" style="--m:${M.length}">
     <colgroup><col class="lab">${M.map(() => "<col>").join("")}</colgroup>
     <thead><tr><td></td>${M.map(m => `<th scope="col">${month(m.m)}</th>`).join("")}</tr></thead>
     <tbody>${SERIES.map(([k, name], r) => `<tr class="${k}"><th scope="row">${name}</th>${M.map((m, c) =>

@@ -5,17 +5,17 @@
 // the pace setter, from the same race the home page draws.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, countTo, pct1, usd0, usd2, day, esc, logoHtml, pctClass } from "./shell.js?v=14";
-import { live, state } from "./live.js?v=14";
-import { loadRace } from "./series.js?v=14";
-import { niceTicks } from "./chart.js?v=14";
-import { watchTickers, checkTicker } from "./prices.js?v=14";
-import { backend, measure, publishMine, remember, COLORS, MAX_HOLDINGS } from "./folio.js?v=14";
+import { initShell, observeReveals, onReveal, countTo, pct1, usd0, usd2, day, esc, logoHtml, pctClass } from "./shell.js?v=15";
+import { live, state } from "./live.js?v=15";
+import { loadRace } from "./series.js?v=15";
+import { niceTicks } from "./chart.js?v=15";
+import { watchTickers, checkTicker } from "./prices.js?v=15";
+import { backend, measure, publishMine, remember, COLORS, DASHES, MAX_HOLDINGS,
+         makeKey, newSalt, unb64, sealMine, openMine, keepKey, keptKey, dropKey, nextLine, passcodeProblem } from "./folio.js?v=15";
 
 const $ = (id) => document.getElementById(id);
 const RANGES = { "1M": 22, "3M": 64 };   // ponytail: mirrors chart.js RANGES
-const FUND_HEX = "#FF7A45";
-const logoOf = (tk) => `https://assets.parqet.com/logos/symbol/${encodeURIComponent(tk)}?format=png&size=64`;
+const FUND_HEX = "#0B0B0C";
 
 initShell();
 
@@ -25,10 +25,16 @@ let me = null, isMem = null, mine = null, measured = null, unMine = null, unMem 
 /* ======================= the board ======================= */
 
 // Everyone on the board, best return first. Each member keeps the
-// color they picked up when they first joined.
+// style they picked up when they first joined. The board carries no
+// one's day-by-day line; the chart shows yours, from your own sealed
+// box, next to the fund's.
 function entries() {
   const ids = racers.map(r => r.id).sort();
-  const list = racers.map(r => ({ ...r, color: COLORS[(r.c ?? ids.indexOf(r.id)) % COLORS.length], me: r.id === me?.uid }));
+  const list = racers.map(r => {
+    const i = (r.c ?? ids.indexOf(r.id)) % COLORS.length, mine_ = r.id === me?.uid;
+    const own = mine_ && mine?.line?.days?.length ? mine.line : null;
+    return { ...r, color: mine_ ? "#0B0B0C" : COLORS[i], dash: DASHES[i], me: mine_, days: own?.days || [], vals: own?.vals || [] };
+  });
   if (fundLine) list.push(fundLine);
   return list.sort((a, b) => b.pct - a.pct);
 }
@@ -54,7 +60,7 @@ function standings(list) {
   el.innerHTML = list.map((r, i) => `
     <li class="fr${r.fund ? " fund" : ""}${r.me ? " me" : ""}" style="--c:${r.color}">
       <span class="fr-rank num">${i + 1}</span>
-      <i class="fr-dot" aria-hidden="true"></i>
+      <svg class="fr-dot" viewBox="0 0 22 6" aria-hidden="true"><line x1="0" y1="3" x2="22" y2="3" stroke="${r.color}" stroke-width="${r.me || r.fund ? 3 : 2}"${r.me || r.fund ? "" : ` stroke-dasharray="${r.dash}"`}/></svg>
       <span class="fr-name"><b>${esc(r.name)}</b>${r.me ? " <em>You</em>" : ""}${r.fund ? " <em>Pace setter</em>" : ""}
         <small>${r.fund ? "Our fund's calls since July 4" : "Updated " + ago(r.at)}</small></span>
       <b class="fr-pct num ${pctClass(r.pct)}">${pct1(r.pct)}</b>
@@ -75,13 +81,13 @@ function podium(list) {
     return {
       id: r.id, x: slot * 1.5, z: -Math.abs(slot) * 0.3, w: 0.95,
       h: r.pct > 0 ? 0.35 + (r.pct / max) * 4.2 : 0.25,
-      color: r.pct < 0 ? "#FF5470" : r.fund ? 0xff7a45 : r.color,
-      label: i < labelled ? `${esc(r.name)} <b${r.fund ? "" : ` style="color:${r.color}"`}>${pct1(r.pct)}</b>` : null,
+      color: r.pct < 0 ? "#D92D20" : r.fund ? 0x0b0b0c : r.color,
+      label: i < labelled ? `${esc(r.name)} <b${r.pct < 0 ? ' class="neg"' : ""}>${pct1(r.pct)}</b>` : null,
       labelClass: (Math.abs(slot) % 2 ? "alt" : "") + (r.fund ? " fund" : ""),
     };
   }));
 }
-import("./bars3d.js?v=14")
+import("./bars3d.js?v=15")
   .then(m => m.startTowers($("podCanvas"), $("podLabels"), { yaw0: -0.3, pitch: 0.36, spin: 0.07 }))
   .then(t => { towers = t; podium(entries()); })
   .catch(err => { console.warn("3D podium unavailable:", err); $("podStage").classList.add("fallback"); });
@@ -129,13 +135,11 @@ function famChart(el) {
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     svg.setAttribute("aria-label", "The family race: " + ser.map(s => `${s.name} ${pct1(s.pct)}`).join(", "));
     svg.innerHTML = `
-      <defs><linearGradient id="fundStroke" gradientUnits="userSpaceOnUse" x1="${pad.l}" y1="0" x2="${W - pad.r}" y2="0">
-        <stop offset="0" stop-color="#FF4F79"/><stop offset=".55" stop-color="#FF7A45"/><stop offset="1" stop-color="#FFB547"/></linearGradient></defs>
       <g class="grid">${ticks.map(t => `<line x1="${pad.l}" x2="${W - pad.r}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/>`).join("")}</g>
       <g class="axis">${ticks.map(t => `<text x="${pad.l - 10}" y="${(Y(t) + 4).toFixed(1)}" text-anchor="end">${(t > 0 ? "+" : "") + +t.toFixed(1)}%</text>`).join("")}
         ${xl.map(([i, s, a]) => `<text x="${X(i).toFixed(1)}" y="${H - 8}" text-anchor="${a || "middle"}">${s}</text>`).join("")}</g>
       <line class="base" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}"/>
-      ${order.map(s => `<path class="line${s.fund ? " fund" : ""}${s.me ? " me" : ""}" pathLength="1" d="${path(s.v)}"${s.fund ? "" : ` style="stroke:${s.color}"`}/>`).join("")}
+      ${order.map(s => `<path class="line${s.fund ? " fund" : ""}${s.me ? " me" : ""}" d="${path(s.v)}"${s.fund ? "" : ` style="stroke:${s.color};stroke-dasharray:${s.dash}"`}/>`).join("")}
       ${order.map(s => { const i = last(s.v); return `<circle class="end${s.fund ? " fund" : ""}" cx="${X(i).toFixed(1)}" cy="${Y(s.v[i]).toFixed(1)}" r="${s.me || s.fund ? 4 : 3}" fill="${s.color}"/>`; }).join("")}
       <line class="cross" y1="${pad.t}" y2="${H - pad.b}"/>`;
     empty.hidden = true;
@@ -197,7 +201,7 @@ live((what) => {
 
 /* ======================= my portfolio ======================= */
 
-const say = (el, text, err) => { el.textContent = text; el.className = "mine-msg" + (text ? (err ? " err" : " ok") : ""); };
+const say = (el, text, err) => { if (!el) return; el.textContent = text; el.className = "mine-msg" + (text ? (err ? " err" : " ok") : ""); };
 const defaultName = (u) => (u.displayName || u.email || "Me").split(/[\s@]/)[0].slice(0, 24);
 const fmtSh = (v) => Number(v).toLocaleString("en-US", { maximumFractionDigits: 4 });
 const keyOf = (hs) => JSON.stringify(hs.map(h => [h.tk, h.sh, h.avg]));   // same stocks, same numbers
@@ -211,26 +215,33 @@ const nameTaken = (n) => sameName(n, "Albassam Fund") || racers.some(r => r.id !
 let queue = Promise.resolve();
 const run = (fn) => (queue = queue.then(fn).catch(e => console.error(e)));
 
-// Which card shows: sign in, ask to join, or the desk.
+// The passcode lock: the key opens this member's sealed box. It lives
+// in memory, and on this device too if the member chose to remember it.
+let key = null, salt = null, raw = null, lockMode = null, rawSeq = 0, pending = null;   // pending: a new passcode being saved
+
+// Which card shows: sign in, ask to join, the lock, or the desk.
 function view() {
   $("mineGate").hidden = !!me;
   $("mineJoin").hidden = !me || isMem === true;
-  $("mineDesk").hidden = !me || isMem !== true;
+  $("mineLock").hidden = !me || isMem !== true || !lockMode;
+  $("mineDesk").hidden = !me || isMem !== true || !!lockMode;
 }
 
 function onUser(u) {
   me = u; isMem = null;
   unMine?.(); unMem?.(); unMine = unMem = null; mine = null; measured = null; published = false;
+  key = salt = raw = null; lockMode = "wait"; rawSeq++; lockForm.reset(); passForm.reset(); passForm.hidden = true;
   // nothing of the last person stays on the page (a shared phone)
   $("holdRows").innerHTML = ""; paintedFor = null;
   blankPct(); $("mineSub").textContent = "Only you see this card.";
   $("boardName").value = ""; resetForm();
-  ["formMsg", "optsMsg", "gateMsg", "joinMsg"].forEach(id => say($(id), ""));
+  ["formMsg", "optsMsg", "gateMsg", "joinMsg", "lockMsg", "passMsg"].forEach(id => say($(id), ""));
   watchTickers([], "mine");
   view();
   if (!u) { remember(false); paintBoard(); return; }
   $("mineName").textContent = u.displayName || "Signed in";
   $("mineEmail").textContent = u.email || "";
+  document.querySelectorAll("[data-me-email]").forEach(i => (i.value = u.email || ""));   // lets a password manager file the passcode under this account
   $("minePhoto").innerHTML = u.photoURL ? `<img src="${esc(u.photoURL)}" alt="" referrerpolicy="no-referrer">` : esc((u.displayName || u.email || "?")[0]);
   joinState("checking");
   unMem = api.watchMember(u, (ok) => {
@@ -240,15 +251,146 @@ function onUser(u) {
     if (!ok) { unMine?.(); unMine = null; mine = null; return askedYet(u); }
     if (unMine) return;
     published = false;
-    unMine = api.watchMine(u.uid, (doc) => {
-      mine = doc || { holdings: [], name: defaultName(u), show: true, fresh: true };
-      paintMine();
-      refreshMine();
-    }, (err) => { console.error(err); say($("optsMsg"), "Your portfolio could not load. Refresh the page to try again.", true); });
+    lock("wait");
+    unMine = api.watchMine(u.uid, (doc) => onRaw(u, doc),
+      (err) => { console.error(err); say($("lockMsg"), "Your portfolio could not load. Refresh the page to try again.", true); });
     observeReveals(document);
   }, (err) => { console.error(err); joinState("error"); });
   paintBoard();
 }
+
+/* ---------- the lock: choose a passcode, or open the box with it ---------- */
+const lockForm = $("mineLock"), passForm = $("passForm");
+const LOCK = {
+  wait: ["Opening your portfolio…", ""],
+  setup: ["Choose your passcode.",
+    "Your stocks are sealed with a passcode only you know. The family can't read them, the manager can't, and neither can the database itself. Write it down: if you forget it, nobody can get it back and you type your stocks in again."],
+  unlock: ["Enter your passcode.", "Your portfolio is sealed. Your passcode opens it on this device."],
+};
+function lock(mode) {
+  lockMode = mode; view();
+  if (!mode) return;
+  say($("lockMsg"), "");
+  const [title, copy] = LOCK[mode];
+  $("lockTitle").textContent = title; $("lockCopy").textContent = copy;
+  lockForm.classList.toggle("waiting", mode === "wait");
+  $("lockAgainRow").hidden = mode !== "setup";
+  $("lockForgot").hidden = mode !== "unlock";
+  $("lockGo").textContent = mode === "setup" ? "Lock my portfolio" : "Open my portfolio";
+  $("lockPass").autocomplete = mode === "setup" ? "new-password" : "current-password";
+}
+
+// Every change to the stored portfolio lands here, sealed. It opens with
+// the key in memory or the one kept on this device; otherwise the lock asks.
+async function onRaw(u, doc) {
+  const my = ++rawSeq;
+  raw = doc;
+  if (!doc) {   // a new member, or one who started over
+    if (key) { mine = { holdings: [], name: defaultName(u), show: true, fresh: true }; lock(null); paintMine(); return; }
+    return lock("setup");
+  }
+  if (!doc.box) return lock("setup");   // saved before the lock existed: sealing it is the first step
+  if (pending && b64of(pending.salt) === doc.box.salt) ({ key, salt } = pending);   // our own new passcode just landed
+  if (!key || b64of(salt) !== doc.box.salt) {
+    const k = await keptKey(u.uid);
+    if (my !== rawSeq) return;
+    if (k?.salt === doc.box.salt) { key = k.key; salt = unb64(k.salt); }
+    else { key = null; if (k) dropKey(u.uid); }   // a key kept for an older passcode is no use
+  }
+  if (!key) { clearDesk(); return lock("unlock"); }
+  try {
+    const opened = await openMine(doc, key);
+    if (my !== rawSeq) return;
+    mine = opened; lock(null); paintMine(); refreshMine();
+  } catch (e) {   // the passcode changed on another device
+    if (my !== rawSeq) return;
+    key = null; dropKey(u.uid); mine = null; lock("unlock");
+  }
+}
+const b64of = (u8) => (u8 ? btoa(String.fromCharCode(...u8)) : "");
+function clearDesk() {   // nothing of the opened portfolio stays on the page
+  mine = null; measured = null;
+  $("holdRows").innerHTML = ""; paintedFor = null; blankPct(); $("mineSub").textContent = "Only you see this card.";
+  paintBoard();
+}
+
+lockForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!me || (lockMode !== "setup" && lockMode !== "unlock")) return;
+  const msg = $("lockMsg"), pass = $("lockPass").value, keep = $("lockKeep").checked, uid = me.uid, mode = lockMode;
+  if (!pass) return say(msg, "Enter your passcode.", true);
+  if (mode === "setup") {
+    const why = passcodeProblem(pass);
+    if (why) return say(msg, why, true);
+    if (pass !== $("lockAgain").value) return say(msg, "The two passcodes don't match.", true);
+  }
+  $("lockGo").disabled = true;
+  say(msg, mode === "setup" ? "Sealing…" : "Opening…");
+  try {
+    if (mode === "unlock") {
+      const s = unb64(raw.box.salt), k = await makeKey(pass, s);
+      let opened;
+      try { opened = await openMine(raw, k); } catch (err) { return say(msg, "That passcode doesn't open it. Try again.", true); }
+      if (me?.uid !== uid) return;
+      key = k; salt = s; mine = opened;
+      if (keep) await keepKey(uid, k, s);
+      lockForm.reset(); say(msg, ""); lock(null); paintMine(); refreshMine();
+    } else {
+      const s = newSalt(), k = await makeKey(pass, s);
+      if (me?.uid !== uid) return;
+      const old = raw && !raw.box ? await openMine(raw, null) : null;   // stocks saved before the lock: seal them now
+      key = k; salt = s;
+      mine = { holdings: old?.holdings || [], line: old?.line || null, name: old?.name || defaultName(me), show: old?.show !== false };
+      if (keep) await keepKey(uid, k, s);
+      lockForm.reset(); lock(null); paintMine();
+      await run(() => save(() => ({}), $("optsMsg"), "Your portfolio is sealed. Add your stocks below.", { expect: raw?.box?.salt ?? null }));
+    }
+  } finally { $("lockGo").disabled = false; }
+});
+$("lockForgot").addEventListener("click", (e) => {
+  const b = e.currentTarget;
+  if (!me) return;
+  if (!b.classList.contains("armed")) {
+    b.classList.add("armed"); b.textContent = "Tap again: your stocks are erased and you start over";
+    say($("lockMsg"), "Starting over erases your sealed stocks and your own line. You come back on the board when you add your stocks again.");
+    setTimeout(() => { b.classList.remove("armed"); b.textContent = "Forgot it? Start over"; }, 5000);
+    return;
+  }
+  b.classList.remove("armed"); b.textContent = "Forgot it? Start over";
+  const uid = me.uid;
+  run(async () => {
+    try { await dropKey(uid); key = salt = null; await api.resetMine(uid); say($("lockMsg"), "Done. Choose a new passcode."); }
+    catch (err) { console.error(err); say($("lockMsg"), "Could not start over. Try again.", true); }
+  });
+});
+$("lockOut").addEventListener("click", () => { if (me) dropKey(me.uid); api?.signOut(); });
+
+// From the desk: a new passcode (the stocks are sealed again with it), or lock now.
+$("passChange").addEventListener("click", () => { passForm.hidden = !passForm.hidden; say($("passMsg"), ""); if (!passForm.hidden) $("passNew").focus(); });
+passForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!me || !mine) return;
+  const msg = $("passMsg"), pass = $("passNew").value, uid = me.uid;
+  const why = passcodeProblem(pass);
+  if (why) return say(msg, why, true);
+  if (pass !== $("passAgain").value) return say(msg, "The two passcodes don't match.", true);
+  say(msg, "Sealing with the new passcode…");
+  const oldSalt = salt, wasKept = (await keptKey(uid))?.salt === b64of(oldSalt);
+  const s = newSalt(), k = await makeKey(pass, s);
+  if (me?.uid !== uid || !key) return;
+  pending = { key: k, salt: s };
+  const ok = await run(() => save(() => ({}), msg, "Done. Your new passcode is set.", { key: k, salt: s, expect: b64of(oldSalt) }));
+  pending = null;
+  if (!ok || me?.uid !== uid || !key) return;   // failed, signed out or locked meanwhile: keep nothing
+  key = k; salt = s;
+  if (wasKept) await keepKey(uid, k, s); else await dropKey(uid);
+  passForm.reset(); passForm.hidden = true;
+});
+$("lockNow").addEventListener("click", () => {
+  if (!me) return;
+  dropKey(me.uid); key = salt = null; pending = null; clearDesk();
+  lock(raw?.box ? "unlock" : "setup");
+});
 
 /* ---------- not let in yet: ask once ---------- */
 function joinState(s) {
@@ -290,8 +432,7 @@ async function refreshMine() {
     paintMine();
     if (!published && !doc.fresh && m?.pct != null) {
       published = true;
-      publishMine(uid, doc, m, takenColors()).then(ok => { if (!ok) published = false; })
-        .catch(e => { published = false; console.warn("board refresh failed:", e); });
+      run(() => save(() => ({}), null)).then(ok => { if (!ok) published = false; });
     }
   } catch (e) { console.warn("portfolio prices failed:", e); }
   finally { measuring = false; if (again) { again = false; refreshMine(); } }
@@ -311,7 +452,7 @@ function paintMine() {
     paintedFor = key;
     $("holdRows").innerHTML = rows.map(r => `
       <tr>
-        <th scope="row"><span class="h-tk">${logoHtml({ ticker: r.tk, logo: logoOf(r.tk) })}<b>${esc(r.tk)}</b></span></th>
+        <th scope="row"><span class="h-tk">${logoHtml({ ticker: r.tk, logo: "" })}<b>${esc(r.tk)}</b></span></th>
         <td class="mono">${fmtSh(r.sh)}</td>
         <td class="mono">${usd2(r.avg)}</td>
         <td class="mono" data-px></td>
@@ -338,12 +479,17 @@ function paintMine() {
   $("boardShow").checked = mine.show !== false;
 }
 
-// Save the whole portfolio, then set today's point on the board.
-// Runs inside run(): `change(current)` returns the new fields, or a
-// string to show as the reason nothing changed.
-async function save(change, where, okText) {
+// Save the whole portfolio, sealed, with today's point on your own line,
+// then put your % on the board. Runs inside run(): `change(current)`
+// returns the new fields, or a string to show as the reason nothing
+// changed. `where` is the message line (null: quiet). `use` seals with
+// a new passcode ({ key, salt }) and/or names the salt the stored box
+// must still have ({ expect }); by default it is this device's own.
+async function save(change, where, okText, use = {}) {
   if (!me || !mine) return false;
-  const uid = me.uid;
+  const uid = me.uid, k = use.key || key, s = use.salt || salt;
+  if (!k) { say(where, "Your portfolio is locked. Enter your passcode first.", true); return false; }
+  const expect = "expect" in use ? use.expect : b64of(salt);
   const now = { holdings: mine.holdings, name: (mine.name || defaultName(me)).slice(0, 24), show: mine.show !== false, ...(mine.line ? { line: mine.line } : {}) };
   const patch = change(now);
   if (typeof patch === "string") { say(where, patch, true); return false; }
@@ -352,24 +498,24 @@ async function save(change, where, okText) {
   for (let n = 2; nameTaken(doc.name) && n < 50; n++) doc.name = base + " " + n;   // two Abdullahs: the second shows as "Abdullah 2"
   say(where, "Saving…");
   try {
-    // going off the board: keep the recorded line privately, so coming back resumes it
-    if (doc.show === false || !doc.holdings.length) {
-      const r = await api.readRacer(uid);
-      if (r?.days?.length) doc.line = { days: r.days, vals: r.vals, c: r.c ?? 0 };
-    }
-    await api.saveMine(uid, doc);
-    if (me?.uid !== uid) return false;
-    mine = doc;
-    say(where, "Saved. Updating the board…");
     const m = doc.holdings.length ? await measure(doc.holdings) : null;
-    if (mine === doc) { measured = m; paintMine(); }
+    if (m?.pct != null) doc.line = { ...nextLine(doc.line, m.pct), c: doc.line?.c ?? racers.find(r => r.id === uid)?.c ?? null };
+    await api.saveMine(uid, await sealMine(k, s, doc), expect);
+    if (me?.uid !== uid || !key) return false;   // signed out or locked meanwhile: show nothing
+    mine = doc; measured = m;
+    paintMine(); paintBoard();
     const onBoard = await publishMine(uid, doc, m, takenColors());
     published = onBoard;   // prices missing: refreshMine tries again when they load
-    say(where, !doc.holdings.length || !doc.show ? (doc.holdings.length ? "Saved. You are hidden from the race." : "Saved.")
+    say(where, !doc.holdings.length || !doc.show ? (doc.holdings.length ? "Saved. You are hidden from the race." : okText || "Saved.")
       : onBoard ? okText || "Saved. Your % is on the board." : "Saved. The board updates as soon as prices load.");
     return true;
   } catch (err) {
     console.error(err);
+    if (err?.code === "stale") {   // the passcode or the stocks changed on another device
+      say(where, "Your portfolio was changed on another device. Enter your passcode to open the latest.", true);
+      if (me?.uid === uid) { key = null; dropKey(uid); clearDesk(); lock("unlock"); }
+      return false;
+    }
     say(where, String(err?.code || "").includes("permission") ? "The manager hasn't let you in yet, so this wasn't saved."
       : "Could not save. Check your connection and try again.", true);
     return false;
@@ -503,7 +649,7 @@ $("mineIn").addEventListener("click", async () => {
       : installed ? SAFARI : "Sign-in didn't work here. Open this page in Safari or Chrome and try again.", true);
   }
 });
-$("mineOut").addEventListener("click", () => api?.signOut());
+$("mineOut").addEventListener("click", () => { if (me) dropKey(me.uid); api?.signOut(); });   // a shared phone keeps nothing
 $("joinOut").addEventListener("click", () => api?.signOut());
 
 backend().then((b) => {

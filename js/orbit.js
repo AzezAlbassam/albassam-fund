@@ -1,35 +1,27 @@
 // ============================================================
-// In orbit: every call is a glossy planet circling a glowing core,
-// live in 3D (Three.js). Size = share of the pot; green won, rose
-// lost, amber still open. Drag to spin, tap a planet to pick it.
+// In orbit: every call is a small faceted planet circling the
+// core, drawn in black lines on white, live in 3D (Three.js).
+// Size = share of the pot; ink won, red lost, grey still open.
+// Drag to spin, tap a planet to pick it.
 //   const o = await startOrbit(canvas, labelsEl, onPick);
 //   o.set(trades, pctOf)   // pctOf(trade) -> result % or null
 // ============================================================
 
 import * as THREE from "three";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { LineSegments2 } from "three/addons/lines/LineSegments2.js";
+import { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js";
+import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 
 const RADII = [2.1, 2.75, 3.4];
 const TILTS = [[0.0, 0.0], [0.28, 0.35], [-0.22, -0.4]];
-const COL = { win: 0x22d38a, loss: 0xff4668, open: 0xffb02e };
-
-function dotTexture() {
-  const c = document.createElement("canvas"); c.width = c.height = 64;
-  const g = c.getContext("2d"), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-  gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.35, "rgba(255,255,255,.55)"); gr.addColorStop(1, "rgba(255,255,255,0)");
-  g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-}
+const COL = { win: 0x0b0b0c, loss: 0xd92d20, open: 0x8a8a93 };
+const PAPER = 0xffffff;
 
 export async function startOrbit(canvas, labelsEl, onPick) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   const scene = new THREE.Scene();
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.25;   // keep the colors rich, not washed out
+  scene.fog = new THREE.Fog(PAPER, 10, 20);   // the far side of every orbit fades into the paper
 
   const cam = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
   cam.position.set(0, 2.4, 10.2);
@@ -38,81 +30,59 @@ export async function startOrbit(canvas, labelsEl, onPick) {
   const world = new THREE.Group();
   world.rotation.x = 0.32;
   scene.add(world);
-  const dot = dotTexture();
 
-  // the core: a glossy iridescent sphere inside a shell of sunset sparks
-  const core = new THREE.Mesh(new THREE.SphereGeometry(1.2, 64, 64), new THREE.MeshPhysicalMaterial({
-    color: 0xff5236, emissive: 0xff2a5e, emissiveIntensity: 0.9, metalness: 0.35, roughness: 0.2,
-    clearcoat: 1, clearcoatRoughness: 0.06, iridescence: 1, iridescenceIOR: 1.7, iridescenceThicknessRange: [120, 480],
-  }));
+  const res = new THREE.Vector2(1, 1), mats = [];
+  const lineMat = (color, linewidth, opacity = 1) => {
+    const m = new LineMaterial({ color, linewidth, transparent: opacity < 1, opacity, fog: true });
+    m.resolution.copy(res); mats.push(m); return m;
+  };
+  // a white body that hides the lines behind it, so it reads as a solid drawn in lines
+  const paper = new THREE.MeshBasicMaterial({ color: PAPER, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+  const edgesOf = (geo) => new LineSegmentsGeometry().fromEdgesGeometry(new THREE.EdgesGeometry(geo));
+
+  // the core: a geodesic sphere
+  const coreGeo = new THREE.IcosahedronGeometry(1.2, 1);
+  const core = new THREE.Mesh(coreGeo, paper);
+  core.add(new LineSegments2(edgesOf(coreGeo), lineMat(0x0b0b0c, 1.4)));
   world.add(core);
-  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: dot, color: 0xff6a4d, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
-  glow.scale.setScalar(6.2);
-  world.add(glow);
 
-  const N = 1500, pos = new Float32Array(N * 3), col = new Float32Array(N * 3);
-  const c1 = new THREE.Color(0xff4f79), c2 = new THREE.Color(0xffb547), tmp = new THREE.Color();
-  for (let i = 0; i < N; i++) {
-    const y = 1 - (i / (N - 1)) * 2, r = Math.sqrt(1 - y * y), th = i * 2.399963;
-    const R = 1.5 + (Math.sin(i * 12.9898) * 0.5 + 0.5) * 0.35;
-    pos.set([Math.cos(th) * r * R, y * R, Math.sin(th) * r * R], i * 3);
-    tmp.copy(c1).lerp(c2, (y + 1) / 2);
-    col.set([tmp.r, tmp.g, tmp.b], i * 3);
+  // three tilted orbits: thin ink circles
+  const circle = [];
+  for (let i = 0, n = 160; i < n; i++) {
+    const a = (i / n) * Math.PI * 2, b = ((i + 1) / n) * Math.PI * 2;
+    circle.push(Math.cos(a), 0, Math.sin(a), Math.cos(b), 0, Math.sin(b));
   }
-  const shellGeo = new THREE.BufferGeometry();
-  shellGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  shellGeo.setAttribute("color", new THREE.BufferAttribute(col, 3));
-  const shell = new THREE.Points(shellGeo, new THREE.PointsMaterial({ size: 0.075, map: dot, vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending }));
-  world.add(shell);
-
-  // three tilted orbits
+  const circleGeo = new LineSegmentsGeometry().setPositions(circle);
+  const ringMat = lineMat(0x0b0b0c, 1, 0.4);
   const rings = RADII.map((r, i) => {
     const g = new THREE.Group();
     g.rotation.x = TILTS[i][0]; g.rotation.z = TILTS[i][1];
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.01, 8, 220),
-      new THREE.MeshBasicMaterial({ color: i === 0 ? 0xff7a45 : i === 1 ? 0xff4f79 : 0xffb547, transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false }));
-    ring.rotation.x = Math.PI / 2;
+    const ring = new LineSegments2(circleGeo, ringMat);
+    ring.scale.setScalar(r);
     g.add(ring);
     world.add(g);
     return g;
   });
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.35));
-  const coreLight = new THREE.PointLight(0xff8a5c, 60, 30, 2);
-  world.add(coreLight);
-  const rim = new THREE.DirectionalLight(0xb9a6ff, 1.4);
-  rim.position.set(-6, 5, -4);
-  scene.add(rim);
-
-  // stars far away
-  const S = 500, sp = new Float32Array(S * 3);
-  for (let i = 0; i < S; i++) {
-    const u = Math.sin(i * 78.233) * 43758.5453 % 1, v = Math.sin(i * 12.9898) * 23421.631 % 1, w = Math.sin(i * 4.1414) * 3758.5453 % 1;
-    sp.set([(u - 0.5) * 60, (v - 0.5) * 40, -12 - Math.abs(w) * 30], i * 3);
-  }
-  const starGeo = new THREE.BufferGeometry(); starGeo.setAttribute("position", new THREE.BufferAttribute(sp, 3));
-  scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ size: 0.12, map: dot, color: 0xffd9c2, transparent: true, opacity: 0.55, depthWrite: false })));
-
   /* ---------- planets = calls ---------- */
   let planets = [];
-  const planetGeo = new THREE.SphereGeometry(1, 40, 40);
+  const planetGeo = new THREE.IcosahedronGeometry(1, 0), planetEdges = edgesOf(planetGeo);
   function set(trades, pctOf) {
-    for (const p of planets) { p.ring.remove(p.mesh); p.mat.dispose(); p.glow.material.dispose(); p.label.remove(); }
+    for (const p of planets) { p.ring.remove(p.mesh); p.mat.dispose(); mats.splice(mats.indexOf(p.mat), 1); p.label.remove(); }
     planets = trades.map((t, i) => {
       const pct = pctOf(t), kind = t.status === "active" ? "open" : (pct ?? 0) < 0 ? "loss" : "win";
       const ri = i % 3, r = RADII[ri];
       const size = 0.13 + Math.sqrt(Math.max(t.wt || 4, 4)) * 0.034;
-      const mat = new THREE.MeshPhysicalMaterial({ color: COL[kind], emissive: COL[kind], emissiveIntensity: 0.85, metalness: 0.15, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.08 });
-      const mesh = new THREE.Mesh(planetGeo, mat);
+      const mat = lineMat(COL[kind], 1.3);
+      const mesh = new THREE.Mesh(planetGeo, paper);
+      mesh.add(new LineSegments2(planetEdges, mat));
       mesh.scale.setScalar(size);
-      const g = new THREE.Sprite(new THREE.SpriteMaterial({ map: dot, color: COL[kind], transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
-      g.scale.setScalar(size * 5);
-      mesh.add(g);
+      mesh.rotation.set(i * 0.7, i * 1.3, 0);
       rings[ri].add(mesh);
       const label = document.createElement("span");
-      label.innerHTML = `${t.ticker} <i style="color:#${COL[kind].toString(16).padStart(6, "0")}">${pct == null ? "" : (pct >= 0 ? "+" : "-") + Math.abs(pct).toFixed(1) + "%"}</i>`;
+      label.innerHTML = `${t.ticker} <i class="${kind}">${pct == null ? "" : (pct >= 0 ? "+" : "-") + Math.abs(pct).toFixed(1) + "%"}</i>`;
       labelsEl.appendChild(label);
-      return { t, mesh, mat, glow: g, label, ring: rings[ri], r, a: i * 2.399963, speed: 0.34 / Math.sqrt(r) * (1 + (i % 4) * 0.08), size };
+      return { t, mesh, mat, label, ring: rings[ri], r, a: i * 2.399963, speed: 0.34 / Math.sqrt(r) * (1 + (i % 4) * 0.08), size };
     });
   }
 
@@ -158,9 +128,12 @@ export async function startOrbit(canvas, labelsEl, onPick) {
     cam.aspect = w / h;
     cam.position.z = w / h < 0.9 ? 15 : 12.6;   // the outer orbit always fits inside the frame
     cam.updateProjectionMatrix();
+    const d = cam.position.length();
+    scene.fog.near = d - 1.5; scene.fog.far = d + 7;
+    res.set(w, h);
+    for (const m of mats) m.resolution.copy(res);
+    if (!running) frame();
   }
-  new ResizeObserver(size).observe(canvas);
-  size();
 
   const v = new THREE.Vector3(), clock = new THREE.Clock();
   function frame() {
@@ -168,23 +141,32 @@ export async function startOrbit(canvas, labelsEl, onPick) {
     if (!dragging) { vel += (auto * k - vel) * 0.02; yaw += vel; }
     world.rotation.set(pitch, yaw, 0);
     core.rotation.y += dt * 0.25 * k;
-    shell.rotation.y -= dt * 0.12 * k;
-    shell.rotation.x = Math.sin(clock.elapsedTime * 0.3) * 0.15;
-    glow.material.opacity = 0.48 + Math.sin(clock.elapsedTime * 1.6) * 0.08;
+    core.rotation.x = Math.sin(clock.elapsedTime * 0.3) * 0.15;
     const W = canvas.clientWidth, H = canvas.clientHeight;
     for (const p of planets) {
       p.a += p.speed * dt * k;
       p.mesh.position.set(Math.cos(p.a) * p.r, 0, Math.sin(p.a) * p.r);
+      p.mesh.rotation.y += dt * 0.6 * k;
       const s = p.size * (p === selected ? 1.45 : p === hovered ? 1.25 : 1);
       p.mesh.scale.setScalar(p.mesh.scale.x + (s - p.mesh.scale.x) * 0.2);
+      p.mat.linewidth = p === selected ? 2.4 : 1.3;
       p.mesh.getWorldPosition(v);
-      const camDist = v.distanceTo(cam.position);
+      p.d = v.distanceTo(cam.position);
       v.project(cam);
-      const x = (v.x * 0.5 + 0.5) * W, y = (-v.y * 0.5 + 0.5) * H;
+      p.x = (v.x * 0.5 + 0.5) * W; p.y = (-v.y * 0.5 + 0.5) * H; p.c = Math.hypot(v.x, v.y);
+    }
+    // labels: the picked one first, then nearest first; one that would cover another waits its turn
+    const placed = [];
+    for (const p of [...planets].sort((a, b) => (b === selected) - (a === selected) || a.d - b.d)) {
+      const { x, y } = p, lw = (p.lw ||= p.label.offsetWidth || 90), lh = (p.lh ||= p.label.offsetHeight || 22);
+      const box = { l: x - lw / 2, t: y - lh * 1.7, r: x + lw / 2, b: y - lh * 0.7 };
       p.label.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,-170%)`;
-      const behind = camDist > cam.position.length() + 0.4 && Math.hypot(v.x, v.y) < 0.2;
+      const behind = p.d > cam.position.length() + 0.4 && p.c < 0.2;
       const outside = x < 40 || x > W - 40 || y < 30 || y > H - 10;   // never let a label hang off the frame
-      p.label.style.opacity = behind || outside ? "0" : p === selected || p === hovered ? "1" : ".85";
+      const covers = placed.some(q => box.l < q.r + 4 && q.l < box.r + 4 && box.t < q.b + 2 && q.t < box.b + 2);
+      const show = !behind && !outside && !covers;
+      if (show) placed.push(box);
+      p.label.style.opacity = show ? (p === selected || p === hovered ? "1" : ".9") : "0";
     }
     renderer.render(scene, cam);
   }
@@ -195,6 +177,8 @@ export async function startOrbit(canvas, labelsEl, onPick) {
     else if (!go && running) { running = false; renderer.setAnimationLoop(null); frame(); }
     else if (!go) frame();
   }
+  new ResizeObserver(size).observe(canvas);   // last: size() draws a frame, so everything above must exist
+  size();
   loop();
   return { set: (trades, pctOf) => { set(trades, pctOf); if (!running) frame(); }, select: (id) => { selected = planets.find(p => p.t.id === id) || null; } };
 }

@@ -1,30 +1,36 @@
 // ============================================================
-// Home v2: a hero that plays on its own (Higgsfield loop, a phone
-// cut for phones), a moving ticker of every call, the bento
-// scoreboard with rolling numbers, a live 3D orbit of the calls,
-// racing what-if bars, the record, the book and the wire.
+// Home v3 ("Line maze"): the maze hero, a moving ticker of every
+// call, the bento scoreboard with rolling numbers, the 3D line orbit
+// of the calls, what-if bars, the forecast towers, the record, the
+// book and the wire.
 // ============================================================
 
 import { initShell, observeReveals, onReveal, roll, countTo, reducedMotion, usd0, pct1, pts1, shortUsd,
-         day, esc, pctClass, logoHtml, daysBetween } from "./shell.js?v=14";
-import { live, state } from "./live.js?v=14";
-import { loadRace, raceSummary } from "./series.js?v=14";
-import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=14";
-import { simulate, statPct, derive, blendedPct } from "./roi.js?v=14";
-import { watchNews } from "./news.js?v=14";
+         day, esc, pctClass, logoHtml, daysBetween } from "./shell.js?v=15";
+import { live, state } from "./live.js?v=15";
+import { loadRace, raceSummary } from "./series.js?v=15";
+import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=15";
+import { simulate, statPct, derive, blendedPct } from "./roi.js?v=15";
+import { watchNews } from "./news.js?v=15";
 
 const $ = (s, r = document) => r.querySelector(s);
 initShell();
 
-/* =================== HERO: the live 3D market =================== */
+/* =================== HERO: the maze, our fund's line climbing out =================== */
 const media = $("#heroMedia");
-let market = null;
-import("./market.js?v=14")
-  .then(m => m.startMarket($("#market"), $("#mkLabels")))
-  .then(mk => { market = mk; if (race) market.setData(race, state.trades, pctOf); onHeroScroll(); })
-  .catch(err => { console.warn("3D market unavailable:", err); media.classList.add("fallback"); });
+let maze = null;
+const phone = innerWidth < 720;
+import("./maze.js?v=15")
+  .then(m => m.startMaze($("#maze"), { labelsEl: $("#mzLabels"), cols: phone ? 9 : 16, rows: phone ? 11 : 11, fit: phone ? 1.12 : 1 }))
+  .then(mz => { maze = mz; feedMaze(); onHeroScroll(); })
+  .catch(err => { console.warn("3D maze unavailable:", err); media.classList.add("fallback"); });
+function feedMaze() {
+  if (!maze || !race) return;
+  const n = race.fund.length - 1;
+  maze.setPath(race.fund, `<b>${pct1((race.fund[n] / race.fund[0] - 1) * 100)}</b>our fund`);
+}
 const hero = $(".hero");
-function onHeroScroll() { market?.setScroll(Math.min(1, Math.max(0, scrollY / (hero.offsetHeight || 1)))); }
+function onHeroScroll() { maze?.setScroll(Math.min(1, Math.max(0, scrollY / (hero.offsetHeight || 1)))); }
 addEventListener("scroll", onHeroScroll, { passive: true });
 
 // the title builds itself letter by letter
@@ -52,7 +58,7 @@ async function refreshRace() {
   race = r;
   raceFailed = !race && state.trades.some(t => t.wt > 0);
   chart.set(race);
-  market?.setData(race, state.trades, pctOf);
+  feedMaze();
   if (raceFailed) chart.fail(RACE_FAIL);
   legend(); renderScore(); renderBars(); renderForecast();
 }
@@ -97,9 +103,9 @@ function legend() {
   const box = $("#raceLegend");
   if (!race) { box.innerHTML = ""; return; }
   const o = chart.opts, s = viewValues(race, o), b = o.bench, f = o.unit === "pct" ? pct1 : usd0;
-  const item = (c, name, v) => `<span><i style="background:${c}"></i>${name} <b>${f(v)}</b></span>`;
-  box.innerHTML = item("var(--grad)", "Our fund", s.fund) +
-    (b !== "spx" ? item("var(--gold)", "Gold", s.gold) : "") + (b !== "gold" ? item("var(--spx)", "S&amp;P 500", s.spx) : "") +
+  const item = (k, name, v) => `<span class="${k}"><i></i>${name} <b>${f(v)}</b></span>`;   // site.css: gold dashed, S&P dotted
+  box.innerHTML = item("fund", "Our fund", s.fund) +
+    (b !== "spx" ? item("gold", "Gold", s.gold) : "") + (b !== "gold" ? item("spx", "S&amp;P 500", s.spx) : "") +
     `<span class="muted">as of ${day(s.asOf)}</span>`;
 }
 
@@ -143,7 +149,7 @@ function renderBars() {
   onReveal(box, () => {
     for (const col of box.querySelectorAll(".bar-col")) {
       const k = col.dataset.k;
-      col.querySelector(".bar-track i").style.transform = `scaleY(${(fin[k] / max).toFixed(4)})`;
+      col.querySelector(".bar-track i").style.height = (fin[k] / max * 100).toFixed(2) + "%";   // height, not scale: the hatching keeps its angle
       countTo(col.querySelector("[data-v]"), fin[k], innerWidth < 560 && fin[k] >= 1e6 ? shortUsd : usd0, 1800);
       col.querySelector("[data-r]").textContent = pct1(s[k]);
     }
@@ -166,10 +172,9 @@ function renderRecord() {
   recordKey = key;
   row.removeAttribute("data-stagger"); row.classList.remove("in", "done");
   row.innerHTML = closed.map(t => {
-    const loss = t.finalPct < 0, c = loss ? "var(--loss)" : "var(--pos)";
-    return `<li class="call-card tilt"><span class="cc-glow" style="background:${loss ? "#FF5470" : "#FF7A45"}" aria-hidden="true"></span>
+    return `<li class="call-card tilt">
       <div class="cc-top">${logoHtml(t)}<div><b>${esc(t.ticker)}</b><small>${esc(t.name || "")}</small></div></div>
-      <p class="cc-pct" style="color:${c}">${pct1(t.finalPct)}</p>
+      <p class="cc-pct ${pctClass(t.finalPct)}">${pct1(t.finalPct)}</p>
       <p class="cc-meta">${day(t.opened)} → ${day(t.closed)}${t.wt > 0 ? " · " + t.wt + "% of pot" : ""}</p>
       <p class="cc-gain ${pctClass(t.finalPct)}">${t.wt > 0 ? pct1(t.wt * t.finalPct / 100) + " on the pot" : "Unsized"}</p></li>`;
   }).join("") || `<li class="muted">Closed calls land here with their result locked in.</li>`;
@@ -201,7 +206,7 @@ function renderBook(liveOnly) {
       <dl><div><dt>Avg cost</dt><dd>$${d.avgCost.toFixed(2)}</dd></div><div><dt>Now</dt><dd data-f="px">${q ? "$" + q.c.toFixed(2) : "…"}</dd></div>
         <div><dt>Share of pot</dt><dd>${t.wt > 0 ? t.wt + "%" : "Unsized"}</dd></div><div><dt>Opened</dt><dd>${day(t.opened)}</dd></div></dl>
     </article>`;
-  }).join("") : `<div class="glass glow book-empty" data-reveal><span class="orb" aria-hidden="true"></span>
+  }).join("") : `<div class="glass glow book-empty" data-reveal>
       <div><h3>All cash.</h3><p>Every gain is banked. The next call shows up here the minute it opens.</p></div></div>`;
   observeReveals(box);
 }
@@ -227,7 +232,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startOrbit } = await import("./orbit.js?v=14");
+    const { startOrbit } = await import("./orbit.js?v=15");
     orbit = await startOrbit($("#orbit"), $("#orbitLabels"), renderOrbitCard);
     feedOrbit();
   } catch (err) {
@@ -240,19 +245,19 @@ new IntersectionObserver(async ([e], obs) => {
 // "Our pace" = our return so far, repeated once a year. The literal
 // daily pace is shown in the note only: annualized it runs into the
 // billions within a few years, which no fund sustains.
-const FC_REF = [["spx", "S&amp;P 500", 0.10, 0xa78bfa, "var(--spx)"], ["gold", "Gold", 0.08, 0xffc24b, "var(--gold)"]];
+const FC_REF = [["spx", "S&amp;P 500", 0.10, 0xa1a1aa], ["gold", "Gold", 0.08, 0x6b6b74]];
 const fc = { share: 1, years: 5, towers: null };
 function renderForecast() {
   if (!race) return;
   const r0 = raceSummary(race).fund / 100, r = r0 * fc.share, pot = state.pot, N = fc.years;
   const val = (rate, y) => pot * Math.pow(1 + rate, y);
-  const rows = [["fund", "Our fund", r, 0xff7a45, "var(--grad)"], ...FC_REF];
+  const rows = [["fund", "Our fund", r, 0x0b0b0c], ...FC_REF];
   // the numbers
   $("#fcN").textContent = N + (N === 1 ? " year" : " years");
   countTo($("#fcValue"), val(r, N), (v) => (v >= 1e6 ? shortUsd(v) : usd0(v)), 1600);
   $("#fcRate").textContent = `at ${pct1(r * 100)} a year${fc.share < 1 ? "" : ", the same as our run so far"}`;
-  $("#fcRows").innerHTML = rows.map(([k, name, rate, , css]) =>
-    `<tr class="${k}"><th scope="row"><i style="background:${css}"></i>${name}</th><td>${shortUsd(val(rate, 5))}</td><td>${shortUsd(val(rate, 10))}</td></tr>`).join("");
+  $("#fcRows").innerHTML = rows.map(([k, name, rate]) =>
+    `<tr class="${k}"><th scope="row"><i class="sw ${k}"></i>${name}</th><td>${shortUsd(val(rate, 5))}</td><td>${shortUsd(val(rate, 10))}</td></tr>`).join("");
   const days = Math.max(1, daysBetween(race.first, race.days[race.days.length - 1]));
   const ann = Math.pow(1 + r0, 365 / days) - 1;
   const toBillion = Math.log(1e9 / pot) / Math.log(1 + ann);
@@ -288,7 +293,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=14");
+    const { startTowers } = await import("./bars3d.js?v=15");
     fc.towers = await startTowers($("#fcCanvas"), $("#fcLabels"));
     renderForecast();
   } catch (err) { console.warn("3D forecast unavailable:", err); $("#fcStage").classList.add("fallback"); }

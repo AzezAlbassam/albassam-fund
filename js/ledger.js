@@ -5,10 +5,10 @@
 // so expanded rows, sparklines and reveals survive every change.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, countTo, roll, usd2, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=14";
-import { live, state } from "./live.js?v=14";
-import { derive, blendedPct, today, exitPx } from "./roi.js?v=14";
-import { history } from "./history.js?v=14";
+import { initShell, observeReveals, onReveal, countTo, roll, usd2, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=15";
+import { live, state } from "./live.js?v=15";
+import { derive, blendedPct, today, exitPx } from "./roi.js?v=15";
+import { history } from "./history.js?v=15";
 
 initShell();
 
@@ -19,6 +19,11 @@ let ci = 0;
 document.querySelectorAll(".lhead h1 .w").forEach(w => {
   w.innerHTML = [...w.textContent].map(ch => `<span class="ch" style="--i:${ci++}">${esc(ch)}</span>`).join("");
 });
+// the header: a calm line maze, no path through it
+import("./maze.js?v=15")
+  .then(m => m.startMaze($("#lmaze"), { cols: 12, rows: 9, seed: 20260815, spin: 0.035, fit: 1, path: false }))
+  .catch(err => console.warn("3D maze unavailable:", err));
+
 const list = $("#calls"), tally = $("#tally"), emptyEl = $("#empty"), countEl = $("#count");
 const ui = { filter: "all", sort: "new", q: "" };
 const expanded = new Set();          // ids of open rows
@@ -119,7 +124,6 @@ async function loadSpark(id) {
   if (cell) cell.innerHTML = html;
 }
 
-let gid = 0;   // unique gradient ids across rows
 function sparkSvg(t, h) {
   const end = endOf(t), pts = [];
   h.dates.forEach((d, i) => { if (d >= t.opened && d <= end && h.closes[i] != null) pts.push(h.closes[i]); });
@@ -133,11 +137,10 @@ function sparkSvg(t, h) {
     .map(n => +n.toFixed(1)));
   const d = xy.map(([x, y], i) => (i ? "L" : "M") + x + " " + y).join("");
   const [x0, y0] = xy[0], [x1, y1] = xy[xy.length - 1];
-  const g = "sg" + ++gid, cls = isOpen(t) ? "open" : (pctOf(t) ?? 0) < 0 ? "loss" : "";
+  const cls = isOpen(t) ? "open" : (pctOf(t) ?? 0) < 0 ? "loss" : "";
+  // a bare line drawing: baseline at the entry price, then the line
   return `<svg class="spark ${cls}" viewBox="0 0 ${W} ${H}" focusable="false">` +
-    `<defs><linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".32"/>` +
-    `<stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs>` +
-    `<path class="area" fill="url(#${g})" d="${d}L${x1} ${H}L${x0} ${H}Z"/><path class="ln" pathLength="1" d="${d}"/>` +
+    `<path class="base" d="M${x0} ${y0}H${x1}"/><path class="ln" pathLength="1" d="${d}"/>` +
     `<circle class="p0" cx="${x0}" cy="${y0}" r="3"/><circle class="halo" cx="${x1}" cy="${y1}" r="3"/><circle class="p1" cx="${x1}" cy="${y1}" r="3"/></svg>`;
 }
 
