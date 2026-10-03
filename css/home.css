@@ -10,7 +10,7 @@
 @keyframes fadeIn{to{opacity:1}}
 .hero-media.fallback{background:repeating-linear-gradient(90deg,transparent 0 55px,rgba(11,11,12,.08) 55px 56px),repeating-linear-gradient(0deg,transparent 0 55px,rgba(11,11,12,.08) 55px 56px)}
 .hero-shade{position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:linear-gradient(90deg,var(--paper) 0%,rgba(255,255,255,.9) 30%,rgba(255,255,255,0) 54%),
+  background:linear-gradient(90deg,var(--paper) 0%,rgba(255,255,255,.92) 40%,rgba(255,255,255,0) 60%),
              linear-gradient(0deg,var(--paper) 0%,rgba(255,255,255,0) 22%)}
 .hero-inner{padding:calc(var(--nav-h) + 6vh) 0 clamp(36px,7vh,80px)}
 .live-chip{display:inline-flex;align-items:center;gap:10px;margin:0 0 22px;padding:9px 16px;border-radius:999px;

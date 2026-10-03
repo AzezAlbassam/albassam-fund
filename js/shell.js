@@ -4,7 +4,7 @@
 // build stamp and the "new version" bar. Plus small formatters.
 // ============================================================
 
-import { BUILD } from "./config.js?v=15";
+import { BUILD } from "./config.js?v=16";
 
 export const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -74,13 +74,13 @@ export function initShell() {
   // the owner's "+ New call" button, only on a device where the manager signed in
   try {
     if (localStorage.getItem("af:owner") === "1" && !document.getElementById("addForm"))
-      import("./owner.js?v=15").then(m => m.startOwner()).catch(e => console.warn("quick add unavailable:", e));
+      import("./owner.js?v=16").then(m => m.startOwner()).catch(e => console.warn("quick add unavailable:", e));
   } catch (e) { /* storage blocked */ }
 
   // a family member's line on the board refreshes whenever they open any page
   try {
     if (localStorage.getItem("af:racer") === "1" && !document.getElementById("mineDesk"))
-      setTimeout(() => import("./folio.js?v=15").then(m => m.syncMine()).catch(e => console.warn("board refresh skipped:", e)), 4000);
+      setTimeout(() => import("./folio.js?v=16").then(m => m.syncMine()).catch(e => console.warn("board refresh skipped:", e)), 4000);
   } catch (e) { /* storage blocked */ }
 
   // "Get the app": install on the phone's home screen

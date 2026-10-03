@@ -4,11 +4,11 @@
 // Everything re-renders from live(): trades, pot and quotes.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=15";
-import { live, state } from "./live.js?v=15";
-import { statPct } from "./roi.js?v=15";
-import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=15";
-import { raceChart, bindRaceControls } from "./chart.js?v=15";
+import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=16";
+import { live, state } from "./live.js?v=16";
+import { statPct } from "./roi.js?v=16";
+import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=16";
+import { raceChart, bindRaceControls } from "./chart.js?v=16";
 
 const $ = (id) => document.getElementById(id);
 const FAIL = "The race could not load right now. Try again in a minute.";
@@ -28,7 +28,7 @@ let race = null, status = "loading", key = "", seq = 0;
 /* ---------- header: the line maze, our fund's path climbing out of it ---------- */
 let maze = null;
 const phone = innerWidth < 720;
-import("./maze.js?v=15")
+import("./maze.js?v=16")
   .then(m => m.startMaze($("rhMaze"), { labelsEl: $("rhLabels"), cols: phone ? 8 : 12, rows: phone ? 7 : 9, seed: 20260712, spin: 0.035, fit: phone ? 0.92 : 1 }))
   .then(mz => { maze = mz; feedMaze(); })
   .catch(err => console.warn("3D maze unavailable:", err));
@@ -74,7 +74,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=15");
+    const { startTowers } = await import("./bars3d.js?v=16");
     towers = await startTowers($("pdCanvas"), $("pdLabels"), { yaw0: -0.45, pitch: 0.35, spin: 0.06 });
     podium();
   } catch (err) { console.warn("3D podium unavailable:", err); $("pdStage").classList.add("fallback"); }

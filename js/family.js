@@ -5,13 +5,13 @@
 // the pace setter, from the same race the home page draws.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, countTo, pct1, usd0, usd2, day, esc, logoHtml, pctClass } from "./shell.js?v=15";
-import { live, state } from "./live.js?v=15";
-import { loadRace } from "./series.js?v=15";
-import { niceTicks } from "./chart.js?v=15";
-import { watchTickers, checkTicker } from "./prices.js?v=15";
+import { initShell, observeReveals, onReveal, countTo, pct1, usd0, usd2, day, esc, logoHtml, pctClass } from "./shell.js?v=16";
+import { live, state } from "./live.js?v=16";
+import { loadRace } from "./series.js?v=16";
+import { niceTicks } from "./chart.js?v=16";
+import { watchTickers, checkTicker } from "./prices.js?v=16";
 import { backend, measure, publishMine, remember, COLORS, DASHES, MAX_HOLDINGS,
-         makeKey, newSalt, unb64, sealMine, openMine, keepKey, keptKey, dropKey, nextLine, passcodeProblem } from "./folio.js?v=15";
+         makeKey, newSalt, unb64, sealMine, openMine, keepKey, keptKey, dropKey, nextLine, passcodeProblem } from "./folio.js?v=16";
 
 const $ = (id) => document.getElementById(id);
 const RANGES = { "1M": 22, "3M": 64 };   // ponytail: mirrors chart.js RANGES
@@ -87,7 +87,7 @@ function podium(list) {
     };
   }));
 }
-import("./bars3d.js?v=15")
+import("./bars3d.js?v=16")
   .then(m => m.startTowers($("podCanvas"), $("podLabels"), { yaw0: -0.3, pitch: 0.36, spin: 0.07 }))
   .then(t => { towers = t; podium(entries()); })
   .catch(err => { console.warn("3D podium unavailable:", err); $("podStage").classList.add("fallback"); });

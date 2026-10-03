@@ -195,14 +195,14 @@ export async function startMaze(canvas, { labelsEl = null, cols = 16, rows = 11,
     // framing: the whole maze fits, wider screens sit it to the right
     const aspect = cam.aspect, wide = aspect > 1.1;
     const span = Math.max(cols, rows * (wide ? 1.15 : 1.4));
-    const r = (span / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * Math.min(1, aspect * (wide ? 0.5 : 0.95)))) * 1.18 / fit;
+    const r = (span / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * Math.min(1, aspect * (wide ? 0.44 : 0.95)))) * 1.18 / fit;
     const p = pitch - scroll * 0.3 + my * 0.08, y = yaw + mx * 0.25;
     cam.position.set(Math.sin(y) * Math.cos(p) * r, Math.sin(p) * r * (1 - scroll * 0.35), Math.cos(y) * Math.cos(p) * r);
     cam.lookAt(0, wall * 0.4, 0);
     scene.fog.near = r - span * 0.2; scene.fog.far = r + span * 1.3;   // the far side of the maze fades into the paper
     // wide: the maze sits right of the copy; tall: it sits above it
     const W0 = canvas.clientWidth, H0 = canvas.clientHeight;
-    if (wide) cam.setViewOffset(W0, H0, -W0 * 0.2 * shift, 0, W0, H0);
+    if (wide) cam.setViewOffset(W0, H0, -W0 * 0.24 * shift, 0, W0, H0);
     else cam.setViewOffset(W0, H0, 0, H0 * 0.17 * shift, W0, H0);
     // the label rides with the head once the path is through
     if (label && head) {

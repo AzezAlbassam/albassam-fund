@@ -5,10 +5,10 @@
 // so expanded rows, sparklines and reveals survive every change.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, countTo, roll, usd2, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=15";
-import { live, state } from "./live.js?v=15";
-import { derive, blendedPct, today, exitPx } from "./roi.js?v=15";
-import { history } from "./history.js?v=15";
+import { initShell, observeReveals, onReveal, countTo, roll, usd2, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=16";
+import { live, state } from "./live.js?v=16";
+import { derive, blendedPct, today, exitPx } from "./roi.js?v=16";
+import { history } from "./history.js?v=16";
 
 initShell();
 
@@ -20,7 +20,7 @@ document.querySelectorAll(".lhead h1 .w").forEach(w => {
   w.innerHTML = [...w.textContent].map(ch => `<span class="ch" style="--i:${ci++}">${esc(ch)}</span>`).join("");
 });
 // the header: a calm line maze, no path through it
-import("./maze.js?v=15")
+import("./maze.js?v=16")
   .then(m => m.startMaze($("#lmaze"), { cols: 12, rows: 9, seed: 20260815, spin: 0.035, fit: 1, path: false }))
   .catch(err => console.warn("3D maze unavailable:", err));
 

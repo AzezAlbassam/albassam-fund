@@ -12,7 +12,7 @@
 // the first call.
 // ============================================================
 
-import { history, stepper } from "./history.js?v=15";
+import { history, stepper } from "./history.js?v=16";
 
 export const GOLD = "GLD", SPX = "^GSPC";
 
