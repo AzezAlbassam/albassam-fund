@@ -17,7 +17,7 @@ import { Line2 } from "three/addons/lines/Line2.js";
 import { LineGeometry } from "three/addons/lines/LineGeometry.js";
 import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 
-const INK = 0x0b0b0c, PAPER = 0xffffff;
+const INK = 0x0b0b0c, PAPER = 0xecebe6;   // the page's warm grey, so far lines fade into it
 
 // A perfect maze (one way between any two cells), the same every load.
 function carve(cols, rows, seed) {
@@ -95,7 +95,7 @@ export async function startMaze(canvas, { labelsEl = null, cols = 16, rows = 11,
     const m = new LineMaterial({ color: INK, linewidth: w, transparent: opacity < 1, opacity, fog: true });
     mats.push(m); return m;
   };
-  const thin = lineMat(1.15), faint = lineMat(1, 0.35), bold = lineMat(3.4);
+  const thin = lineMat(1.5), faint = lineMat(1.1, 0.5), bold = lineMat(3.8);
   const seg = (arr, mat) => { const g = new LineSegmentsGeometry(); g.setPositions(arr); return new LineSegments2(g, mat); };
   world.add(seg(base, faint));
   const rising = rings.filter(r => r.top.length).map((r, i) => {

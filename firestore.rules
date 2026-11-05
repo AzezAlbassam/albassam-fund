@@ -42,16 +42,16 @@ service cloud.firestore {
     // return %, never a day-by-day line (a line can give the stocks away).
     // Public read; only the member writes it; the manager may remove a
     // racer from the board.
-    // Only family the manager has let in (/members/{email}) can save;
-    // a newcomer asks once through /joinRequests/{uid}.
+    // (/members and /joinRequests are from the earlier ask-to-join step.)
     function isSelf(uid) {
       return request.auth != null && request.auth.uid == uid;
     }
 
+    // Anyone signed in with a verified email can join (the link is only
+    // shared in the family); the manager can take a racer off the board.
     function isMember() {
       return request.auth != null
-        && request.auth.token.email_verified == true
-        && (isOwner() || exists(/databases/$(database)/documents/members/$(request.auth.token.email)));
+        && request.auth.token.email_verified == true;
     }
 
     match /members/{email} {

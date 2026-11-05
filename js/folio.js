@@ -21,8 +21,8 @@
 // add &join=1 to practise the "ask to join" step.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=18";
-import { checkTicker, quotes, savedSeries } from "./prices.js?v=18";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=19";
+import { checkTicker, quotes, savedSeries } from "./prices.js?v=19";
 
 export const START = "2026-07-03";   // nothing on the board predates the fund's baseline day
 export const MAX_HOLDINGS = 60;      // mirrors firestore.rules
@@ -171,8 +171,7 @@ async function firebaseBackend() {
     signIn: () => au.signInWithPopup(auth, new au.GoogleAuthProvider()),
     signOut: () => au.signOut(auth),
     // cb(true) once the manager has let this person in (the manager always is)
-    watchMember: (u, cb, err) => isOwnerEmail(u) ? (cb(true), () => {})
-      : fs.onSnapshot(member(u.email), s => { if (s.exists() || !s.metadata.fromCache) cb(s.exists()); }, err),
+    watchMember: (u, cb) => (cb(true), () => {}),   // open to every signed-in member of the family
     readAsk: async (uid) => data(await fs.getDoc(ask(uid))),
     askToJoin: (u, name) => fs.setDoc(ask(u.uid), { email: u.email, name, at: fs.serverTimestamp() }),
     // offline with nothing cached, the SDK reports "no document": that is not
@@ -199,12 +198,12 @@ async function firebaseBackend() {
       let reqs = [], mems = [];
       const emit = () => cb({ requests: reqs, members: mems });
       const a = fs.onSnapshot(fs.collection(db, "joinRequests"), s => { reqs = s.docs.map(d => ({ id: d.id, ...d.data() })); emit(); }, err);
-      const b = fs.onSnapshot(fs.collection(db, "members"), s => { mems = s.docs.map(d => ({ id: d.id, ...d.data() })); emit(); }, err);
+      const b = fs.onSnapshot(fs.collection(db, "racers"), s => { mems = s.docs.map(d => ({ id: d.id, name: d.data().name, uid: d.id })); emit(); }, err);
       return () => { a(); b(); };
     },
     approve: async (r) => { await fs.setDoc(member(r.email), { name: r.name || "", uid: r.id, at: fs.serverTimestamp() }); await fs.deleteDoc(ask(r.id)); },
     decline: (r) => fs.deleteDoc(ask(r.id)),
-    removeMember: async (m) => { await fs.deleteDoc(member(m.id)); if (m.uid) await fs.deleteDoc(racer(m.uid)); },
+    removeMember: async (m) => { await fs.deleteDoc(racer(m.uid)); },   // off the board
   };
 }
 

@@ -7,13 +7,13 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=18";
-import { store } from "./store.js?v=18";
-import { live, state } from "./live.js?v=18";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=18";
-import { watchNews } from "./news.js?v=18";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=18";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=18";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=19";
+import { store, purified } from "./store.js?v=19";
+import { live, state } from "./live.js?v=19";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=19";
+import { watchNews } from "./news.js?v=19";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=19";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=19";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -93,6 +93,7 @@ function cardHtml(t) {
       <div><dt>Avg cost</dt><dd>${money(d.avgCost)}</dd></div>
       ${t.wt > 0 ? `<div><dt>Pot share</dt><dd>${esc(t.wt)}%</dd></div>
       <div><dt>On the pot</dt><dd data-f="onpot">${WAIT}</dd></div>` : ""}
+      ${t.pur > 0 ? `<div><dt>Purification</dt><dd>${esc(t.pur)}% at close</dd></div>` : ""}
       ${canWrite ? `<div><dt>Shares held</dt><dd>${sh(d.heldSh)}${d.soldSh ? ` <small>sold ${sh(d.soldSh)}</small>` : ""}</dd></div>` : ""}
     </dl>
     <div class="bar" aria-hidden="true"><i data-f="bar"></i></div>
@@ -121,6 +122,7 @@ function rowHtml(t, i) {
       <div class="crow-info">
         <p><span>${esc(day(t.opened))} → ${esc(dayYear(t.closed))}</span><span class="muted">${heldFor(t.opened, t.closed || today())}</span></p>
         <p><span>Bought ${money(d.avgCost)} → Sold ${money(sellPx)}</span></p>
+        ${t.pur > 0 && t.grossPct != null ? `<p><span class="muted">${pct1(t.grossPct)} before ${esc(t.pur)}% purification</span></p>` : ""}
         <p>${t.wt > 0 && p != null
           ? `<span>${esc(t.wt)}% of pot</span><span data-onpot="${t.wt * p}"></span>`
           : `<span class="muted">No pot size yet</span>`}</p>
@@ -181,6 +183,8 @@ function updateLive() {
 }
 
 /* ----------------------- inline form plumbing ----------------------- */
+// purification: a share of the profit, 0 to 100 (blank = none)
+const purOf = (v) => { const x = parseFloat(v); return x > 0 ? Math.min(100, x) : null; };
 const fld = (label, attrs) => `<label class="fld"><span>${label}</span><input ${attrs}></label>`;
 const num = (label, key, val = "") =>
   fld(label, `type="number" step="any" min="0" inputmode="decimal" data-in="${key}" value="${esc(val)}"`);
@@ -277,7 +281,8 @@ function openEditForm(holder, t) {
   const d = derive(t);
   const tk = esc(t.ticker);
   const avg = d.avgCost ? d.avgCost.toFixed(2) : "";
-  const wtIn = fld("% of pot", `type="number" step="any" min="0" max="100" inputmode="decimal" data-in="wt" value="${t.wt > 0 ? esc(t.wt) : ""}"`);
+  const wtIn = fld("% of pot", `type="number" step="any" min="0" max="100" inputmode="decimal" data-in="wt" value="${t.wt > 0 ? esc(t.wt) : ""}"`) +
+    fld("Purification % of profit", `type="number" step="any" min="0" max="100" inputmode="decimal" data-in="pur" placeholder="none" value="${t.pur > 0 ? esc(t.pur) : ""}"`);
   if (t.status === "active") {
     box.innerHTML = formBody(`Fix ${tk}. Sells stay intact. "% of pot" sizes it in the fund value.`,
       num("Total shares", "sh", d.boughtSh) + num("Avg price $", "px", avg) + date("Entry date", "d", t.opened) + wtIn, "Save");
@@ -289,7 +294,7 @@ function openEditForm(holder, t) {
   }
   wireForm(box, async () => {
     const wtv = parseFloat(val(box, "wt"));
-    const wt = wtv > 0 ? Math.min(100, wtv) : null;
+    const wt = wtv > 0 ? Math.min(100, wtv) : null, pur = purOf(val(box, "pur"));
     if (t.status === "active") {
       const shares = parseFloat(val(box, "sh"));
       const price = parseFloat(val(box, "px"));
@@ -297,7 +302,7 @@ function openEditForm(holder, t) {
       if (!(shares > 0)) return fail("Enter total shares bought.");
       if (!(price > 0)) return fail("Enter the average buy price.");
       if (shares < d.soldSh) return fail(`You already sold ${sh(d.soldSh)} shares. Total bought can't be less.`);
-      await store.editActive(t.id, { shares, price, date: dt, wt });
+      await store.editActive(t.id, { shares, price, date: dt, wt, pur });
       toast(`${t.ticker} numbers fixed.`);
     } else {
       const buyPx = parseFloat(val(box, "buy"));
@@ -306,7 +311,7 @@ function openEditForm(holder, t) {
       const closed = val(box, "d2") || t.closed;
       if (!(buyPx > 0) || !(sellPx > 0)) return fail("Enter both buy and sell prices.");
       if (opened && closed && closed < opened) return fail("Sell date is before the buy date.");
-      await store.editClosed(t.id, { buyPx, sellPx, opened, closed, wt });
+      await store.editClosed(t.id, { buyPx, sellPx, opened, closed, wt, pur });
       toast(`${t.ticker} closed call fixed.`);
     }
   }, holder.querySelector('[data-act="edit"]'));
@@ -395,7 +400,7 @@ $("#addForm").addEventListener("submit", (e) => {
   const shares = parseFloat($("#adShares").value);
   const price = parseFloat($("#adPrice").value);
   const date = $("#adDate").value || today();
-  const wtv = parseFloat($("#adWt").value);
+  const wtv = parseFloat($("#adWt").value), pur = purOf($("#adPur").value);
   if (!ticker) return fail("Enter a ticker symbol.");
   if (!(shares > 0)) return fail("Enter how many shares you bought.");
   if (!(price > 0)) return fail("Enter your average buy price.");
@@ -405,7 +410,7 @@ $("#addForm").addEventListener("submit", (e) => {
     toast("Checking " + ticker + "…");
     if (!(await checkTicker(ticker))) return fail(ticker + " not found. Is it a US-listed symbol?");
     const profile = await fetchProfile(ticker);
-    await store.add({ ticker, shares, price, date, wt: wtv > 0 ? wtv : null, ...profile });
+    await store.add({ ticker, shares, price, date, wt: wtv > 0 ? wtv : null, pur, ...profile });
     form.reset();
     $("#adDate").value = today();
     toast(ticker + " added. Live ROI is now tracking.");
@@ -421,16 +426,16 @@ $("#pastForm").addEventListener("submit", (e) => {
   const sellPx = parseFloat($("#pcSell").value);
   const opened = $("#pcOpened").value || today();   // the dates that will actually be stored
   const closed = $("#pcClosed").value || today();
-  const wtv = parseFloat($("#pcWt").value);
+  const wtv = parseFloat($("#pcWt").value), pur = purOf($("#pcPur").value);
   if (!ticker) return fail("Enter a ticker symbol.");
   if (!(buyPx > 0)) return fail("Enter the buy price.");
   if (!(sellPx > 0)) return fail("Enter the sell price.");
   if (closed < opened) return fail("Sell date is before the buy date.");
   busy(form, async () => {
     const profile = await fetchProfile(ticker);
-    await store.addClosed({ ticker, buyPx, sellPx, opened, closed, wt: wtv > 0 ? wtv : null, ...profile });
+    await store.addClosed({ ticker, buyPx, sellPx, opened, closed, wt: wtv > 0 ? wtv : null, pur, ...profile });
     form.reset();
-    const pct = ((sellPx - buyPx) / buyPx) * 100;
+    const pct = purified(((sellPx - buyPx) / buyPx) * 100, pur);
     toast(`${ticker} logged: ${pct >= 0 ? "+" : ""}${pct.toFixed(2)}% locked in.`);
   });
 });
@@ -495,7 +500,7 @@ function familyAdmin(on = true) {
   if (famStop) return;
   const my = ++famSeq;
   famStop = () => {};   // starting
-  import("./folio.js?v=18").then(m => m.backend()).then((api) => {
+  import("./folio.js?v=19").then(m => m.backend()).then((api) => {
     if (my !== famSeq) return;   // signed out while it loaded
     famApi = api;
     famStop = api.watchFamily(({ requests, members }) => { famAsks = requests; famMems = members; paintFamily(); },
@@ -508,7 +513,7 @@ function paintFamily() {
   $("#faAsks").innerHTML = famAsks.length ? famAsks.map((r, i) => row(r,
     `<button class="act" type="button" data-fa="approve" data-i="${i}">Let in</button><button class="act del" type="button" data-fa="decline" data-i="${i}">Decline</button>`)).join("")
     : `<li class="fa-none">Nobody is waiting.</li>`;
-  $("#faMembers").innerHTML = famMems.length ? famMems.map((r, i) => row({ ...r, email: r.id },
+  $("#faMembers").innerHTML = famMems.length ? famMems.map((r, i) => row({ ...r, email: "on the board" },
     `<button class="act del" type="button" data-fa="remove" data-i="${i}">Remove</button>`)).join("")
     : `<li class="fa-none">No one yet. Send the family the Family page link.</li>`;
 }

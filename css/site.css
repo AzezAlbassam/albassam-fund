@@ -9,15 +9,17 @@
 
 :root{
   --ink:#0B0B0C; --paper:#FFFFFF;
-  --canvas:#FFFFFF; --canvas-2:#F6F6F4;
+  --canvas:#ECEBE6; --canvas-2:#E4E3DD; --canvas-rgb:236,235,230;   /* a soft warm grey: easier on the eyes, white cards stand out */
   --panel:#FFFFFF; --panel-solid:#FFFFFF; --panel-2:#F4F4F2;
-  --line:rgba(11,11,12,.12); --line-strong:#0B0B0C;
-  --text-primary:#0B0B0C; --text-secondary:#3F3F46; --text-muted:#6B6B74;
+  --line:rgba(11,11,12,.16); --line-strong:#0B0B0C;
+  --text-primary:#0B0B0C; --text-secondary:#2B2B30; --text-muted:#585861;
+  --shadow:0 1px 2px rgba(20,20,22,.08),0 12px 32px -14px rgba(20,20,22,.28);
+  --shadow-lift:0 2px 4px rgba(20,20,22,.1),0 22px 48px -18px rgba(20,20,22,.38);
   /* the old accent names now all mean ink, so every page turns monochrome */
   --coral:#0B0B0C; --orange:#0B0B0C; --amber:#0B0B0C; --magenta:#0B0B0C;
   --grad:linear-gradient(#0B0B0C,#0B0B0C);
   --grad-soft:rgba(11,11,12,.04);
-  --fund:#0B0B0C; --gold:#6B6B74; --spx:#A1A1AA; --pearl:#A1A1AA;
+  --fund:#0B0B0C; --gold:#55555D; --spx:#8A8A93; --pearl:#8A8A93;
   --pos:#0B0B0C; --jade:#0B0B0C; --loss:#D92D20;
   --jade-muted:rgba(11,11,12,.05); --gold-muted:rgba(11,11,12,.05); --gold-hot:#0B0B0C;
   --ease-out:cubic-bezier(.16,1,.3,1); --ease-io:cubic-bezier(.65,0,.35,1); --spring:cubic-bezier(.22,1,.36,1);
@@ -73,7 +75,7 @@ h3{font-size:clamp(18px,2vw,22px);letter-spacing:-.02em}
 
 /* ---------- the background: a faint drafting grid ---------- */
 .env{position:fixed;inset:0;z-index:-1;pointer-events:none;background-color:var(--canvas);
-  background-image:linear-gradient(rgba(11,11,12,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(11,11,12,.045) 1px,transparent 1px);
+  background-image:linear-gradient(rgba(11,11,12,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(11,11,12,.06) 1px,transparent 1px);
   background-size:56px 56px;background-position:-1px -1px;
   -webkit-mask-image:radial-gradient(ellipse 90% 70% at 50% 0%,#000 30%,transparent 90%);mask-image:radial-gradient(ellipse 90% 70% at 50% 0%,#000 30%,transparent 90%)}
 .env b,.env i{display:none}
@@ -81,7 +83,7 @@ h3{font-size:clamp(18px,2vw,22px);letter-spacing:-.02em}
 /* ---------- nav: a hairline pill ---------- */
 .nav{position:fixed;top:calc(12px + env(safe-area-inset-top));left:0;right:0;z-index:50;height:calc(var(--nav-h) - 24px);display:flex;align-items:center;pointer-events:none}
 .nav .wrap{pointer-events:auto;display:flex;align-items:center;justify-content:space-between;gap:14px;height:100%;padding:0 8px 0 16px;border-radius:999px;
-  background:rgba(255,255,255,.82);border:1px solid var(--line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  background:rgba(255,255,255,.9);border:1px solid var(--line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:var(--shadow);
   transition:border-color .5s var(--ease-out),box-shadow .5s var(--ease-out)}
 .nav.scrolled .wrap{border-color:var(--ink);box-shadow:0 10px 30px -18px rgba(0,0,0,.35)}
 .brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--ink)}
@@ -111,12 +113,12 @@ h3{font-size:clamp(18px,2vw,22px);letter-spacing:-.02em}
 /* ---------- buttons, segmented controls, chips ---------- */
 .btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 26px;border-radius:999px;overflow:hidden;
   border:1px solid var(--ink);background:var(--ink);color:var(--paper);font:500 15px/1 var(--body);text-decoration:none;cursor:pointer;isolation:isolate;
-  transition:color .35s var(--ease-out),transform .4s var(--spring)}
+  transition:color .35s var(--ease-out),transform .4s var(--spring);box-shadow:0 6px 18px -8px rgba(20,20,22,.45)}
 .btn::after{content:"";position:absolute;inset:0;z-index:-1;background:var(--paper);transform:translateY(101%);transition:transform .45s var(--ease-out)}
 .btn:hover{color:var(--ink)}
 .btn:hover::after{transform:none}
 .btn:active{transform:scale(.98)}
-.btn.ghost{background:transparent;color:var(--ink)}
+.btn.ghost{background:var(--paper);color:var(--ink);box-shadow:0 4px 14px -8px rgba(20,20,22,.3)}
 .btn.ghost::after{background:var(--ink)}
 .btn.ghost:hover{color:var(--paper)}
 .btn[hidden]{display:none}
@@ -137,7 +139,7 @@ h3{font-size:clamp(18px,2vw,22px);letter-spacing:-.02em}
 @media (max-width:720px){.race-controls .seg{width:100%}.race-controls .seg button{flex:1}}
 
 /* ---------- cards: white, a hairline, and drafting corner marks ---------- */
-.panel,.glass{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:clamp(18px,2.4vw,28px)}
+.panel,.glass{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:clamp(18px,2.4vw,28px);box-shadow:var(--shadow)}
 .glow{isolation:isolate}
 .glow::before{content:"";position:absolute;inset:-7px;pointer-events:none;opacity:0;transform:scale(1.04);
   transition:opacity .8s var(--ease-out) .2s,transform 1s var(--ease-out) .2s;
@@ -148,7 +150,7 @@ h3{font-size:clamp(18px,2vw,22px);letter-spacing:-.02em}
     linear-gradient(var(--ink),var(--ink)) 100% 100%/14px 1px no-repeat,linear-gradient(var(--ink),var(--ink)) 100% 100%/1px 14px no-repeat}
 .glow.in::before,.in .glow::before,.glow:not([data-reveal]):not([data-stagger] *)::before{opacity:1;transform:none}
 .tilt{transform-style:preserve-3d;transition:transform .5s var(--ease-out),border-color .3s}
-.tilt:hover{border-color:var(--ink)}
+.tilt:hover{border-color:var(--ink);box-shadow:var(--shadow-lift)}
 
 /* ---------- the moving ticker tape ---------- */
 .ticker{position:relative;overflow:hidden;border-block:1px solid var(--ink);background:var(--paper);
@@ -189,9 +191,9 @@ h3{font-size:clamp(18px,2vw,22px);letter-spacing:-.02em}
 
 /* ---------- rolling digits (odometer) ---------- */
 .odo{display:inline-flex;align-items:baseline;white-space:nowrap}
-.odo .col{display:inline-block;height:1em;line-height:1;overflow:hidden;vertical-align:-.1em}
+.odo .col{display:inline-block;height:1.12em;line-height:1.12;overflow:hidden;vertical-align:-.16em}
 .odo .col>span{display:flex;flex-direction:column;transform:translateY(0);transition:transform 1.6s var(--ease-out)}
-.odo .col>span>span{height:1em;line-height:1}
+.odo .col>span>span{height:1.12em;line-height:1.12}
 
 /* ---------- race chart (shared component) ---------- */
 .race{position:relative;width:100%;height:var(--race-h,420px);touch-action:pan-y;user-select:none;-webkit-user-select:none}
@@ -242,8 +244,8 @@ h3{font-size:clamp(18px,2vw,22px);letter-spacing:-.02em}
 /* ---------- page header mazes (race, ledger, family) ---------- */
 .mz{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
 .mz canvas{position:absolute;inset:0;width:100%;height:100%}
-.mz::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--paper) 0%,rgba(255,255,255,.85) 34%,rgba(255,255,255,0) 62%),linear-gradient(0deg,var(--paper) 0%,rgba(255,255,255,0) 26%)}
-@media (max-width:720px){.mz::after{background:linear-gradient(0deg,var(--paper) 8%,rgba(255,255,255,.9) 46%,rgba(255,255,255,0) 78%)}}
+.mz::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--canvas) 0%,rgba(var(--canvas-rgb),.85) 34%,rgba(var(--canvas-rgb),0) 62%),linear-gradient(0deg,var(--canvas) 0%,rgba(var(--canvas-rgb),0) 26%)}
+@media (max-width:720px){.mz::after{background:linear-gradient(0deg,var(--canvas) 8%,rgba(var(--canvas-rgb),.9) 46%,rgba(var(--canvas-rgb),0) 78%)}}
 .mz-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .mz-label{position:absolute;left:0;top:0;padding:7px 12px;border-radius:999px;white-space:nowrap;background:var(--paper);border:1px solid var(--ink);
   font:500 12px/1 var(--mono);color:var(--text-secondary);opacity:0;transition:opacity .8s var(--ease-out)}
@@ -259,7 +261,7 @@ h3{font-size:clamp(18px,2vw,22px);letter-spacing:-.02em}
 @media (max-width:560px){.t3-label{padding:5px 9px;font-size:11px}}
 
 /* ---------- footer ---------- */
-.foot{position:relative;border-top:1px solid var(--ink);padding:56px 0 40px;margin-top:40px;color:var(--text-muted);font-size:14px;background:var(--paper)}
+.foot{position:relative;border-top:1px solid var(--ink);padding:56px 0 40px;margin-top:40px;color:var(--text-muted);font-size:14px;background:var(--canvas-2)}
 .foot .wrap{display:grid;gap:18px;grid-template-columns:1fr auto;align-items:start}
 .foot .brand{margin-bottom:12px}
 .foot p{margin:0 0 6px;max-width:60ch}

@@ -5,13 +5,13 @@
 
 /* ---------- hero: copy on the left, the maze turning on the right ---------- */
 .hero{position:relative;min-height:100vh;min-height:100svh;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;isolation:isolate}
-.hero-media{position:absolute;inset:0;z-index:-2;background:var(--paper)}
+.hero-media{position:absolute;inset:0;z-index:-2;background:var(--canvas)}
 .hero-media canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0;animation:fadeIn 1s var(--ease-out) .1s forwards}
 @keyframes fadeIn{to{opacity:1}}
 .hero-media.fallback{background:repeating-linear-gradient(90deg,transparent 0 55px,rgba(11,11,12,.08) 55px 56px),repeating-linear-gradient(0deg,transparent 0 55px,rgba(11,11,12,.08) 55px 56px)}
 .hero-shade{position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:linear-gradient(90deg,var(--paper) 0%,rgba(255,255,255,.92) 40%,rgba(255,255,255,0) 60%),
-             linear-gradient(0deg,var(--paper) 0%,rgba(255,255,255,0) 22%)}
+  background:linear-gradient(90deg,var(--canvas) 0%,rgba(var(--canvas-rgb),.92) 40%,rgba(var(--canvas-rgb),0) 60%),
+             linear-gradient(0deg,var(--canvas) 0%,rgba(var(--canvas-rgb),0) 22%)}
 .hero-inner{padding:calc(var(--nav-h) + 6vh) 0 clamp(36px,7vh,80px)}
 .live-chip{display:inline-flex;align-items:center;gap:10px;margin:0 0 22px;padding:9px 16px;border-radius:999px;
   background:var(--paper);border:1px solid var(--ink);
@@ -33,7 +33,7 @@
 .hero-ticker{position:relative;z-index:1}
 @media (max-width:720px){
   .hero{justify-content:flex-end}
-  .hero-shade{background:linear-gradient(0deg,var(--paper) 0%,rgba(255,255,255,.94) 40%,rgba(255,255,255,.2) 62%,rgba(255,255,255,0) 100%)}
+  .hero-shade{background:linear-gradient(0deg,var(--canvas) 0%,rgba(var(--canvas-rgb),.94) 40%,rgba(var(--canvas-rgb),.2) 62%,rgba(var(--canvas-rgb),0) 100%)}
   .hero-inner{padding-top:46vh}
   .hero-inner .btn-row .btn{flex:1}
 }

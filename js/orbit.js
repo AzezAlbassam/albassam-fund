@@ -21,7 +21,7 @@ export async function startOrbit(canvas, labelsEl, onPick) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(PAPER, 10, 20);   // the far side of every orbit fades into the paper
+  scene.fog = new THREE.Fog(0xecebe6, 10, 20);   // the far side of every orbit fades into the paper
 
   const cam = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
   cam.position.set(0, 2.4, 10.2);

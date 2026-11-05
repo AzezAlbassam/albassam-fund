@@ -11,13 +11,15 @@
 //   opened   "YYYY-MM-DD"           (date of first buy)
 //   closed   "YYYY-MM-DD" | null
 //   closePx  number | null          (price used when closing)
-//   finalPct number | null          (blended ROI locked at close)
+//   finalPct number | null          (ROI locked at close, after purification)
+//   grossPct number | null          (the ROI before purification)
+//   pur      number | null          (purification: % of the profit given away at close)
 //   txns     [{t:"buy"|"sell", sh, px, d}]
 //   createdAt server timestamp      (ordering)
 // ============================================================
 
-import { DEMO, firebaseConfig } from "./config.js?v=18";
-import { blendedPct, derive, exitPx, today } from "./roi.js?v=18";
+import { DEMO, firebaseConfig } from "./config.js?v=19";
+import { blendedPct, derive, exitPx, today } from "./roi.js?v=19";
 
 const SYNCING = "Still syncing with the fund record. Try again in a moment.";
 
@@ -25,6 +27,10 @@ const SYNCING = "Still syncing with the fund record. Try again in a moment.";
 // alone, only dates and pot share change: the buy/sell history and the
 // locked result stay exactly as recorded.
 const samePx = (a, b) => Math.abs(a - b) < 0.005;
+// Purification (تطهير): a share of a PROFIT is given away when the call
+// closes, so the locked result is the profit minus that share. A loss
+// has nothing to purify.
+export const purified = (g, pur) => (g != null && g > 0 && pur > 0 ? g * (1 - Math.min(pur, 100) / 100) : g);
 function metaPatch(t, opened, wt, closed) {
   const buys = (t.txns || []).filter(x => x.t === "buy");
   const txns = buys.length === 1 ? t.txns.map(x => (x.t === "buy" ? { ...x, d: opened } : x)) : t.txns;
@@ -86,9 +92,9 @@ async function firestoreStore() {
     async setSimStart(v) {
       await fs.setDoc(fs.doc(db, "meta", "settings"), { simStart: v }, { merge: true });
     },
-    async add({ ticker, shares, price, date, name = "", logo = "", wt = null }) {
+    async add({ ticker, shares, price, date, name = "", logo = "", wt = null, pur = null }) {
       await fs.addDoc(col, {
-        ticker, name, logo, wt,
+        ticker, name, logo, wt, pur,
         status: "active",
         opened: date || today(),
         closed: null, closePx: null, finalPct: null,
@@ -98,14 +104,14 @@ async function firestoreStore() {
     },
     // Log a past call that was already bought and sold — lands
     // straight in Closed with its ROI locked in.
-    async addClosed({ ticker, shares = 1, buyPx, sellPx, opened, closed, name = "", logo = "", wt = null }) {
-      const finalPct = ((sellPx - buyPx) / buyPx) * 100;
+    async addClosed({ ticker, shares = 1, buyPx, sellPx, opened, closed, name = "", logo = "", wt = null, pur = null }) {
+      const grossPct = ((sellPx - buyPx) / buyPx) * 100;
       await fs.addDoc(col, {
-        ticker, name, logo, wt,
+        ticker, name, logo, wt, pur,
         status: "closed",
         opened: opened || today(),
         closed: closed || today(),
-        closePx: sellPx, finalPct,
+        closePx: sellPx, grossPct, finalPct: purified(grossPct, pur),
         txns: [{ t: "buy", sh: shares, px: buyPx, d: opened || today() }],
         createdAt: fs.serverTimestamp(),
       });
@@ -116,38 +122,40 @@ async function firestoreStore() {
     },
     // Fix mistyped numbers without deleting. Active: buys are
     // replaced by one equivalent buy, partial sells stay intact.
-    async editActive(id, { shares, price, date, wt = null }) {
+    async editActive(id, { shares, price, date, wt = null, pur = null }) {
       const t = find(id); if (!t) throw new Error(SYNCING);
       const d = derive(t);
       if (shares === d.boughtSh && samePx(price, d.avgCost))
-        return fs.updateDoc(fs.doc(db, "trades", id), metaPatch(t, date, wt));
+        return fs.updateDoc(fs.doc(db, "trades", id), { ...metaPatch(t, date, wt), pur });
       const sells = (t.txns || []).filter(x => x.t === "sell");
       await fs.updateDoc(fs.doc(db, "trades", id), {
-        opened: date, wt, txns: [{ t: "buy", sh: shares, px: price, d: date }, ...sells],
+        opened: date, wt, pur, txns: [{ t: "buy", sh: shares, px: price, d: date }, ...sells],
       });
     },
-    async editClosed(id, { buyPx, sellPx, opened, closed, wt = null }) {
+    async editClosed(id, { buyPx, sellPx, opened, closed, wt = null, pur = null }) {
       const t = find(id); if (!t) throw new Error(SYNCING);
       const d = derive(t);
-      if (samePx(buyPx, d.avgCost) && samePx(sellPx, exitPx(t) ?? 0))
-        return fs.updateDoc(fs.doc(db, "trades", id), metaPatch(t, opened, wt, closed));
-      const sh = d.boughtSh || 1;
+      if (samePx(buyPx, d.avgCost) && samePx(sellPx, exitPx(t) ?? 0)) {
+        const g = t.grossPct ?? t.finalPct;   // the prices stay: only the purification can change the result
+        return fs.updateDoc(fs.doc(db, "trades", id), { ...metaPatch(t, opened, wt, closed), pur, grossPct: g, finalPct: purified(g, pur) });
+      }
+      const sh = d.boughtSh || 1, g = ((sellPx - buyPx) / buyPx) * 100;
       await fs.updateDoc(fs.doc(db, "trades", id), {
-        opened, closed, closePx: sellPx, wt,
-        finalPct: ((sellPx - buyPx) / buyPx) * 100,
+        opened, closed, closePx: sellPx, wt, pur,
+        grossPct: g, finalPct: purified(g, pur),
         txns: [{ t: "buy", sh, px: buyPx, d: opened }],
       });
     },
     async close(id, closePx) {
       const t = find(id); if (!t) throw new Error(SYNCING);
-      const finalPct = blendedPct(t, closePx);
+      const g = blendedPct(t, closePx);
       await fs.updateDoc(fs.doc(db, "trades", id), {
-        status: "closed", closed: today(), closePx, finalPct,
+        status: "closed", closed: today(), closePx, grossPct: g, finalPct: purified(g, t.pur),
       });
     },
     async reopen(id) {
       await fs.updateDoc(fs.doc(db, "trades", id), {
-        status: "active", closed: null, closePx: null, finalPct: null,
+        status: "active", closed: null, closePx: null, finalPct: null, grossPct: null,
       });
     },
     async remove(id) {
@@ -192,16 +200,17 @@ function demoStore() {
     subscribe(fn) { cb = fn; emit(); },
     watchSettings(fn) { settingsCb = fn; settingsCb({}); },
     async setSimStart(v) { settingsCb({ simStart: v }); },
-    async add({ ticker, shares, price, date, name = "", logo = "", wt = null }) {
-      trades.unshift({ id: uid(), ticker, name, logo, wt, status: "active",
+    async add({ ticker, shares, price, date, name = "", logo = "", wt = null, pur = null }) {
+      trades.unshift({ id: uid(), ticker, name, logo, wt, pur, status: "active",
         opened: date || today(), closed: null, closePx: null, finalPct: null,
         txns: [{ t: "buy", sh: shares, px: price, d: date || today() }] });
       emit();
     },
-    async addClosed({ ticker, shares = 1, buyPx, sellPx, opened, closed, name = "", logo = "", wt = null }) {
-      trades.unshift({ id: uid(), ticker, name, logo, wt, status: "closed",
+    async addClosed({ ticker, shares = 1, buyPx, sellPx, opened, closed, name = "", logo = "", wt = null, pur = null }) {
+      const g = ((sellPx - buyPx) / buyPx) * 100;
+      trades.unshift({ id: uid(), ticker, name, logo, wt, pur, status: "closed",
         opened: opened || today(), closed: closed || today(),
-        closePx: sellPx, finalPct: ((sellPx - buyPx) / buyPx) * 100,
+        closePx: sellPx, grossPct: g, finalPct: purified(g, pur),
         txns: [{ t: "buy", sh: shares, px: buyPx, d: opened || today() }] });
       emit();
     },
@@ -209,33 +218,35 @@ function demoStore() {
       const t = trades.find(x => x.id === id); if (!t) return;
       t.txns = [...t.txns, txn]; emit();
     },
-    async editActive(id, { shares, price, date, wt = null }) {
+    async editActive(id, { shares, price, date, wt = null, pur = null }) {
       const t = trades.find(x => x.id === id); if (!t) return;
       const d = derive(t);
+      t.pur = pur;
       if (shares === d.boughtSh && samePx(price, d.avgCost)) { Object.assign(t, metaPatch(t, date, wt)); return emit(); }
       const sells = t.txns.filter(x => x.t === "sell");
       t.opened = date; t.wt = wt;
       t.txns = [{ t: "buy", sh: shares, px: price, d: date }, ...sells];
       emit();
     },
-    async editClosed(id, { buyPx, sellPx, opened, closed, wt = null }) {
+    async editClosed(id, { buyPx, sellPx, opened, closed, wt = null, pur = null }) {
       const t = trades.find(x => x.id === id); if (!t) return;
       const d = derive(t);
-      if (samePx(buyPx, d.avgCost) && samePx(sellPx, exitPx(t) ?? 0)) { Object.assign(t, metaPatch(t, opened, wt, closed)); return emit(); }
+      t.grossPct = t.grossPct ?? t.finalPct; t.pur = pur;
+      if (samePx(buyPx, d.avgCost) && samePx(sellPx, exitPx(t) ?? 0)) { Object.assign(t, metaPatch(t, opened, wt, closed)); t.finalPct = purified(t.grossPct, pur); return emit(); }
       const sh = d.boughtSh || 1;
       t.opened = opened; t.closed = closed; t.closePx = sellPx; t.wt = wt;
-      t.finalPct = ((sellPx - buyPx) / buyPx) * 100;
+      t.grossPct = ((sellPx - buyPx) / buyPx) * 100; t.finalPct = purified(t.grossPct, pur);
       t.txns = [{ t: "buy", sh, px: buyPx, d: opened }];
       emit();
     },
     async close(id, closePx) {
       const t = trades.find(x => x.id === id); if (!t) return;
       t.status = "closed"; t.closed = today(); t.closePx = closePx;
-      t.finalPct = blendedPct(t, closePx); emit();
+      t.grossPct = blendedPct(t, closePx); t.finalPct = purified(t.grossPct, t.pur); emit();
     },
     async reopen(id) {
       const t = trades.find(x => x.id === id); if (!t) return;
-      t.status = "active"; t.closed = null; t.closePx = null; t.finalPct = null; emit();
+      t.status = "active"; t.closed = null; t.closePx = null; t.finalPct = null; t.grossPct = null; emit();
     },
     async remove(id) { trades = trades.filter(x => x.id !== id); emit(); },
     async setProfile(id, { name, logo }) {
