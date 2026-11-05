@@ -21,8 +21,8 @@
 // add &join=1 to practise the "ask to join" step.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=23";
-import { checkTicker, quotes, savedSeries } from "./prices.js?v=23";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=24";
+import { checkTicker, quotes, savedSeries } from "./prices.js?v=24";
 
 export const START = "2026-07-03";   // nothing on the board predates the fund's baseline day
 export const MAX_HOLDINGS = 60;      // mirrors firestore.rules
@@ -39,9 +39,14 @@ export const DASHES = ["7 4", "2 4", "12 4 2 4", "1 3", "10 6", "4 2", "8 3 2 3"
 /* ----------------------- the math ----------------------- */
 // Today's return and a row per holding. The % is null unless every
 // holding has a price: a partial answer would put a wrong % on the board.
+const asked = {};
 export async function measure(holdings) {
   const tks = [...new Set(holdings.map(h => h.tk))];
-  await Promise.all(tks.filter(tk => !quotes[tk] || quotes[tk].saved).map(tk => checkTicker(tk).catch(() => false)));
+  // a saved close is fine for a while: ask the live feed again at most every 5 minutes
+  // (when the feed is down every ask costs seconds)
+  const stale = tks.filter(tk => !quotes[tk] || (quotes[tk].saved && Date.now() - (asked[tk] || 0) > 3e5));
+  stale.forEach(tk => (asked[tk] = Date.now()));
+  await Promise.all(stale.map(tk => checkTicker(tk).catch(() => false)));
   const saved = await savedSeries();
   const now = (tk) => quotes[tk]?.c ?? saved[tk]?.c?.at(-1) ?? null;   // the last saved close stands in
   const rows = holdings.map(h => {

@@ -10,7 +10,7 @@
 // to a letter badge if a logo doesn't exist.
 // ============================================================
 
-import { DEMO, FINNHUB_KEY, PRICE_REFRESH_MS } from "./config.js?v=23";
+import { DEMO, FINNHUB_KEY, PRICE_REFRESH_MS } from "./config.js?v=24";
 
 const USE_FINNHUB = !FINNHUB_KEY.startsWith("__");
 const FINNHUB = "https://finnhub.io/api/v1";
@@ -95,6 +95,14 @@ export async function checkTicker(ticker) {
   if (DEMO) return true;
   const q = await getQuote(ticker);
   if (q) { quotes[ticker] = q; return true; }
+  // the live feed can be down: a ticker with saved closes is real, and its
+  // last close stands in until a live quote lands
+  const h = (await savedSeries())[ticker];
+  if (h?.c?.length) {
+    const c = h.c[h.c.length - 1], pc = h.c[h.c.length - 2] ?? null;
+    quotes[ticker] ??= { c, pc, dp: pc ? ((c - pc) / pc) * 100 : null, saved: true };
+    return true;
+  }
   return false;
 }
 

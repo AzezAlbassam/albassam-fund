@@ -7,13 +7,13 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=23";
-import { store, purified } from "./store.js?v=23";
-import { live, state } from "./live.js?v=23";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=23";
-import { watchNews } from "./news.js?v=23";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=23";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=23";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=24";
+import { store, purified } from "./store.js?v=24";
+import { live, state } from "./live.js?v=24";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=24";
+import { watchNews } from "./news.js?v=24";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=24";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=24";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -521,7 +521,7 @@ function familyAdmin(on = true) {
   if (famStop) return;
   const my = ++famSeq;
   famStop = () => {};   // starting
-  import("./folio.js?v=23").then(m => m.backend()).then((api) => {
+  import("./folio.js?v=24").then(m => m.backend()).then((api) => {
     if (my !== famSeq) return;   // signed out while it loaded
     famApi = api;
     famStop = api.watchFamily(({ requests, members }) => { famAsks = requests; famMems = members; paintFamily(); },
