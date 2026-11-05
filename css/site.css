@@ -9,7 +9,7 @@
 
 :root{
   --ink:#0B0B0C; --paper:#FFFFFF;
-  --canvas:#ECEBE6; --canvas-2:#E4E3DD; --canvas-rgb:236,235,230;   /* a soft warm grey: easier on the eyes, white cards stand out */
+  --canvas:#DEDDD6; --canvas-2:#D4D3CB; --canvas-rgb:222,221,214;   /* a soft warm grey: easier on the eyes, white cards stand out */
   --panel:#FFFFFF; --panel-solid:#FFFFFF; --panel-2:#F4F4F2;
   --line:rgba(11,11,12,.16); --line-strong:#0B0B0C;
   --text-primary:#0B0B0C; --text-secondary:#2B2B30; --text-muted:#585861;

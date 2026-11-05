@@ -17,7 +17,7 @@ import { Line2 } from "three/addons/lines/Line2.js";
 import { LineGeometry } from "three/addons/lines/LineGeometry.js";
 import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 
-const INK = 0x0b0b0c, PAPER = 0xecebe6;   // the page's warm grey, so far lines fade into it
+const INK = 0x0b0b0c, PAPER = 0xdeddd6;   // the page's warm grey, so far lines fade into it
 
 // A perfect maze (one way between any two cells), the same every load.
 function carve(cols, rows, seed) {
