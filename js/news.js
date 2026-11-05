@@ -6,8 +6,8 @@
 // same CORS mirrors the price feed uses.
 // ============================================================
 
-import { DEMO } from "./config.js?v=22";
-import { proxiedJson } from "./prices.js?v=22";
+import { DEMO } from "./config.js?v=23";
+import { proxiedJson } from "./prices.js?v=23";
 
 const NEWS_REFRESH_MS = 5 * 60 * 1000;   // headlines refresh every 5 min
 const MAX_PER_TICKER = 3, MAX_TOTAL = 12;

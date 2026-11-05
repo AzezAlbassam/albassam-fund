@@ -4,17 +4,17 @@
 // Everything re-renders from live(): trades, pot and quotes.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=22";
-import { live, state } from "./live.js?v=22";
-import { statPct } from "./roi.js?v=22";
-import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=22";
-import { raceChart, bindRaceControls } from "./chart.js?v=22";
+import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=23";
+import { live, state } from "./live.js?v=23";
+import { statPct } from "./roi.js?v=23";
+import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=23";
+import { raceChart, bindRaceControls } from "./chart.js?v=23";
 
 const $ = (id) => document.getElementById(id);
 const FAIL = "The race could not load right now. Try again in a minute.";
 const EMPTY = "The race starts with the first sized call.";
 // [key, name]: our fund is drawn solid ink, gold dashed grey, the S&P dotted grey (site.css)
-const SERIES = [["fund", "Our fund"], ["gold", "Gold"], ["spx", "S&amp;P 500"]];
+const SERIES = [["fund", "Our fund"], ["gold", "Gold"], ["spx", "S&amp;P 500"], ["tasi", "TASI"]];
 const RANGES = { "1M": 22, "3M": 64 };   // ponytail: mirrors chart.js RANGES (the chart does not expose its slice)
 
 initShell();
@@ -28,7 +28,7 @@ let race = null, status = "loading", key = "", seq = 0;
 /* ---------- header: the line maze, our fund's path climbing out of it ---------- */
 let maze = null;
 const phone = innerWidth < 720;
-import("./maze.js?v=22")
+import("./maze.js?v=23")
   .then(m => m.startMaze($("rhMaze"), { labelsEl: $("rhLabels"), cols: phone ? 8 : 12, rows: phone ? 7 : 9, seed: 20260712, spin: 0.035, fit: phone ? 0.92 : 1 }))
   .then(mz => { maze = mz; feedMaze(); })
   .catch(err => console.warn("3D maze unavailable:", err));
@@ -64,9 +64,9 @@ let towers = null;
 function podium() {
   if (!towers || status !== "ok") return;
   const s = raceSummary(race), n = race.days.length - 1;
-  const rows = [["fund", "Our fund", race.fund[n], 0x0b0b0c], ["gold", "Gold", race.gold[n], 0x6b6b74], ["spx", "S&amp;P 500", race.spx[n], 0xa1a1aa]];
+  const rows = [["fund", "Our fund", race.fund[n], 0x0b0b0c], ["gold", "Gold", race.gold[n], 0x55555d], ["spx", "S&amp;P 500", race.spx[n], 0x8a8a93], ["tasi", "TASI", race.tasi[n], 0x2e2e33]];
   const max = Math.max(...rows.map(r => r[2]));
-  towers.set(rows.map(([k, name, v, color], i) => ({ id: k, x: (i - 1) * 1.7, z: 0, h: 0.4 + v / max * 4, color, w: 1.05,
+  towers.set(rows.map(([k, name, v, color], i) => ({ id: k, x: (i - 1.5) * 1.6, z: 0, h: 0.4 + v / max * 4, color, w: 1.05,
     label: `${name} <b>${pct1((v / race.pot - 1) * 100)}</b>`, labelClass: k })));
   document.querySelectorAll("[data-pot]").forEach(el => (el.textContent = shortUsd(race.pot)));
 }
@@ -74,7 +74,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=22");
+    const { startTowers } = await import("./bars3d.js?v=23");
     towers = await startTowers($("pdCanvas"), $("pdLabels"), { yaw0: -0.45, pitch: 0.35, spin: 0.06 });
     podium();
   } catch (err) { console.warn("3D podium unavailable:", err); $("pdStage").classList.add("fallback"); }
@@ -104,7 +104,7 @@ function legend() {
   const el = $("legend");
   if (status !== "ok") { el.innerHTML = ""; return; }
   const { bench, range, unit } = chart.opts;
-  const keys = ["fund", ...(bench === "both" ? ["gold", "spx"] : [bench])];
+  const keys = ["fund", ...(bench === "both" ? ["gold", "spx", "tasi"] : [bench])];
   const n = race.days.length - 1, i0 = RANGES[range] ? Math.max(0, n - RANGES[range]) : 0;
   const val = (k) => unit === "pct"
     ? pct1((race[k][n] / race[k][i0] - 1) * 100)
@@ -143,7 +143,7 @@ function months() {
   if (status !== "ok") { box.innerHTML = note(stateMsg()); return; }
   const M = monthly(race);
   if (!M.length) { box.innerHTML = note("The first month is still running."); return; }
-  const max = Math.max(...M.flatMap(m => [m.fund, m.gold, m.spx].map(Math.abs)), 1e-9);
+  const max = Math.max(...M.flatMap(m => [m.fund, m.gold, m.spx, m.tasi].map(Math.abs)), 1e-9);
   // ink (or red, for a loss) in four steps; sqrt keeps a +2% gold month visible next to a +40% fund month
   const tint = (v) => (0.03 + 0.07 * Math.ceil(4 * Math.sqrt(Math.min(1, Math.abs(v) / max)))).toFixed(2);
   box.innerHTML = `<table class="hm" style="--m:${M.length}">

@@ -10,7 +10,7 @@
 //   c.view({ bench: "gold"|"spx"|"both", range: "1M"|"3M"|"ALL", unit: "pct"|"usd" });
 // ============================================================
 
-import { onReveal, observeReveals, reducedMotion, day, shortUsd } from "./shell.js?v=22";
+import { onReveal, observeReveals, reducedMotion, day, shortUsd } from "./shell.js?v=23";
 
 const NS = "http://www.w3.org/2000/svg";
 const RANGES = { "1M": 22, "3M": 64 };
@@ -21,11 +21,12 @@ export function viewValues(race, { range = "ALL", unit = "pct" } = {}) {
   const n = race.days.length - 1, k = RANGES[range], i0 = k ? Math.max(0, n - k) : 0;
   const v = key => unit === "pct" ? (race[key][n] / race[key][i0] - 1) * 100
     : key === "fund" ? race.fund[n] : race[key][n] / race[key][i0] * race.fund[i0];
-  return { fund: v("fund"), gold: v("gold"), spx: v("spx"), from: race.days[i0], asOf: race.days[n] };
+  return { fund: v("fund"), gold: v("gold"), spx: v("spx"), tasi: v("tasi"), from: race.days[i0], asOf: race.days[n] };
 }
-const NAMES = { fund: "Our fund", gold: "Gold", spx: "S&P 500" };
-const HEX = { fund: "#0B0B0C", gold: "#6B6B74", spx: "#A1A1AA" };
-const CLS = { fund: "fund", gold: "gold", spx: "spx" };
+export const BENCH = ["gold", "spx", "tasi"];   // "both" in a view means all of them
+const NAMES = { fund: "Our fund", gold: "Gold", spx: "S&P 500", tasi: "TASI" };
+const HEX = { fund: "#0B0B0C", gold: "#55555D", spx: "#8A8A93", tasi: "#2E2E33" };
+const CLS = { fund: "fund", gold: "gold", spx: "spx", tasi: "tasi" };
 
 export function raceChart(el) {
   el.classList.add("race");
@@ -46,7 +47,7 @@ export function raceChart(el) {
   new ResizeObserver(() => render()).observe(el);
 
   function visible() {
-    return ["fund", ...(opts.bench === "both" ? ["gold", "spx"] : [opts.bench])];
+    return ["fund", ...(opts.bench === "both" ? BENCH : [opts.bench])];
   }
 
   function slice() {
@@ -54,7 +55,7 @@ export function raceChart(el) {
     const i0 = k ? Math.max(0, n - 1 - k) : 0;
     const out = { days: race.days.slice(i0) };
     const f0 = race.fund[i0];
-    for (const key of ["fund", "gold", "spx"]) {
+    for (const key of ["fund", ...BENCH]) {
       const v = race[key].slice(i0), v0 = v[0];
       out[key] = opts.unit === "pct"
         ? v.map(x => (x / v0 - 1) * 100)
@@ -83,7 +84,7 @@ export function raceChart(el) {
     const Y = (v) => pad.t + (1 - (v - lo) / (hi - lo)) * (H - pad.t - pad.b);
     const path = (arr) => arr.map((v, i) => (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1)).join("");
 
-    const bench = opts.bench === "spx" ? "spx" : "gold";
+    const bench = BENCH.includes(opts.bench) ? opts.bench : "gold";
     const endF = cut.fund[n - 1], endB = cut[bench][n - 1];
     const lead = endF - endB, ahead = lead >= 0;
     const leadTxt = (ahead ? "+" : "-") + (opts.unit === "pct" ? Math.abs(lead).toFixed(1) + " pts" : shortUsd(Math.abs(lead)));
@@ -123,7 +124,7 @@ export function raceChart(el) {
 
     // the lead readout, pinned between our end point and the benchmark's
     leadEl.className = "race-lead" + (ahead ? "" : " behind");
-    leadEl.innerHTML = `${ahead ? "Lead over" : "Behind"} ${bench === "gold" ? "gold" : "the S&amp;P 500"}<b>${leadTxt}</b>`;
+    leadEl.innerHTML = `${ahead ? "Lead over" : "Behind"} ${{ gold: "gold", spx: "the S&amp;P 500", tasi: "TASI" }[bench]}<b>${leadTxt}</b>`;
     leadEl.style.top = narrow ? "22px" : ((Y(endF) + Y(endB)) / 2).toFixed(0) + "px";
     leadEl.style.width = narrow ? "auto" : (pad.r - 18) + "px";
 

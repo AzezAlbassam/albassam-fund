@@ -12,9 +12,9 @@
 // the first call.
 // ============================================================
 
-import { history, stepper } from "./history.js?v=22";
+import { history, stepper } from "./history.js?v=23";
 
-export const GOLD = "GLD", SPX = "^GSPC";
+export const GOLD = "GLD", SPX = "^GSPC", TASI = "^TASI.SR";   // TASI: the Saudi market, in SAR (a % is a %)
 
 // Fetch everything the race needs. Resolves null if no sized calls
 // or the benchmark history could not be loaded.
@@ -23,16 +23,16 @@ export async function loadRace(trades, pot, quotes = {}) {
   if (!sized.length) return null;
   const first = sized.reduce((m, t) => (t.opened < m ? t.opened : m), "9999-99-99");
   const tks = [...new Set(sized.map(t => t.ticker))];
-  const [gold, spx, ...hs] = await Promise.all([GOLD, SPX, ...tks].map(tk => history(tk, first)));
-  if (!spx.dates.length || !gold.dates.length) return null;
+  const [gold, spx, tasi, ...hs] = await Promise.all([GOLD, SPX, TASI, ...tks].map(tk => history(tk, first)));
+  if (!spx.dates.length || !gold.dates.length || !tasi.dates.length) return null;
   const hist = Object.fromEntries(tks.map((tk, i) => [tk, hs[i]]));
   // a call held across a trading day with no closes would silently drop out of the line
   const end = t => (t.status === "closed" ? (t.closed || t.opened) : spx.dates.at(-1));
   if (sized.some(t => !hist[t.ticker].dates.length && spx.dates.some(d => d >= t.opened && d < end(t)))) return null;
-  return buildRace({ trades: sized, hist, gold, spx, pot, quotes, first });
+  return buildRace({ trades: sized, hist, gold, spx, tasi, pot, quotes, first });
 }
 
-export function buildRace({ trades, hist, gold, spx, pot, quotes = {}, first }) {
+export function buildRace({ trades, hist, gold, spx, tasi, pot, quotes = {}, first }) {
   const cal = spx.dates;
   let i0 = cal.findIndex(d => d >= first);
   if (i0 === -1) i0 = cal.length;
@@ -40,11 +40,11 @@ export function buildRace({ trades, hist, gold, spx, pot, quotes = {}, first }) 
   if (!days.length) return null;
 
   const at = Object.fromEntries(Object.entries(hist).map(([tk, h]) => [tk, stepper(h)]));
-  const g = stepper(gold), s = stepper(spx);
-  const g0 = g(days[0]), s0 = s(days[0]);
+  const g = stepper(gold), s = stepper(spx), ta = stepper(tasi);   // TASI trades Sun-Thu: a day it is shut keeps its last close
+  const g0 = g(days[0]), s0 = s(days[0]), ta0 = ta(days[0]) ?? tasi.closes[0];
   const last = days.length - 1;
 
-  const fund = [], goldV = [], spxV = [];
+  const fund = [], goldV = [], spxV = [], tasiV = [];
   days.forEach((d, i) => {
     let c = 0;
     const now = i === last;   // the endpoint is "now", exactly like the scoreboard
@@ -59,6 +59,7 @@ export function buildRace({ trades, hist, gold, spx, pot, quotes = {}, first }) 
     fund.push(pot * (1 + c));
     goldV.push(pot * g(d) / g0);
     spxV.push(pot * s(d) / s0);
+    tasiV.push(pot * (ta(d) ?? ta0) / ta0);
   });
 
   const markers = [];
@@ -66,7 +67,7 @@ export function buildRace({ trades, hist, gold, spx, pot, quotes = {}, first }) 
     if (t.opened >= days[0]) markers.push({ d: t.opened, tk: t.ticker, kind: "open" });
     if (t.status === "closed" && t.closed) markers.push({ d: t.closed, tk: t.ticker, kind: "close", pct: t.finalPct });
   }
-  return { days, fund, gold: goldV, spx: spxV, pot, first, markers };
+  return { days, fund, gold: goldV, spx: spxV, tasi: tasiV, pot, first, markers };
 }
 
 // A call's blended % on day d, using only its trades up to that day.
@@ -109,7 +110,7 @@ export function monthly(race) {
     const m = d.slice(0, 7), nextM = race.days[i + 1]?.slice(0, 7);
     if (i === 0 || nextM === m) return;
     const ch = k => (race[k][i] / race[k][prev] - 1) * 100;
-    out.push({ m, fund: ch("fund"), gold: ch("gold"), spx: ch("spx") });
+    out.push({ m, fund: ch("fund"), gold: ch("gold"), spx: ch("spx"), tasi: ch("tasi") });
     prev = i;
   });
   return out;
@@ -118,6 +119,6 @@ export function monthly(race) {
 // Race headline: returns since the start, and our lead in points.
 export function raceSummary(race) {
   const n = race.days.length - 1, r = k => (race[k][n] / race[k][0] - 1) * 100;
-  const fund = r("fund"), gold = r("gold"), spx = r("spx");
-  return { fund, gold, spx, leadGold: fund - gold, leadSpx: fund - spx, value: race.fund[n], asOf: race.days[n] };
+  const fund = r("fund"), gold = r("gold"), spx = r("spx"), tasi = r("tasi");
+  return { fund, gold, spx, tasi, leadGold: fund - gold, leadSpx: fund - spx, leadTasi: fund - tasi, value: race.fund[n], asOf: race.days[n] };
 }

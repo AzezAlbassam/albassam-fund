@@ -6,12 +6,12 @@
 // ============================================================
 
 import { initShell, observeReveals, onReveal, roll, countTo, reducedMotion, usd0, pct1, pctBig, pts1, shortUsd,
-         day, esc, pctClass, logoHtml, daysBetween } from "./shell.js?v=22";
-import { live, state } from "./live.js?v=22";
-import { loadRace, raceSummary } from "./series.js?v=22";
-import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=22";
-import { simulate, statPct, derive, blendedPct } from "./roi.js?v=22";
-import { watchNews } from "./news.js?v=22";
+         day, esc, pctClass, logoHtml, daysBetween } from "./shell.js?v=23";
+import { live, state } from "./live.js?v=23";
+import { loadRace, raceSummary } from "./series.js?v=23";
+import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=23";
+import { simulate, statPct, derive, blendedPct } from "./roi.js?v=23";
+import { watchNews } from "./news.js?v=23";
 
 const $ = (s, r = document) => r.querySelector(s);
 initShell();
@@ -20,7 +20,7 @@ initShell();
 const media = $("#heroMedia");
 let maze = null;
 const phone = innerWidth < 720;
-import("./maze.js?v=22")
+import("./maze.js?v=23")
   .then(m => m.startMaze($("#maze"), { labelsEl: $("#mzLabels"), cols: phone ? 9 : 16, rows: phone ? 11 : 11, fit: phone ? 1.12 : 1 }))
   .then(mz => { maze = mz; feedMaze(); onHeroScroll(); })
   .catch(err => { console.warn("3D maze unavailable:", err); media.classList.add("fallback"); });
@@ -79,7 +79,7 @@ function renderScore() {
   roll($("#ldBank"), pct1(sim.realizedPct));
   $("#sbRet").textContent = usd0(sim.value);   // the money, only as an example
   if (s) {
-    for (const [k, id, name] of [["leadGold", "ldGold", "gold"], ["leadSpx", "ldSpx", "the S&P 500"]]) {
+    for (const [k, id, name] of [["leadGold", "ldGold", "gold"], ["leadSpx", "ldSpx", "the S&P 500"], ["leadTasi", "ldTasi", "TASI"]]) {
       const v = s[k], el = $("#" + id);
       $("#" + id + "K").textContent = (v >= 0 ? "Ahead of " : "Behind ") + name;
       el.textContent = pts1(v); el.className = "num " + pctClass(v);
@@ -87,6 +87,7 @@ function renderScore() {
     const line = $("[data-liveline]");
     line.querySelector('[data-l="gold"]').textContent = pct1(s.gold);
     line.querySelector('[data-l="spx"]').textContent = pct1(s.spx);
+    line.querySelector('[data-l="tasi"]').textContent = pct1(s.tasi);
   }
   const d = sinceDate();
   if (d) $("[data-liveline]").firstChild.textContent = "since " + new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" }) + " ";
@@ -105,7 +106,7 @@ function legend() {
   const o = chart.opts, s = viewValues(race, o), b = o.bench, f = o.unit === "pct" ? pct1 : usd0;
   const item = (k, name, v) => `<span class="${k}"><i></i>${name} <b>${f(v)}</b></span>`;   // site.css: gold dashed, S&P dotted
   box.innerHTML = item("fund", "Our fund", s.fund) +
-    (b !== "spx" ? item("gold", "Gold", s.gold) : "") + (b !== "gold" ? item("spx", "S&amp;P 500", s.spx) : "") +
+    [["gold", "Gold"], ["spx", "S&amp;P 500"], ["tasi", "TASI"]].filter(([k]) => b === "both" || b === k).map(([k, name]) => item(k, name, s[k])).join("") +
     `<span class="muted">as of ${day(s.asOf)}</span>`;
 }
 
@@ -144,8 +145,8 @@ function renderBars() {
   const box = $("#bars");
   if (!race) return;
   const s = raceSummary(race);
-  const fin = { fund: amt * (1 + s.fund / 100), gold: amt * (1 + s.gold / 100), spx: amt * (1 + s.spx / 100) };
-  const max = Math.max(1, ...["fund", "gold", "spx"].map(k => s[k]));   // bar heights follow the % (a loss stays a sliver)
+  const fin = Object.fromEntries(["fund", "gold", "spx", "tasi"].map(k => [k, amt * (1 + s[k] / 100)]));
+  const max = Math.max(1, ...["fund", "gold", "spx", "tasi"].map(k => s[k]));   // bar heights follow the % (a loss stays a sliver)
   onReveal(box, () => {
     for (const col of box.querySelectorAll(".bar-col")) {
       const k = col.dataset.k;
@@ -233,7 +234,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startOrbit } = await import("./orbit.js?v=22");
+    const { startOrbit } = await import("./orbit.js?v=23");
     orbit = await startOrbit($("#orbit"), $("#orbitLabels"), renderOrbitCard);
     feedOrbit();
   } catch (err) {
@@ -296,7 +297,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=22");
+    const { startTowers } = await import("./bars3d.js?v=23");
     fc.towers = await startTowers($("#fcCanvas"), $("#fcLabels"));
     renderForecast();
   } catch (err) { console.warn("3D forecast unavailable:", err); $("#fcStage").classList.add("fallback"); }

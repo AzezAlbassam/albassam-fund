@@ -208,6 +208,7 @@ h3{font-size:clamp(18px,2vw,22px);letter-spacing:-.02em}
 .race.drawn .lead{opacity:1}
 .race .line.gold{stroke-dasharray:6 5}
 .race .line.spx{stroke-dasharray:1.5 5}
+.race .line.tasi{stroke:#2E2E33;stroke-width:1.8;stroke-dasharray:10 4 2 4}
 /* lines draw in left to right (a reveal, so dashed lines stay dashed) */
 .race .line{clip-path:inset(-20px 100% -20px -20px)}
 .race.drawn .line{clip-path:inset(-20px -20px -20px -20px);transition:clip-path 2.2s var(--ease-io)}
@@ -236,6 +237,7 @@ h3{font-size:clamp(18px,2vw,22px);letter-spacing:-.02em}
 .race-legend i{width:20px;height:0;border-top:3px solid var(--ink);display:inline-block;transform:translateY(-4px);background:none!important}
 .race-legend .gold i,.race-legend i.gold{border-top:2px dashed var(--gold)}
 .race-legend .spx i,.race-legend i.spx{border-top:2px dotted var(--spx)}
+.race-legend .tasi i,.race-legend i.tasi{border:0;height:2px;background:repeating-linear-gradient(90deg,#2E2E33 0 8px,transparent 8px 11px,#2E2E33 11px 13px,transparent 13px 16px)!important}
 .race-legend b{font:500 14px var(--mono);font-variant-numeric:tabular-nums;color:var(--text-primary)}
 .race-empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--text-muted);font:400 14px var(--body)}
 .race-empty[hidden]{display:none}

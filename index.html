@@ -26,8 +26,8 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin>
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/site.css?v=22">
-<link rel="stylesheet" href="css/home.css?v=22">
+<link rel="stylesheet" href="css/site.css?v=23">
+<link rel="stylesheet" href="css/home.css?v=23">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 </head>
 <body class="home">
@@ -65,7 +65,7 @@
       <p class="live-chip hero-in" style="--d:0"><span></span>Live · since July 4, 2026</p>
       <h1 class="hero-title" aria-label="Albassam Fund"><span class="hl" aria-hidden="true">Albassam</span> <span class="hl" aria-hidden="true">Fund</span></h1>
       <p class="hero-big hero-in" style="--d:.55"><span class="num grad-text" id="heroPct">+0.0%</span></p>
-      <p class="hero-sub hero-in" style="--d:.75" data-liveline>since July 4 <span class="dotsep">·</span> <span class="nw">Gold <b class="gold" data-l="gold">…</b></span> <span class="dotsep">·</span> <span class="nw">S&amp;P&nbsp;500 <b class="spx" data-l="spx">…</b></span></p>
+      <p class="hero-sub hero-in" style="--d:.75" data-liveline>since July 4 <span class="dotsep">·</span> <span class="nw">Gold <b class="gold" data-l="gold">…</b></span> <span class="dotsep">·</span> <span class="nw">S&amp;P&nbsp;500 <b class="spx" data-l="spx">…</b></span> <span class="dotsep">·</span> <span class="nw">TASI <b data-l="tasi">…</b></span></p>
       <div class="btn-row hero-in" style="--d:.9">
         <a class="btn" href="race.html">See the analytics</a>
         <a class="btn ghost" href="ledger.html">See every call</a>
@@ -94,7 +94,8 @@
               <div class="seg" role="group" aria-label="Compare with">
                 <button type="button" data-bench="gold" aria-pressed="false">vs Gold</button>
                 <button type="button" data-bench="spx" aria-pressed="false">vs S&amp;P</button>
-                <button type="button" data-bench="both" aria-pressed="true">All three</button>
+                <button type="button" data-bench="tasi" aria-pressed="false">vs TASI</button>
+                <button type="button" data-bench="both" aria-pressed="true">All</button>
               </div>
               <div class="seg" role="group" aria-label="Time range">
                 <button type="button" data-range="1M" aria-pressed="false">1M</button>
@@ -139,6 +140,7 @@
           <ul class="leads">
             <li><span class="l-k" id="ldGoldK">vs gold</span><b class="num" id="ldGold">…</b></li>
             <li><span class="l-k" id="ldSpxK">vs the S&amp;P&nbsp;500</span><b class="num" id="ldSpx">…</b></li>
+            <li><span class="l-k" id="ldTasiK">vs TASI</span><b class="num" id="ldTasi">…</b></li>
           </ul>
         </article>
 
@@ -176,7 +178,7 @@
       <div class="section-head">
         <div>
           <p class="kicker" data-reveal>What if</p>
-          <h2 id="wifH" data-reveal>Same day. Three results.</h2>
+          <h2 id="wifH" data-reveal>Same day. Four results.</h2>
           <p class="lede" data-reveal>Each bar is the return since July 4. Pick an amount to see it in money too.</p>
         </div>
         <div class="seg amounts" role="group" aria-label="Amount" data-reveal>
@@ -190,6 +192,7 @@
         <div class="bar-col" data-k="fund"><div class="bar-val num" data-v>+0.0%</div><div class="bar-track"><i></i></div><p>Our fund <b data-r>…</b></p></div>
         <div class="bar-col" data-k="gold"><div class="bar-val num" data-v>+0.0%</div><div class="bar-track"><i></i></div><p>Gold <b data-r>…</b></p></div>
         <div class="bar-col" data-k="spx"><div class="bar-val num" data-v>+0.0%</div><div class="bar-track"><i></i></div><p>S&amp;P&nbsp;500 <b data-r>…</b></p></div>
+        <div class="bar-col" data-k="tasi"><div class="bar-val num" data-v>+0.0%</div><div class="bar-track"><i></i></div><p>TASI <b data-r>…</b></p></div>
       </div>
     </div>
   </section>
@@ -300,6 +303,6 @@
   </div>
 </footer>
 
-<script type="module" src="js/home.js?v=22"></script>
+<script type="module" src="js/home.js?v=23"></script>
 </body>
 </html>

@@ -26,8 +26,8 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin>
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/site.css?v=22">
-<link rel="stylesheet" href="css/race.css?v=22">
+<link rel="stylesheet" href="css/site.css?v=23">
+<link rel="stylesheet" href="css/race.css?v=23">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 </head>
@@ -62,13 +62,14 @@
       <div class="rh-copy" data-stagger>
         <p class="kicker">Analytics</p>
         <h1 id="rhTitle"><span class="w" style="--i:0">Every</span> <span class="w" style="--i:1">day,</span> <span class="w" style="--i:2">against</span> <span class="w grad-text" style="--i:3">the bar.</span></h1>
-        <p class="lede">Our fund against gold and the S&amp;P 500, from the same starting pot.</p>
+        <p class="lede">Our fund against gold, the S&amp;P 500 and TASI, from the same starting pot.</p>
         <div class="rh-strip" id="strip" data-state="loading">
           <p class="rh-since" id="since">Loading the race…</p>
           <dl>
             <div class="lane fund tilt"><dt>Our fund</dt><dd class="num grad-text" data-k="fund"><span class="sk"></span></dd></div>
             <div class="lane gold tilt"><dt>Gold</dt><dd class="num gold" data-k="gold"><span class="sk"></span></dd></div>
             <div class="lane spx tilt"><dt>S&amp;P 500</dt><dd class="num spx" data-k="spx"><span class="sk"></span></dd></div>
+            <div class="lane tasi tilt"><dt>TASI</dt><dd class="num" data-k="tasi"><span class="sk"></span></dd></div>
           </dl>
         </div>
       </div>
@@ -83,7 +84,8 @@
           <div class="seg" role="group" aria-label="Compare with">
             <button type="button" data-bench="gold" aria-pressed="true">vs Gold</button>
             <button type="button" data-bench="spx" aria-pressed="false">vs S&amp;P 500</button>
-            <button type="button" data-bench="both" aria-pressed="false">All three</button>
+            <button type="button" data-bench="tasi" aria-pressed="false">vs TASI</button>
+            <button type="button" data-bench="both" aria-pressed="false">All</button>
           </div>
           <div class="seg" role="group" aria-label="Range">
             <button type="button" data-range="1M" aria-pressed="false">1M</button>
@@ -202,6 +204,6 @@
   </div>
 </footer>
 
-<script type="module" src="js/race.js?v=22"></script>
+<script type="module" src="js/race.js?v=23"></script>
 </body>
 </html>

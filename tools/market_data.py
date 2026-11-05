@@ -14,7 +14,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import monthly_report as R   # fetch_trades(): public Firestore read
 
-BENCH = ["GLD", "^GSPC"]
+BENCH = ["GLD", "^GSPC", "^TASI.SR"]
 UA = {"User-Agent": "Mozilla/5.0"}   # a full browser UA gets 429 from Yahoo
 
 
@@ -62,8 +62,16 @@ def main():
         old = json.load(open(out))
     except Exception:
         pass
-    for tk, s in old.get("series", {}).items():   # a failed ticker keeps yesterday's data
-        series.setdefault(tk, s)
+    for tk, s in old.get("series", {}).items():
+        if tk not in series:   # a failed ticker keeps yesterday's data
+            series[tk] = s
+            continue
+        # merge by date, new closes win: Yahoo serves TASI (^TASI.SR) as one
+        # point only, so its history (seeded from TradingView) grows a day at a time
+        new = series[tk]
+        byday = dict(zip(s["d"], s["c"])); byday.update(zip(new["d"], new["c"]))
+        days = sorted(byday)
+        series[tk] = {**new, "d": days, "c": [byday[x] for x in days]}
     doc = {"from": start, "series": series}
     if old.get("from") == doc["from"] and old.get("series") == doc["series"]:
         print("no change")
