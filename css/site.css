@@ -300,6 +300,13 @@ body.still *,body.still *::before,body.still *::after{animation-play-state:pause
   .race .lead,.race-lead{opacity:1!important}
 }
 
+/* ---------- the owner's buttons inside a call (Portfolio tab): only for the signed-in manager ---------- */
+.own-acts{display:none;flex-wrap:wrap;gap:8px;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+body.is-owner .own-acts{display:flex}
+.own-btn{min-height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--ink);background:var(--paper);color:var(--ink);font:500 13px/1 var(--body);cursor:pointer}
+.own-btn:hover{background:var(--ink);color:var(--paper)}
+@media (pointer:coarse){.own-btn{min-height:44px}}
+
 /* ---------- the owner's quick add ---------- */
 .owner-fab{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:70;display:inline-flex;align-items:center;gap:8px;
   min-height:54px;padding:0 22px;border:1px solid var(--ink);border-radius:999px;background:var(--ink);color:var(--paper);font:500 15px/1 var(--body);cursor:pointer;

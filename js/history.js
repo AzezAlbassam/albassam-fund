@@ -5,8 +5,8 @@
 //   history("MU", "2026-07-01") -> { dates: ["2026-07-01", ...], closes: [..] }
 // ============================================================
 
-import { DEMO } from "./config.js?v=20";
-import { proxiedJson, savedSeries } from "./prices.js?v=20";
+import { DEMO } from "./config.js?v=21";
+import { proxiedJson, savedSeries } from "./prices.js?v=21";
 
 const TTL = 30 * 60 * 1000;
 const inflight = {};

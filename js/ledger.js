@@ -5,10 +5,10 @@
 // so expanded rows, sparklines and reveals survive every change.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, countTo, roll, usd2, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=20";
-import { live, state } from "./live.js?v=20";
-import { derive, blendedPct, today, exitPx } from "./roi.js?v=20";
-import { history } from "./history.js?v=20";
+import { initShell, observeReveals, onReveal, countTo, roll, usd2, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=21";
+import { live, state } from "./live.js?v=21";
+import { derive, blendedPct, today, exitPx } from "./roi.js?v=21";
+import { history } from "./history.js?v=21";
 
 initShell();
 
@@ -20,7 +20,7 @@ document.querySelectorAll(".lhead h1 .w").forEach(w => {
   w.innerHTML = [...w.textContent].map(ch => `<span class="ch" style="--i:${ci++}">${esc(ch)}</span>`).join("");
 });
 // the header: a calm line maze, no path through it
-import("./maze.js?v=20")
+import("./maze.js?v=21")
   .then(m => m.startMaze($("#lmaze"), { cols: 12, rows: 9, seed: 20260815, spin: 0.035, fit: 1, path: false }))
   .catch(err => console.warn("3D maze unavailable:", err));
 
@@ -105,6 +105,8 @@ function rowHtml(t) {
   </button>
   <div class="call-body" id="tx-${id}"${on ? "" : " inert"}><div><div class="inner">
     <h3>Trades</h3><ul class="txns">${txHtml(t)}</ul>
+    <div class="own-acts" role="group" aria-label="Manager actions for ${esc(t.ticker)}">${isOpen(t)
+      ? `<button class="own-btn" type="button" data-own-act="buy" data-id="${id}">+ Buy more</button><button class="own-btn" type="button" data-own-act="sell" data-id="${id}">− Sell</button>` : ""}<button class="own-btn" type="button" data-own-act="pur" data-id="${id}">Purification${t.pur > 0 ? " " + +t.pur + "%" : ""}</button></div>
   </div></div></div>`;
 }
 
