@@ -6,11 +6,11 @@
 // account, and Firestore rules still check every write.
 // ============================================================
 
-import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=19";
-import { store } from "./store.js?v=19";
-import { state } from "./live.js?v=19";
-import { checkTicker, fetchProfile } from "./prices.js?v=19";
-import { today } from "./roi.js?v=19";
+import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=20";
+import { store } from "./store.js?v=20";
+import { state } from "./live.js?v=20";
+import { checkTicker, fetchProfile } from "./prices.js?v=20";
+import { today } from "./roi.js?v=20";
 
 export async function startOwner() {
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
@@ -45,6 +45,7 @@ export function mount() {   // exported so the sheet can be exercised without a 
       <div class="os-row">
         <label class="os-f"><span>Entry date</span><input name="date" type="date"></label>
         <label class="os-f"><span>% of pot (optional)</span><input name="wt" type="number" step="any" min="0" max="100" inputmode="decimal" placeholder="e.g. 30"></label>
+        <label class="os-f"><span>Purification % (optional)</span><input name="pur" type="number" step="any" min="0" max="100" inputmode="decimal" placeholder="e.g. 5"></label>
       </div>
       <p class="os-msg" role="status"></p>
       <button class="btn os-go" type="submit">Launch position</button>
@@ -76,7 +77,8 @@ export function mount() {   // exported so the sheet can be exercised without a 
         return say(`Couldn't confirm ${ticker} with the price feed. Check the symbol, then tap Launch again to save anyway.`, true);
       }
       const profile = await fetchProfile(ticker);
-      await store.add({ ticker, shares, price, date, wt: wtv > 0 ? Math.min(100, wtv) : null, ...profile });
+      const pv = parseFloat(f.pur.value);
+      await store.add({ ticker, shares, price, date, wt: wtv > 0 ? Math.min(100, wtv) : null, pur: pv > 0 ? Math.min(100, pv) : null, ...profile });
       say(ticker + " added. Live ROI is now tracking.");
       setTimeout(() => dlg.close(), 1200);
     } catch (err) {

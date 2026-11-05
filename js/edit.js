@@ -7,13 +7,13 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=19";
-import { store, purified } from "./store.js?v=19";
-import { live, state } from "./live.js?v=19";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=19";
-import { watchNews } from "./news.js?v=19";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=19";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=19";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=20";
+import { store, purified } from "./store.js?v=20";
+import { live, state } from "./live.js?v=20";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=20";
+import { watchNews } from "./news.js?v=20";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=20";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=20";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -103,6 +103,7 @@ function cardHtml(t) {
       <button class="act" type="button" data-act="sell">− Sell</button>
       <button class="act" type="button" data-act="close">Close</button>
       <button class="act" type="button" data-act="edit" aria-label="Fix ${tk} numbers">✎ Fix</button>
+      <button class="act" type="button" data-act="pur" aria-label="Purification for ${tk}">Purification${t.pur > 0 ? " " + esc(t.pur) + "%" : ""}</button>
       <button class="act del" type="button" data-act="del" aria-label="Delete ${tk}">✕</button>
     </div>
     <div class="inline-form" hidden></div>` : ""}
@@ -129,6 +130,7 @@ function rowHtml(t, i) {
       </div>
       ${writable() ? `<div class="crow-acts" role="group" aria-label="Actions for ${tk}">
         <button class="act" type="button" data-act="edit" aria-label="Fix ${tk} numbers">✎ Fix</button>
+      <button class="act" type="button" data-act="pur" aria-label="Purification for ${tk}">Purification${t.pur > 0 ? " " + esc(t.pur) + "%" : ""}</button>
         <button class="act" type="button" data-act="reopen" aria-label="Reopen ${tk}">↩ Reopen</button>
         <button class="act del" type="button" data-act="del" aria-label="Delete ${tk}">✕</button>
       </div>` : ""}
@@ -317,6 +319,23 @@ function openEditForm(holder, t) {
   }, holder.querySelector('[data-act="edit"]'));
 }
 
+// Purification: the % of the profit given away. Taken off when the call closes;
+// on a closed call the result is worked out again straight away.
+function openPurForm(holder, t) {
+  const box = openBox(holder, "pur");
+  if (!box) return;
+  const tk = esc(t.ticker);
+  box.innerHTML = formBody(t.status === "closed"
+      ? `Purification for ${tk}. The locked result is worked out again from ${pct1(t.grossPct ?? t.finalPct)} before purification.`
+      : `Purification for ${tk}. It is taken off the profit when this call closes. A loss has nothing to purify.`,
+    fld("Purification % of profit", `type="number" step="any" min="0" max="100" inputmode="decimal" data-in="pur" placeholder="e.g. 5" value="${t.pur > 0 ? esc(t.pur) : ""}"`), "Save");
+  wireForm(box, async () => {
+    const pur = purOf(val(box, "pur"));
+    await store.setPur(t.id, pur);
+    toast(pur ? `${t.ticker}: ${pur}% purification${t.status === "closed" ? " applied." : " at close."}` : `${t.ticker}: no purification.`);
+  }, holder.querySelector('[data-act="pur"]'));
+}
+
 /* ----------------------- card + row actions ----------------------- */
 // Delegation matches BUTTONS with data-act only: clicks inside an
 // inline form (inputs, OK, Cancel) never re-trigger the action.
@@ -355,6 +374,8 @@ document.addEventListener("click", async (e) => {
       }
     } else if (act === "edit") {
       openEditForm(holder, t);
+    } else if (act === "pur") {
+      openPurForm(holder, t);
     } else {
       openInlineForm(holder, t, act);
     }
@@ -500,7 +521,7 @@ function familyAdmin(on = true) {
   if (famStop) return;
   const my = ++famSeq;
   famStop = () => {};   // starting
-  import("./folio.js?v=19").then(m => m.backend()).then((api) => {
+  import("./folio.js?v=20").then(m => m.backend()).then((api) => {
     if (my !== famSeq) return;   // signed out while it loaded
     famApi = api;
     famStop = api.watchFamily(({ requests, members }) => { famAsks = requests; famMems = members; paintFamily(); },

@@ -4,11 +4,11 @@
 // Everything re-renders from live(): trades, pot and quotes.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=19";
-import { live, state } from "./live.js?v=19";
-import { statPct } from "./roi.js?v=19";
-import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=19";
-import { raceChart, bindRaceControls } from "./chart.js?v=19";
+import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=20";
+import { live, state } from "./live.js?v=20";
+import { statPct } from "./roi.js?v=20";
+import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=20";
+import { raceChart, bindRaceControls } from "./chart.js?v=20";
 
 const $ = (id) => document.getElementById(id);
 const FAIL = "The race could not load right now. Try again in a minute.";
@@ -28,7 +28,7 @@ let race = null, status = "loading", key = "", seq = 0;
 /* ---------- header: the line maze, our fund's path climbing out of it ---------- */
 let maze = null;
 const phone = innerWidth < 720;
-import("./maze.js?v=19")
+import("./maze.js?v=20")
   .then(m => m.startMaze($("rhMaze"), { labelsEl: $("rhLabels"), cols: phone ? 8 : 12, rows: phone ? 7 : 9, seed: 20260712, spin: 0.035, fit: phone ? 0.92 : 1 }))
   .then(mz => { maze = mz; feedMaze(); })
   .catch(err => console.warn("3D maze unavailable:", err));
@@ -74,7 +74,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=19");
+    const { startTowers } = await import("./bars3d.js?v=20");
     towers = await startTowers($("pdCanvas"), $("pdLabels"), { yaw0: -0.45, pitch: 0.35, spin: 0.06 });
     podium();
   } catch (err) { console.warn("3D podium unavailable:", err); $("pdStage").classList.add("fallback"); }
@@ -162,17 +162,17 @@ function bars() {
     .filter(t => t.wt > 0 && (t.status === "closed" || t.status === "active"))
     .map(t => { const p = statPct(t, state.quotes); return p == null ? null : { t, p, pts: t.wt / 100 * p }; })
     .filter(Boolean)
-    .sort((a, b) => b.pts - a.pts);
+    .sort((a, b) => b.p - a.p);   // the return leads; what it added to the pot comes second
   if (!rows.length) { el.innerHTML = `<li class="state-note">${EMPTY}</li>`; return; }
-  const pos = Math.max(0, ...rows.map(r => r.pts)), neg = Math.max(0, ...rows.map(r => -r.pts));
+  const pos = Math.max(0, ...rows.map(r => r.p)), neg = Math.max(0, ...rows.map(r => -r.p));
   const span = pos + neg || 1;
   el.style.setProperty("--z", (neg / span * 100).toFixed(2) + "%");   // the zero line
   el.innerHTML = rows.map((r, i) => `
-    <li class="lb-row${r.pts < 0 ? " loss" : ""}" style="--i:${Math.min(i, 12)}">
+    <li class="lb-row${r.p < 0 ? " loss" : ""}" style="--i:${Math.min(i, 12)}">
       <div class="lb-name">${logoHtml(r.t)}<span><b>${esc(r.t.ticker)}</b>
-        <small>${pct1(r.p)} × ${+(+r.t.wt).toFixed(1)}% of pot${r.t.status === "active" ? " · open" : ""}</small></span></div>
-      <div class="lb-track" aria-hidden="true"><i class="lb-bar" style="width:${(Math.abs(r.pts) / span * 100).toFixed(2)}%;--d:${Math.min(i, 12) * 70}ms"></i></div>
-      <div class="lb-val"><b>${pct1(r.pts)}</b><small>on the pot</small></div>
+        <small>${+(+r.t.wt).toFixed(1)}% of pot${r.t.status === "active" ? " · open" : ""}</small></span></div>
+      <div class="lb-track" aria-hidden="true"><i class="lb-bar" style="width:${(Math.abs(r.p) / span * 100).toFixed(2)}%;--d:${Math.min(i, 12) * 70}ms"></i></div>
+      <div class="lb-val"><b>${pct1(r.p)}</b><small>${pct1(r.pts)} on the pot</small></div>
     </li>`).join("");
   playOnce(el, ".lb-val b");
 }

@@ -18,8 +18,8 @@
 //   createdAt server timestamp      (ordering)
 // ============================================================
 
-import { DEMO, firebaseConfig } from "./config.js?v=19";
-import { blendedPct, derive, exitPx, today } from "./roi.js?v=19";
+import { DEMO, firebaseConfig } from "./config.js?v=20";
+import { blendedPct, derive, exitPx, today } from "./roi.js?v=20";
 
 const SYNCING = "Still syncing with the fund record. Try again in a moment.";
 
@@ -55,6 +55,7 @@ export const store = {
   close: (id, closePx) => impl.close(id, closePx),
   reopen: (id) => impl.reopen(id),
   remove: (id) => impl.remove(id),
+  setPur: (id, pur) => impl.setPur(id, pur),
   setProfile: (id, profile) => impl.setProfile(id, profile),
   setSimStart: (v) => impl.setSimStart(v),
 };
@@ -161,6 +162,14 @@ async function firestoreStore() {
     async remove(id) {
       await fs.deleteDoc(fs.doc(db, "trades", id));
     },
+    // purification on its own: an open call keeps it for its close, a closed
+    // call's result is worked out again from its result before purification
+    async setPur(id, pur) {
+      const t = find(id); if (!t) throw new Error(SYNCING);
+      if (t.status !== "closed") return fs.updateDoc(fs.doc(db, "trades", id), { pur });
+      const g = t.grossPct ?? t.finalPct;
+      await fs.updateDoc(fs.doc(db, "trades", id), { pur, grossPct: g, finalPct: purified(g, pur) });
+    },
     async setProfile(id, { name, logo }) {
       await fs.updateDoc(fs.doc(db, "trades", id), { name, logo });
     },
@@ -249,6 +258,12 @@ function demoStore() {
       t.status = "active"; t.closed = null; t.closePx = null; t.finalPct = null; t.grossPct = null; emit();
     },
     async remove(id) { trades = trades.filter(x => x.id !== id); emit(); },
+    async setPur(id, pur) {
+      const t = trades.find(x => x.id === id); if (!t) return;
+      t.pur = pur;
+      if (t.status === "closed") { t.grossPct = t.grossPct ?? t.finalPct; t.finalPct = purified(t.grossPct, pur); }
+      emit();
+    },
     async setProfile(id, { name, logo }) {
       const t = trades.find(x => x.id === id); if (!t) return;
       t.name = name; t.logo = logo; emit();
