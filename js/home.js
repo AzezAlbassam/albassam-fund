@@ -6,12 +6,12 @@
 // ============================================================
 
 import { initShell, observeReveals, onReveal, roll, countTo, reducedMotion, usd0, pct1, pctBig, pts1, shortUsd,
-         day, esc, pctClass, logoHtml, daysBetween } from "./shell.js?v=24";
-import { live, state } from "./live.js?v=24";
-import { loadRace, raceSummary } from "./series.js?v=24";
-import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=24";
-import { simulate, statPct, derive, blendedPct } from "./roi.js?v=24";
-import { watchNews } from "./news.js?v=24";
+         day, esc, pctClass, logoHtml, daysBetween } from "./shell.js?v=25";
+import { live, state } from "./live.js?v=25";
+import { loadRace, raceSummary } from "./series.js?v=25";
+import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=25";
+import { simulate, statPct, derive, blendedPct } from "./roi.js?v=25";
+import { watchNews } from "./news.js?v=25";
 
 const $ = (s, r = document) => r.querySelector(s);
 initShell();
@@ -20,7 +20,7 @@ initShell();
 const media = $("#heroMedia");
 let maze = null;
 const phone = innerWidth < 720;
-import("./maze.js?v=24")
+import("./maze.js?v=25")
   .then(m => m.startMaze($("#maze"), { labelsEl: $("#mzLabels"), cols: phone ? 9 : 16, rows: phone ? 11 : 11, fit: phone ? 1.12 : 1 }))
   .then(mz => { maze = mz; feedMaze(); onHeroScroll(); })
   .catch(err => { console.warn("3D maze unavailable:", err); media.classList.add("fallback"); });
@@ -234,7 +234,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startOrbit } = await import("./orbit.js?v=24");
+    const { startOrbit } = await import("./orbit.js?v=25");
     orbit = await startOrbit($("#orbit"), $("#orbitLabels"), renderOrbitCard);
     feedOrbit();
   } catch (err) {
@@ -297,7 +297,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=24");
+    const { startTowers } = await import("./bars3d.js?v=25");
     fc.towers = await startTowers($("#fcCanvas"), $("#fcLabels"));
     renderForecast();
   } catch (err) { console.warn("3D forecast unavailable:", err); $("#fcStage").classList.add("fallback"); }

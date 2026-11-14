@@ -7,13 +7,13 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=24";
-import { store, purified } from "./store.js?v=24";
-import { live, state } from "./live.js?v=24";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=24";
-import { watchNews } from "./news.js?v=24";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=24";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=24";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=25";
+import { store, purified } from "./store.js?v=25";
+import { live, state } from "./live.js?v=25";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=25";
+import { watchNews } from "./news.js?v=25";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=25";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=25";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -429,7 +429,12 @@ $("#addForm").addEventListener("submit", (e) => {
     return fail(ticker + " is already an active position.");
   busy(form, async () => {
     toast("Checking " + ticker + "…");
-    if (!(await checkTicker(ticker))) return fail(ticker + " not found. Is it a US-listed symbol?");
+    // the live price feed can be down: a second tap on the same ticker launches it anyway
+    if (!(await checkTicker(ticker)) && form.dataset.unverified !== ticker) {
+      form.dataset.unverified = ticker;
+      return fail(`Couldn't confirm ${ticker} with the price feed (it may be down). Check the symbol, then tap Launch again to add it anyway.`);
+    }
+    delete form.dataset.unverified;
     const profile = await fetchProfile(ticker);
     await store.add({ ticker, shares, price, date, wt: wtv > 0 ? wtv : null, pur, ...profile });
     form.reset();
@@ -521,7 +526,7 @@ function familyAdmin(on = true) {
   if (famStop) return;
   const my = ++famSeq;
   famStop = () => {};   // starting
-  import("./folio.js?v=24").then(m => m.backend()).then((api) => {
+  import("./folio.js?v=25").then(m => m.backend()).then((api) => {
     if (my !== famSeq) return;   // signed out while it loaded
     famApi = api;
     famStop = api.watchFamily(({ requests, members }) => { famAsks = requests; famMems = members; paintFamily(); },
