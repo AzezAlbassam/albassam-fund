@@ -7,13 +7,13 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=26";
-import { store, purified } from "./store.js?v=26";
-import { live, state } from "./live.js?v=26";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=26";
-import { watchNews } from "./news.js?v=26";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=26";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=26";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=27";
+import { store, purified } from "./store.js?v=27";
+import { live, state } from "./live.js?v=27";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=27";
+import { watchNews } from "./news.js?v=27";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=27";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=27";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -102,6 +102,7 @@ function cardHtml(t) {
       <button class="act" type="button" data-act="buy">+ Buy</button>
       <button class="act" type="button" data-act="sell">− Sell</button>
       <button class="act" type="button" data-act="close">Close</button>
+      <button class="act" type="button" data-act="share" aria-label="Share card for ${tk}">Share card</button>
       <button class="act" type="button" data-act="edit" aria-label="Fix ${tk} numbers">✎ Fix</button>
       <button class="act" type="button" data-act="pur" aria-label="Purification for ${tk}">Purification${t.pur > 0 ? " " + esc(t.pur) + "%" : ""}</button>
       <button class="act del" type="button" data-act="del" aria-label="Delete ${tk}">✕</button>
@@ -131,6 +132,7 @@ function rowHtml(t, i) {
       ${writable() ? `<div class="crow-acts" role="group" aria-label="Actions for ${tk}">
         <button class="act" type="button" data-act="edit" aria-label="Fix ${tk} numbers">✎ Fix</button>
       <button class="act" type="button" data-act="pur" aria-label="Purification for ${tk}">Purification${t.pur > 0 ? " " + esc(t.pur) + "%" : ""}</button>
+        <button class="act" type="button" data-act="share" aria-label="Share card for ${tk}">Share card</button>
         <button class="act" type="button" data-act="reopen" aria-label="Reopen ${tk}">↩ Reopen</button>
         <button class="act del" type="button" data-act="del" aria-label="Delete ${tk}">✕</button>
       </div>` : ""}
@@ -348,6 +350,7 @@ document.addEventListener("click", async (e) => {
   if (!t) return;
   const act = btn.dataset.act;
   try {
+    if (act === "share") return void (await import("./card.js?v=27")).shareCall(t);
     if (act === "del" || act === "reopen") {
       // two-step: the first click arms the button, a second one at least
       // half a second later confirms (a double-click can never do both)

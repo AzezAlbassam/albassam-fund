@@ -6,11 +6,11 @@
 // account, and Firestore rules still check every write.
 // ============================================================
 
-import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=26";
-import { store } from "./store.js?v=26";
-import { state } from "./live.js?v=26";
-import { checkTicker, fetchProfile } from "./prices.js?v=26";
-import { today, derive } from "./roi.js?v=26";
+import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=27";
+import { store } from "./store.js?v=27";
+import { state } from "./live.js?v=27";
+import { checkTicker, fetchProfile } from "./prices.js?v=27";
+import { today, derive } from "./roi.js?v=27";
 
 export async function startOwner() {
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
