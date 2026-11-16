@@ -6,13 +6,15 @@
 //   NEW CALL     opened today or yesterday: its share of the pot leads
 //   OPEN CALL    still running: the return so far leads
 //   CALL CLOSED  the final return leads
+//   ADDED MORE / AVERAGED DOWN  the latest buy on an open call: what it
+//                did to the average price leads (the manager picks it)
 // Percent first; the stock's own price is the only dollar figure.
 // ============================================================
 
-import { state } from "./live.js?v=29";
-import { blendedPct, derive, exitPx, simulate, today } from "./roi.js?v=29";
-import { history } from "./history.js?v=29";
-import { pct1, usd2, day, dayYear, daysBetween } from "./shell.js?v=29";
+import { state } from "./live.js?v=30";
+import { blendedPct, derive, exitPx, simulate, today } from "./roi.js?v=30";
+import { history } from "./history.js?v=30";
+import { pct1, usd2, day, dayYear, daysBetween } from "./shell.js?v=30";
 
 const W = 1080, H = 1350;
 const INK = "#0B0B0C", PAPER = "#FFFFFF", CANVAS = "#DEDDD6", MUTED = "#585861", LOSS = "#D92D20", HAIR = "rgba(11,11,12,.16)";
@@ -22,11 +24,38 @@ const SITE = "azezalbassam.github.io/albassam-fund";
 const isOpen = (t) => t.status !== "closed";
 const share = (t) => (t.wt > 0 ? +Number(t.wt).toFixed(1) + "%" : null);
 
+// The latest buy on an open call that already had one: the average before
+// and after it, and how much bigger it made the position. null = no add.
+// ponytail: the average is derive()'s (every buy ever), same as the site shows
+export function addFacts(t) {
+  const tx = t.txns || [], i = tx.findLastIndex(x => x.t === "buy");
+  if (!isOpen(t) || i < 1 || !tx.slice(0, i).some(x => x.t === "buy")) return null;
+  const was = derive({ txns: tx.slice(0, i) }), now = derive({ txns: tx.slice(0, i + 1) }), b = tx[i];
+  return {
+    date: b.d, px: +b.px, was: was.avgCost, now: now.avgCost,
+    move: ((now.avgCost - was.avgCost) / was.avgCost) * 100,
+    grew: was.heldSh > 0 ? (b.sh / was.heldSh) * 100 : null,
+  };
+}
+
 // What the card says, separate from how it is drawn (and easy to check).
-export function cardFacts(t, quotes = state.quotes, on = today()) {
+export function cardFacts(t, quotes = state.quotes, on = today(), add = false) {
   const open = isOpen(t), end = open ? on : t.closed || t.opened;
   const pct = open ? blendedPct(t, quotes[t.ticker]?.c ?? null) : t.finalPct ?? null;
   const held = daysBetween(t.opened, end);
+  const a = add ? addFacts(t) : null;
+  if (a) {
+    const m = +a.move.toFixed(1);
+    return {
+      kind: "add", pct, held, end, loss: false, note: "",
+      chip: m < 0 ? "AVERAGED DOWN" : "ADDED MORE",
+      label: m < 0 ? "AVERAGE PRICE LOWERED BY" : m > 0 ? "AVERAGE PRICE RAISED BY" : "AVERAGE PRICE UNCHANGED",
+      hero: Math.abs(m).toFixed(1) + "%",
+      when: `Added ${day(a.date)} at ${usd2(a.px)}  ·  opened ${day(t.opened)}`,
+      stats: [["AVERAGE WAS", usd2(a.was)], ["AVERAGE NOW", usd2(a.now)],
+        ["ADDED TO POSITION", a.grew == null ? "…" : "+" + +a.grew.toFixed(a.grew < 10 ? 1 : 0) + "%"]],
+    };
+  }
   const kind = !open ? "closed" : held <= 1 ? "new" : "open";
   const d = derive(t), sell = open ? null : exitPx(t);
   return {
@@ -66,8 +95,8 @@ async function holdLine(t, f) {
   return pts;
 }
 
-export async function drawCard(t) {
-  const f = cardFacts(t);
+export async function drawCard(t, add = false) {
+  const f = cardFacts(t, undefined, undefined, add);
   const [pts] = await Promise.all([holdLine(t, f), fonts()]);
   const cv = document.createElement("canvas");
   cv.width = W; cv.height = H;
@@ -113,7 +142,7 @@ export async function drawCard(t) {
   let name = t.name || "";
   while (name && c.measureText(name).width > CW - 112) name = name.slice(0, -2).trimEnd() + "…";
   text(name, L, 428, `400 34px ${SANS}`, MUTED);
-  const when = f.kind === "new" ? `Opened ${dayYear(t.opened)}` : `${day(t.opened)} → ${isOpen(t) ? "today" : day(f.end)}  ·  ${f.held === 0 ? "same day" : `held ${f.held} day${f.held === 1 ? "" : "s"}`}`;
+  const when = f.when || (f.kind === "new" ? `Opened ${dayYear(t.opened)}` : `${day(t.opened)} → ${isOpen(t) ? "today" : day(f.end)}  ·  ${f.held === 0 ? "same day" : `held ${f.held} day${f.held === 1 ? "" : "s"}`}`);
   text(when.toUpperCase(), L, 488, `500 24px ${MONO}`, INK, "left", "3px");
 
   // the number
@@ -144,7 +173,7 @@ export async function drawCard(t) {
 
   // three facts under a rule
   const fund = simulate(state.trades, state.quotes, state.pot).totalPct;
-  const stats = [...f.stats, ["THE FUND OVERALL", pct1(fund)]];
+  const stats = f.stats.length > 2 ? f.stats : [...f.stats, ["THE FUND OVERALL", pct1(fund)]];
   line(L, 1096, R, 1096, 2, INK);
   stats.forEach(([k, v], i) => {
     const x = L + (i * (R - L)) / 3 + (i ? 28 : 0);
@@ -160,37 +189,49 @@ export async function drawCard(t) {
 }
 
 // The sheet: the card, then Share (the phone's own share sheet) or Save.
+// An open call with a later buy also offers the "add" card; it opens on
+// that one when the buy is from today or yesterday.
 export async function shareCall(t) {
   let d = document.querySelector(".share-sheet");
   if (!d) {
     d = document.createElement("dialog");
     d.className = "share-sheet";
     d.setAttribute("aria-label", "Share card");
-    d.innerHTML = `<div class="ss-pic"><p class="ss-note">Drawing the card…</p></div>
+    d.innerHTML = `<div class="seg ss-kind" role="group" aria-label="Which card" hidden><button type="button" data-k="">The call</button><button type="button" data-k="add">The add</button></div>
+      <div class="ss-pic"></div>
       <div class="ss-acts"><button class="btn ss-share" type="button" hidden>Share</button><a class="btn ghost ss-save" hidden>Save image</a>
       <button class="ss-x" type="button" aria-label="Close">×</button></div>`;
     d.querySelector(".ss-x").addEventListener("click", () => d.close());
     d.addEventListener("click", (e) => { if (e.target === d) d.close(); });
     document.body.appendChild(d);
   }
-  const pic = d.querySelector(".ss-pic"), shareBtn = d.querySelector(".ss-share"), save = d.querySelector(".ss-save");
-  pic.innerHTML = `<p class="ss-note">Drawing the card…</p>`;
-  shareBtn.hidden = save.hidden = true;
-  d.showModal();
-  try {
-    const cv = await drawCard(t);
-    const blob = await new Promise(r => cv.toBlob(r, "image/png"));
-    const file = new File([blob], `albassam-fund-${t.ticker}.png`, { type: "image/png" });
-    const url = URL.createObjectURL(blob);
-    d.addEventListener("close", () => URL.revokeObjectURL(url), { once: true });
-    pic.innerHTML = `<img alt="Share card for ${t.ticker.replace(/[^\w.^-]/g, "")}" src="${url}">`;
-    save.href = url; save.download = file.name; save.hidden = false;
-    if (navigator.canShare?.({ files: [file] })) {
-      shareBtn.hidden = false;
-      shareBtn.onclick = () => navigator.share({ files: [file] }).catch(() => {});   // closing the share sheet is not an error
+  const pic = d.querySelector(".ss-pic"), shareBtn = d.querySelector(".ss-share"), save = d.querySelector(".ss-save"), kinds = d.querySelector(".ss-kind");
+  const a = addFacts(t);
+  const show = async (add) => {
+    const turn = (d.turn = (d.turn || 0) + 1);   // a second tap while drawing wins
+    for (const b of kinds.children) b.setAttribute("aria-pressed", !!b.dataset.k === add);
+    pic.innerHTML = `<p class="ss-note">Drawing the card…</p>`;
+    shareBtn.hidden = save.hidden = true;
+    try {
+      const cv = await drawCard(t, add);
+      const blob = await new Promise(r => cv.toBlob(r, "image/png"));
+      if (turn !== d.turn) return;
+      const file = new File([blob], `albassam-fund-${t.ticker}${add ? "-add" : ""}.png`, { type: "image/png" });
+      URL.revokeObjectURL(d.url);
+      const url = (d.url = URL.createObjectURL(blob));
+      pic.innerHTML = `<img alt="Share card for ${t.ticker.replace(/[^\w.^-]/g, "")}" src="${url}">`;
+      save.href = url; save.download = file.name; save.hidden = false;
+      if (navigator.canShare?.({ files: [file] })) {
+        shareBtn.hidden = false;
+        shareBtn.onclick = () => navigator.share({ files: [file] }).catch(() => {});   // closing the share sheet is not an error
+      }
+    } catch (err) {
+      console.error(err);
+      if (turn === d.turn) pic.innerHTML = `<p class="ss-note">The card could not be drawn. Try again.</p>`;
     }
-  } catch (err) {
-    console.error(err);
-    pic.innerHTML = `<p class="ss-note">The card could not be drawn. Try again.</p>`;
-  }
+  };
+  kinds.hidden = !a;
+  kinds.onclick = (e) => { const b = e.target.closest("button"); if (b) show(!!b.dataset.k); };
+  d.showModal();
+  await show(!!a && daysBetween(a.date, today()) <= 1);
 }

@@ -18,8 +18,8 @@
 //   createdAt server timestamp      (ordering)
 // ============================================================
 
-import { DEMO, firebaseConfig } from "./config.js?v=29";
-import { blendedPct, derive, exitPx, today } from "./roi.js?v=29";
+import { DEMO, firebaseConfig } from "./config.js?v=30";
+import { blendedPct, derive, exitPx, today } from "./roi.js?v=30";
 
 const SYNCING = "Still syncing with the fund record. Try again in a moment.";
 

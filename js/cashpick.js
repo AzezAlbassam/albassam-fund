@@ -5,8 +5,8 @@
 // cash. 38% free, "50%" tapped -> the call is 19% of the pot.
 // ============================================================
 
-import { state } from "./live.js?v=29";
-import { cashPct } from "./roi.js?v=29";
+import { state } from "./live.js?v=30";
+import { cashPct } from "./roi.js?v=30";
 
 const fmt = (v) => +(+v).toFixed(1) + "%";
 

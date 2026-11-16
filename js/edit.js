@@ -7,14 +7,14 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=29";
-import { store, purified } from "./store.js?v=29";
-import { cashPick, cashProblem } from "./cashpick.js?v=29";
-import { live, state } from "./live.js?v=29";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=29";
-import { watchNews } from "./news.js?v=29";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct } from "./roi.js?v=29";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=29";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=30";
+import { store, purified } from "./store.js?v=30";
+import { cashPick, cashProblem } from "./cashpick.js?v=30";
+import { live, state } from "./live.js?v=30";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=30";
+import { watchNews } from "./news.js?v=30";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct } from "./roi.js?v=30";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=30";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -353,7 +353,7 @@ document.addEventListener("click", async (e) => {
   if (!t) return;
   const act = btn.dataset.act;
   try {
-    if (act === "share") return void (await import("./card.js?v=29")).shareCall(t);
+    if (act === "share") return void (await import("./card.js?v=30")).shareCall(t);
     if (act === "del" || act === "reopen") {
       // two-step: the first click arms the button, a second one at least
       // half a second later confirms (a double-click can never do both)
