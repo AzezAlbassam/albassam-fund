@@ -22,7 +22,7 @@ export const FINNHUB_KEY = "__FINNHUB_KEY__";
 export const OWNER_EMAIL = "azizbassam2018@gmail.com";
 
 // How often live prices refresh (milliseconds).
-export const PRICE_REFRESH_MS = 30000;
+export const PRICE_REFRESH_MS = 15000;   // one small request for all open calls
 
 // Demo mode: active until Firebase is configured, or on demand
 // with ?demo=1 in the URL (handy for testing design changes

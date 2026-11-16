@@ -4,7 +4,7 @@
 // build stamp and the "new version" bar. Plus small formatters.
 // ============================================================
 
-import { BUILD } from "./config.js?v=27";
+import { BUILD } from "./config.js?v=28";
 
 export const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -74,7 +74,7 @@ export function initShell() {
   // the owner's "+ New call" button, only on a device where the manager signed in
   try {
     if (localStorage.getItem("af:owner") === "1" && !document.getElementById("addForm"))
-      import("./owner.js?v=27").then(m => m.startOwner()).catch(e => console.warn("quick add unavailable:", e));
+      import("./owner.js?v=28").then(m => m.startOwner()).catch(e => console.warn("quick add unavailable:", e));
   } catch (e) { /* storage blocked */ }
 
   // "Get the app": install on the phone's home screen
@@ -229,6 +229,8 @@ export const month = (m) => MON[+m.slice(5, 7) - 1];
 export const daysBetween = (a, b) => Math.max(0, Math.round((Date.parse(b) - Date.parse(a)) / 864e5));
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// The label for a quote's day move: "today", or the session outside regular hours.
+export const sessionWord = (q) => (q?.ext === "pre" ? "pre-market" : q?.ext === "post" ? "after hours" : "today");
 export const pctClass = (p) => p == null ? "" : p >= 0 ? "pos" : "neg";
 
 // Company logo with a letter-badge fallback.

@@ -174,12 +174,10 @@
   .lb-name{grid-area:name} .lb-val{grid-area:val} .lb-track{grid-area:bar;height:8px}
   .hw-list li::before{font-size:72px}
 }
-@media (max-width:420px){
-  .rh-strip dl{gap:8px}
-  .lane{padding:12px 10px 22px}
-  .lane::before,.lane::after{left:10px;right:10px}
-  .rh-strip dt{font-size:10px;letter-spacing:.08em}
-  .rh-strip dd{font-size:clamp(19px,5.6vw,24px)}
+/* four lanes in one row are narrower than "+61.9%" on a phone: two by two */
+@media (max-width:560px){
+  .rh-strip dl{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .rh-strip dd{font-size:clamp(28px,8.6vw,38px)}
 }
 
 @media (prefers-reduced-motion:reduce){

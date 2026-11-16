@@ -6,12 +6,12 @@
 // ============================================================
 
 import { initShell, observeReveals, onReveal, roll, countTo, reducedMotion, usd0, pct1, pctBig, pts1, shortUsd,
-         day, esc, pctClass, logoHtml, daysBetween } from "./shell.js?v=27";
-import { live, state } from "./live.js?v=27";
-import { loadRace, raceSummary } from "./series.js?v=27";
-import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=27";
-import { simulate, statPct, derive, blendedPct } from "./roi.js?v=27";
-import { watchNews } from "./news.js?v=27";
+         day, esc, pctClass, logoHtml, daysBetween, sessionWord } from "./shell.js?v=28";
+import { live, state } from "./live.js?v=28";
+import { loadRace, raceSummary } from "./series.js?v=28";
+import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=28";
+import { simulate, statPct, derive, blendedPct } from "./roi.js?v=28";
+import { watchNews } from "./news.js?v=28";
 
 const $ = (s, r = document) => r.querySelector(s);
 initShell();
@@ -20,7 +20,7 @@ initShell();
 const media = $("#heroMedia");
 let maze = null;
 const phone = innerWidth < 720;
-import("./maze.js?v=27")
+import("./maze.js?v=28")
   .then(m => m.startMaze($("#maze"), { labelsEl: $("#mzLabels"), cols: phone ? 9 : 16, rows: phone ? 11 : 11, fit: phone ? 1.12 : 1 }))
   .then(mz => { maze = mz; feedMaze(); onHeroScroll(); })
   .catch(err => { console.warn("3D maze unavailable:", err); media.classList.add("fallback"); });
@@ -196,7 +196,7 @@ function renderBook(liveOnly) {
       el.querySelector("[data-f=pct]").textContent = pct1(p);
       el.querySelector("[data-f=pct]").className = pctClass(p);
       el.querySelector("[data-f=px]").textContent = q ? "$" + q.c.toFixed(2) : "…";
-      el.querySelector("[data-f=today]").textContent = q?.dp != null ? pct1(q.dp) + " today" : "";
+      el.querySelector("[data-f=today]").textContent = q?.dp != null ? pct1(q.dp) + " " + sessionWord(q) : "";
     }
     return;
   }
@@ -204,7 +204,7 @@ function renderBook(liveOnly) {
     const d = derive(t), q = state.quotes[t.ticker], p = blendedPct(t, q?.c);
     return `<article class="glass glow pos-card tilt" data-id="${esc(t.id)}" data-reveal>
       <div class="top">${logoHtml(t)}<div><div class="tk">${esc(t.ticker)}</div><div class="nm">${esc(t.name)}</div></div>
-        <div class="roi"><b data-f="pct" class="${pctClass(p)}">${pct1(p)}</b><small data-f="today">${q?.dp != null ? pct1(q.dp) + " today" : ""}</small></div></div>
+        <div class="roi"><b data-f="pct" class="${pctClass(p)}">${pct1(p)}</b><small data-f="today">${q?.dp != null ? pct1(q.dp) + " " + sessionWord(q) : ""}</small></div></div>
       <dl><div><dt>Avg cost</dt><dd>$${d.avgCost.toFixed(2)}</dd></div><div><dt>Now</dt><dd data-f="px">${q ? "$" + q.c.toFixed(2) : "…"}</dd></div>
         <div><dt>Share of pot</dt><dd>${t.wt > 0 ? t.wt + "%" : "Unsized"}</dd></div><div><dt>Opened</dt><dd>${day(t.opened)}</dd></div></dl>
     </article>`;
@@ -234,7 +234,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startOrbit } = await import("./orbit.js?v=27");
+    const { startOrbit } = await import("./orbit.js?v=28");
     orbit = await startOrbit($("#orbit"), $("#orbitLabels"), renderOrbitCard);
     feedOrbit();
   } catch (err) {
@@ -297,7 +297,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=27");
+    const { startTowers } = await import("./bars3d.js?v=28");
     fc.towers = await startTowers($("#fcCanvas"), $("#fcLabels"));
     renderForecast();
   } catch (err) { console.warn("3D forecast unavailable:", err); $("#fcStage").classList.add("fallback"); }

@@ -7,13 +7,13 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=27";
-import { store, purified } from "./store.js?v=27";
-import { live, state } from "./live.js?v=27";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=27";
-import { watchNews } from "./news.js?v=27";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=27";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween } from "./shell.js?v=27";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=28";
+import { store, purified } from "./store.js?v=28";
+import { live, state } from "./live.js?v=28";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=28";
+import { watchNews } from "./news.js?v=28";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=28";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=28";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -159,7 +159,7 @@ function updateLive() {
     f("pct").className = "num " + pctClass(p);
     f("px").textContent = q ? usd2(q.c) : WAIT;
     f("today").innerHTML = q?.dp != null
-      ? `<span class="${pctClass(q.dp)}">${pct2(q.dp)}</span> today` : "Waiting for price";
+      ? `<span class="${pctClass(q.dp)}">${pct2(q.dp)}</span> ${sessionWord(q)}` : "Waiting for price";
     const bar = f("bar");
     bar.className = p < 0 ? "neg" : "";
     bar.style.transform = `scaleX(${p == null ? 0 : Math.min(Math.abs(p), 100) / 100})`;
@@ -350,7 +350,7 @@ document.addEventListener("click", async (e) => {
   if (!t) return;
   const act = btn.dataset.act;
   try {
-    if (act === "share") return void (await import("./card.js?v=27")).shareCall(t);
+    if (act === "share") return void (await import("./card.js?v=28")).shareCall(t);
     if (act === "del" || act === "reopen") {
       // two-step: the first click arms the button, a second one at least
       // half a second later confirms (a double-click can never do both)

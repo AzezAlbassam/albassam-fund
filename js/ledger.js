@@ -5,10 +5,10 @@
 // so expanded rows, sparklines and reveals survive every change.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, countTo, roll, usd2, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=27";
-import { live, state } from "./live.js?v=27";
-import { derive, blendedPct, today, exitPx } from "./roi.js?v=27";
-import { history } from "./history.js?v=27";
+import { initShell, observeReveals, onReveal, countTo, roll, usd2, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=28";
+import { live, state } from "./live.js?v=28";
+import { derive, blendedPct, today, exitPx } from "./roi.js?v=28";
+import { history } from "./history.js?v=28";
 
 initShell();
 
@@ -20,7 +20,7 @@ document.querySelectorAll(".lhead h1 .w").forEach(w => {
   w.innerHTML = [...w.textContent].map(ch => `<span class="ch" style="--i:${ci++}">${esc(ch)}</span>`).join("");
 });
 // the header: a calm line maze, no path through it
-import("./maze.js?v=27")
+import("./maze.js?v=28")
   .then(m => m.startMaze($("#lmaze"), { cols: 12, rows: 9, seed: 20260815, spin: 0.035, fit: 1, path: false }))
   .catch(err => console.warn("3D maze unavailable:", err));
 
@@ -249,7 +249,7 @@ list.addEventListener("click", (e) => {
   const s = e.target.closest("[data-share]");
   if (s) {   // the manager's picture of this call for WhatsApp
     const t = byId.get(s.dataset.share);
-    if (t) import("./card.js?v=27").then(m => m.shareCall(t)).catch(err => console.error("share card failed:", err));
+    if (t) import("./card.js?v=28").then(m => m.shareCall(t)).catch(err => console.error("share card failed:", err));
     return;
   }
   const b = e.target.closest(".call-head");

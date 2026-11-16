@@ -9,10 +9,10 @@
 // Percent first; the stock's own price is the only dollar figure.
 // ============================================================
 
-import { state } from "./live.js?v=27";
-import { blendedPct, derive, exitPx, simulate, today } from "./roi.js?v=27";
-import { history } from "./history.js?v=27";
-import { pct1, usd2, day, dayYear, daysBetween } from "./shell.js?v=27";
+import { state } from "./live.js?v=28";
+import { blendedPct, derive, exitPx, simulate, today } from "./roi.js?v=28";
+import { history } from "./history.js?v=28";
+import { pct1, usd2, day, dayYear, daysBetween } from "./shell.js?v=28";
 
 const W = 1080, H = 1350;
 const INK = "#0B0B0C", PAPER = "#FFFFFF", CANVAS = "#DEDDD6", MUTED = "#585861", LOSS = "#D92D20", HAIR = "rgba(11,11,12,.16)";

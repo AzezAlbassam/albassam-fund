@@ -1,21 +1,22 @@
 // ============================================================
 // Live prices + company profiles.
-//  * Default provider: Yahoo Finance — free, no API key. Yahoo
-//    doesn't send CORS headers, so requests go through public
-//    CORS-friendly mirrors (with fallbacks).
-//  * Optional provider: Finnhub — used automatically if a key
-//    is set in config.js.
+//  * First choice: CNBC's quote service. Free, no key, open to
+//    browsers, every ticker in one request, and it carries the
+//    pre-market and after-hours price.
+//  * Fallbacks: Finnhub (only if a key is set in config.js), then
+//    Yahoo Finance through public CORS mirrors, then the closes
+//    saved next to the site.
 //  * Demo mode: fabricated random walk (no network at all).
 // Logos come from the free Parqet logo CDN; the UI falls back
 // to a letter badge if a logo doesn't exist.
 // ============================================================
 
-import { DEMO, FINNHUB_KEY, PRICE_REFRESH_MS } from "./config.js?v=27";
+import { DEMO, FINNHUB_KEY, PRICE_REFRESH_MS } from "./config.js?v=28";
 
 const USE_FINNHUB = !FINNHUB_KEY.startsWith("__");
 const FINNHUB = "https://finnhub.io/api/v1";
 
-export const quotes = {};   // ticker -> {c: current, pc: prevClose, dp: day %}
+export const quotes = {};   // ticker -> {c: current, pc: prevClose, dp: day %, ext: "pre" | "post" outside regular hours}
 const names = {};           // ticker -> company name (from Yahoo meta)
 let onUpdate = () => {};
 let tickers = [];
@@ -63,15 +64,49 @@ async function refresh() {
     seeded = true;
   }
   if (seeded) onUpdate(quotes);
+  const live = await cnbcQuotes(tickers);   // one request for every ticker
   await Promise.all(tickers.map(async (tk) => {
-    const q = await getQuote(tk);
+    const q = live[tk] || await fallbackQuote(tk);
     if (q) quotes[tk] = q;
   }));
   onUpdate(quotes);
 }
 
+const fallbackQuote = (tk) => (USE_FINNHUB ? finnhubQuote(tk) : yahooQuote(tk));
 async function getQuote(tk) {
-  return USE_FINNHUB ? finnhubQuote(tk) : yahooQuote(tk);
+  return (await cnbcQuotes([tk]))[tk] || fallbackQuote(tk);
+}
+
+/* ----------------------- CNBC: live, with pre-market and after-hours ----------------------- */
+const CNBC = "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol";
+async function cnbcQuotes(list) {
+  const out = {};
+  if (!list.length) return out;
+  try {
+    const r = await fetch(`${CNBC}?symbols=${list.map(encodeURIComponent).join("%7C")}&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json`,
+      { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) return out;
+    const got = (await r.json())?.FormattedQuoteResult?.FormattedQuote;
+    for (const q of [got].flat()) {
+      const v = cnbcQuote(q);
+      if (!v) continue;
+      out[q.symbol] = v;
+      if (q.name) names[q.symbol] = q.name;
+    }
+  } catch (e) { /* the fallbacks take over */ }
+  return out;
+}
+// One CNBC record -> our quote. Outside regular hours the extended price is the
+// current one and the day's % is measured from the last regular close.
+export function cnbcQuote(q) {
+  const num = (v) => { const n = parseFloat(String(v ?? "").replace(/[,%]/g, "")); return Number.isFinite(n) ? n : null; };
+  const last = num(q?.last);
+  if (q?.code !== 0 || !(last > 0)) return null;
+  const x = q.ExtendedMktQuote, xl = num(x?.last);
+  if (xl > 0 && q.curmktstatus !== "REG_MKT")
+    return { c: xl, pc: last, dp: ((xl - last) / last) * 100, ext: x.type === "PRE_MKT" ? "pre" : "post" };
+  const pc = num(q.previous_day_closing);
+  return { c: last, pc, dp: num(q.change_pct) ?? (pc ? ((last - pc) / pc) * 100 : null) };
 }
 
 // Company name + logo, fetched once when a position is added.
