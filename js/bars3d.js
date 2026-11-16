@@ -2,7 +2,7 @@
 // 3D towers as a line drawing (Three.js): white boxes with crisp
 // ink edges that grow to their values, on a thin grid floor that
 // fades into the paper. Used for the forecast (years as towers),
-// the Race podium and the Family podium.
+// the Race podium.
 //   const t = await startTowers(canvas, labelsEl);
 //   t.set([{ id, x, z, h, color, label, labelClass, ghost, w }])   // h in world units
 // color = the edge color (ink, greys, red for a loss). ghost = lighter

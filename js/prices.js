@@ -10,7 +10,7 @@
 // to a letter badge if a logo doesn't exist.
 // ============================================================
 
-import { DEMO, FINNHUB_KEY, PRICE_REFRESH_MS } from "./config.js?v=25";
+import { DEMO, FINNHUB_KEY, PRICE_REFRESH_MS } from "./config.js?v=26";
 
 const USE_FINNHUB = !FINNHUB_KEY.startsWith("__");
 const FINNHUB = "https://finnhub.io/api/v1";
@@ -116,15 +116,17 @@ const PROXIES = [
 ];
 
 export async function proxiedJson(url) {
-  for (const wrap of PROXIES) {
-    try {
-      const r = await fetch(wrap(url), { signal: AbortSignal.timeout(9000) });
-      if (!r.ok) continue;
-      const j = await r.json();
-      return typeof j?.contents === "string" ? JSON.parse(j.contents) : j;
-    } catch (e) { /* try next mirror */ }
-  }
-  return null;
+  // every mirror at once: the wait is one timeout, not one per dead mirror
+  // (a ticker with no saved closes used to stall the whole race for ~30s)
+  const one = async (wrap) => {
+    const r = await fetch(wrap(url), { signal: AbortSignal.timeout(6000) });
+    if (!r.ok) throw new Error("mirror " + r.status);
+    const j = await r.json();
+    const v = typeof j?.contents === "string" ? JSON.parse(j.contents) : j;
+    if (v == null) throw new Error("mirror empty");
+    return v;
+  };
+  return Promise.any(PROXIES.map(one)).catch(() => null);
 }
 
 async function yahooQuote(tk) {

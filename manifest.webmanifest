@@ -1,7 +1,7 @@
 {
   "name": "Albassam Fund",
   "short_name": "Albassam",
-  "description": "Every call the family fund makes, and the family race.",
+  "description": "Every call the family fund makes, live.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
