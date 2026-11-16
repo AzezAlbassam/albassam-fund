@@ -144,6 +144,12 @@
 .pos-card dl{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin:18px 0 0}
 .pos-card dt{font:500 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted)}
 .pos-card dd{margin:5px 0 0;font:500 14px var(--mono)}
+/* the cash card: the pot as one bar, ink for what is invested, paper for cash */
+.cash-card .logo.ph{font-family:var(--mono)}
+.cash-bar{display:flex;gap:3px;height:44px;margin-top:22px}
+.cash-bar i{min-width:0;display:grid;place-items:center;background:var(--ink);color:var(--paper);border-radius:3px;overflow:hidden;font:500 11px/1 var(--mono);letter-spacing:.06em;font-style:normal}
+.cash-bar i.free{background:var(--paper);color:var(--ink);border:1px dashed var(--ink)}
+.cash-bar span{padding:0 6px;white-space:nowrap}
 
 /* ---------- the wire ---------- */
 .wire-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr);gap:clamp(28px,6vw,80px);align-items:start}

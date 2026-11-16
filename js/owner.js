@@ -6,11 +6,12 @@
 // account, and Firestore rules still check every write.
 // ============================================================
 
-import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=28";
-import { store } from "./store.js?v=28";
-import { state } from "./live.js?v=28";
-import { checkTicker, fetchProfile } from "./prices.js?v=28";
-import { today, derive } from "./roi.js?v=28";
+import { cashPick, cashProblem } from "./cashpick.js?v=29";
+import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=29";
+import { store } from "./store.js?v=29";
+import { state } from "./live.js?v=29";
+import { checkTicker, fetchProfile } from "./prices.js?v=29";
+import { today, derive } from "./roi.js?v=29";
 
 export async function startOwner() {
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
@@ -103,9 +104,10 @@ export function mount() {   // exported so the sheet can be exercised without a 
     </form>`;
   document.body.appendChild(dlg);
   const f = dlg.querySelector("form"), msg = dlg.querySelector(".os-msg"), go = dlg.querySelector(".os-go");
+  const cash = cashPick(f.wt);
   const say = (t, err) => { msg.textContent = t; msg.className = "os-msg " + (err ? "err" : "ok"); };
 
-  fab.addEventListener("click", () => { f.reset(); delete f.dataset.unverified; f.date.value = today(); say(""); dlg.showModal(); setTimeout(() => f.ticker.focus(), 50); });
+  fab.addEventListener("click", () => { f.reset(); delete f.dataset.unverified; f.date.value = today(); say(""); cash.refresh(); dlg.showModal(); setTimeout(() => f.ticker.focus(), 50); });
   dlg.querySelector(".os-x").addEventListener("click", () => dlg.close());
   dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });   // tap outside closes
 
@@ -118,6 +120,7 @@ export function mount() {   // exported so the sheet can be exercised without a 
     if (!(shares > 0)) return say("Enter how many shares you bought.", true);
     if (!(price > 0)) return say("Enter your average buy price.", true);
     if (state.trades.some(t => t.ticker === ticker && t.status === "active")) return say(ticker + " is already an active position.", true);
+    if (cashProblem(wtv)) return say(cashProblem(wtv), true);
     go.disabled = true;
     try {
       say("Checking " + ticker + "…");

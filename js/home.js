@@ -6,12 +6,12 @@
 // ============================================================
 
 import { initShell, observeReveals, onReveal, roll, countTo, reducedMotion, usd0, pct1, pctBig, pts1, shortUsd,
-         day, esc, pctClass, logoHtml, daysBetween, sessionWord } from "./shell.js?v=28";
-import { live, state } from "./live.js?v=28";
-import { loadRace, raceSummary } from "./series.js?v=28";
-import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=28";
-import { simulate, statPct, derive, blendedPct } from "./roi.js?v=28";
-import { watchNews } from "./news.js?v=28";
+         day, esc, pctClass, logoHtml, daysBetween, sessionWord } from "./shell.js?v=29";
+import { live, state } from "./live.js?v=29";
+import { loadRace, raceSummary } from "./series.js?v=29";
+import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=29";
+import { simulate, statPct, derive, blendedPct, cashPct } from "./roi.js?v=29";
+import { watchNews } from "./news.js?v=29";
 
 const $ = (s, r = document) => r.querySelector(s);
 initShell();
@@ -20,7 +20,7 @@ initShell();
 const media = $("#heroMedia");
 let maze = null;
 const phone = innerWidth < 720;
-import("./maze.js?v=28")
+import("./maze.js?v=29")
   .then(m => m.startMaze($("#maze"), { labelsEl: $("#mzLabels"), cols: phone ? 9 : 16, rows: phone ? 11 : 11, fit: phone ? 1.12 : 1 }))
   .then(mz => { maze = mz; feedMaze(); onHeroScroll(); })
   .catch(err => { console.warn("3D maze unavailable:", err); media.classList.add("fallback"); });
@@ -185,6 +185,16 @@ function renderRecord() {
 }
 
 /* ---------- on the book ---------- */
+// What is not invested: the pot as one bar, a slice per open call, the rest cash.
+function cashCard(active) {
+  const cash = cashPct(state.trades), sized = active.filter(t => t.wt > 0);
+  return `<article class="glass pos-card cash-card" data-reveal>
+    <div class="top"><span class="logo ph" aria-hidden="true">$</span><div><div class="tk">Remaining cash</div><div class="nm">Not in any call</div></div>
+      <div class="roi"><b>${+cash.toFixed(1)}%</b><small>of the pot</small></div></div>
+    <div class="cash-bar" role="img" aria-label="${sized.map(t => `${esc(t.ticker)} ${+t.wt}%`).join(", ")}, cash ${+cash.toFixed(1)}%">${sized.map(t =>
+      `<i style="flex:${+t.wt}"><span>${esc(t.ticker)}</span></i>`).join("")}${cash > 0 ? `<i class="free" style="flex:${cash}"><span>Cash</span></i>` : ""}</div>
+  </article>`;
+}
 function renderBook(liveOnly) {
   const box = $("#bookList");
   if (!state.ready) return;
@@ -208,7 +218,7 @@ function renderBook(liveOnly) {
       <dl><div><dt>Avg cost</dt><dd>$${d.avgCost.toFixed(2)}</dd></div><div><dt>Now</dt><dd data-f="px">${q ? "$" + q.c.toFixed(2) : "…"}</dd></div>
         <div><dt>Share of pot</dt><dd>${t.wt > 0 ? t.wt + "%" : "Unsized"}</dd></div><div><dt>Opened</dt><dd>${day(t.opened)}</dd></div></dl>
     </article>`;
-  }).join("") : `<div class="glass glow book-empty" data-reveal>
+  }).join("") + cashCard(active) : `<div class="glass glow book-empty" data-reveal>
       <div><h3>All cash.</h3><p>Every gain is banked. The next call shows up here the minute it opens.</p></div></div>`;
   observeReveals(box);
 }
@@ -234,7 +244,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startOrbit } = await import("./orbit.js?v=28");
+    const { startOrbit } = await import("./orbit.js?v=29");
     orbit = await startOrbit($("#orbit"), $("#orbitLabels"), renderOrbitCard);
     feedOrbit();
   } catch (err) {
@@ -297,7 +307,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=28");
+    const { startTowers } = await import("./bars3d.js?v=29");
     fc.towers = await startTowers($("#fcCanvas"), $("#fcLabels"));
     renderForecast();
   } catch (err) { console.warn("3D forecast unavailable:", err); $("#fcStage").classList.add("fallback"); }

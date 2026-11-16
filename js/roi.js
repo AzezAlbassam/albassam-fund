@@ -129,6 +129,10 @@ export function fmtMoney(v) {
   return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// Cash left in the pot, in % of the pot: 100 minus the share of every open, sized call.
+export const cashPct = (trades) =>
+  Math.max(0, 100 - trades.reduce((s, t) => s + (t.status === "active" && t.wt > 0 ? +t.wt : 0), 0));
+
 export function today() {
   return new Date().toISOString().slice(0, 10);
 }

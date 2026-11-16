@@ -7,13 +7,14 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=28";
-import { store, purified } from "./store.js?v=28";
-import { live, state } from "./live.js?v=28";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=28";
-import { watchNews } from "./news.js?v=28";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx } from "./roi.js?v=28";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=28";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=29";
+import { store, purified } from "./store.js?v=29";
+import { cashPick, cashProblem } from "./cashpick.js?v=29";
+import { live, state } from "./live.js?v=29";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=29";
+import { watchNews } from "./news.js?v=29";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct } from "./roi.js?v=29";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=29";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -52,7 +53,9 @@ function toast(text, isErr) {
 const fail = (m) => (toast(m, true), false);
 
 /* ----------------------- render: full ----------------------- */
+const newCallCash = cashPick($("#adWt"));   // "use 50% of the remaining cash"
 function renderAll() {
+  newCallCash.refresh();
   const active = state.trades.filter(t => t.status === "active");
   const closed = state.trades.filter(t => t.status === "closed");
 
@@ -178,7 +181,7 @@ function updateLive() {
   ret.className = "num " + pctClass(sim.totalPct);
   $("#kPot").textContent = shortUsd(state.pot);
   const unsized = state.trades.filter(t => !(t.wt > 0)).length;
-  $("#kMeta").textContent = `Banked ${pct1(sim.realizedPct)} · open ${pct1(sim.openPct)}` +
+  $("#kMeta").textContent = `Banked ${pct1(sim.realizedPct)} · open ${pct1(sim.openPct)} · cash ${+cashPct(state.trades).toFixed(1)}% of pot` +
     (unsized ? ` · ${unsized} call${unsized > 1 ? "s" : ""} with no pot size yet` : "");
   roll($("#kOpen"), String(st.nOpen));
   roll($("#kClosed"), String(st.nClosed));
@@ -350,7 +353,7 @@ document.addEventListener("click", async (e) => {
   if (!t) return;
   const act = btn.dataset.act;
   try {
-    if (act === "share") return void (await import("./card.js?v=28")).shareCall(t);
+    if (act === "share") return void (await import("./card.js?v=29")).shareCall(t);
     if (act === "del" || act === "reopen") {
       // two-step: the first click arms the button, a second one at least
       // half a second later confirms (a double-click can never do both)
@@ -430,6 +433,7 @@ $("#addForm").addEventListener("submit", (e) => {
   if (!(price > 0)) return fail("Enter your average buy price.");
   if (state.trades.some(t => t.ticker === ticker && t.status === "active"))
     return fail(ticker + " is already an active position.");
+  if (cashProblem(wtv)) return fail(cashProblem(wtv));
   busy(form, async () => {
     toast("Checking " + ticker + "…");
     // the live price feed can be down: a second tap on the same ticker launches it anyway
