@@ -7,14 +7,14 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=30";
-import { store, purified } from "./store.js?v=30";
-import { cashPick, cashProblem } from "./cashpick.js?v=30";
-import { live, state } from "./live.js?v=30";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=30";
-import { watchNews } from "./news.js?v=30";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct } from "./roi.js?v=30";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=30";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=31";
+import { store, purified } from "./store.js?v=31";
+import { addPick, addWt, cashPick, cashProblem } from "./cashpick.js?v=31";
+import { live, state } from "./live.js?v=31";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=31";
+import { watchNews } from "./news.js?v=31";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct } from "./roi.js?v=31";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=31";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -257,14 +257,17 @@ function openInlineForm(holder, t, act) {
   const q = quotes[t.ticker];
   const d = derive(t);
   const tk = esc(t.ticker);
+  const sized = act === "buy" && t.wt > 0 && d.costBasis > 0;   // a buy that draws on the cash
   const titles = {
-    buy: `Buy more ${tk}. The average price updates on its own.`,
+    buy: `Buy more ${tk}. The average price and its share of the pot update on their own.`,
     sell: `Sell part of ${tk}. Holding ${sh(d.heldSh)} shares.`,
     close: `Close ${tk}. The final result locks at this price.`,
   };
   box.innerHTML = formBody(titles[act],
-    (act !== "close" ? num("Shares", "sh") : "") + num("Price $", "px", q ? q.c.toFixed(2) : ""),
+    (act !== "close" ? num("Shares", "sh") : "") + num("Price $", "px", q ? q.c.toFixed(2) : "") + (sized ? num("Adds % of pot", "wt") : ""),
     act === "close" ? "Close call" : "OK");
+  const inp = (k) => box.querySelector(`[data-in="${k}"]`);
+  if (sized) addPick(t, inp("sh"), inp("px"), inp("wt"));
   wireForm(box, async () => {
     const px = parseFloat(val(box, "px"));
     if (!(px > 0)) return fail("Enter a valid price.");
@@ -276,7 +279,9 @@ function openInlineForm(holder, t, act) {
     const n = parseFloat(val(box, "sh"));
     if (!(n > 0)) return fail("Enter a number of shares.");
     if (act === "sell" && n > d.heldSh) return fail(`You only hold ${sh(d.heldSh)} shares of ${t.ticker}.`);
-    await store.addTxn(t.id, { t: act, sh: n, px, d: today() });
+    const add = act === "buy" ? addWt(t, n, px) : null;
+    if (add && cashProblem(add)) return fail(cashProblem(add));
+    await store.addTxn(t.id, { t: act, sh: n, px, d: today() }, add ? +(t.wt + add).toFixed(2) : null);
     toast(`${t.ticker}: ${act === "buy" ? "bought" : "sold"} ${sh(n)} @ ${usd2(px)}.`);
   }, holder.querySelector(`[data-act="${act}"]`));
 }
@@ -353,7 +358,7 @@ document.addEventListener("click", async (e) => {
   if (!t) return;
   const act = btn.dataset.act;
   try {
-    if (act === "share") return void (await import("./card.js?v=30")).shareCall(t);
+    if (act === "share") return void (await import("./card.js?v=31")).shareCall(t);
     if (act === "del" || act === "reopen") {
       // two-step: the first click arms the button, a second one at least
       // half a second later confirms (a double-click can never do both)
