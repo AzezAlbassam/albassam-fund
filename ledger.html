@@ -27,8 +27,8 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
 <!-- fonts load without blocking the page: text shows at once, the faces swap in -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/site.css?v=32">
-<link rel="stylesheet" href="css/ledger.css?v=32">
+<link rel="stylesheet" href="css/site.css?v=33">
+<link rel="stylesheet" href="css/ledger.css?v=33">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 </head>
@@ -68,6 +68,7 @@
       <h2 id="tally-h" class="sr">Summary</h2>
       <dl class="tally" id="tally" data-stagger>
         <div class="glass glow tilt t-bank"><dt>Banked</dt><dd data-s="bank"><span class="sk"></span></dd><dd class="t-foot">Locked in from closed calls</dd></div>
+        <div class="glass tilt t-cash"><dt>Remaining cash</dt><dd data-s="cash"><span class="sk"></span></dd><dd class="t-bar" id="cashBar" role="img"></dd><dd class="t-foot">Of the pot, not in any call</dd></div>
         <div class="glass tilt"><dt>Calls</dt><dd data-s="calls"><span class="sk"></span></dd></div>
         <div class="glass tilt"><dt>Won</dt><dd data-s="won"><span class="sk"></span></dd><dd class="pips" id="pips" aria-hidden="true"></dd></div>
         <div class="glass tilt"><dt>Win rate</dt><dd data-s="rate"><span class="sk"></span></dd><dd class="meter" aria-hidden="true"><i id="rateBar"></i></dd></div>
@@ -140,6 +141,6 @@
   </div>
 </footer>
 
-<script type="module" src="js/ledger.js?v=32"></script>
+<script type="module" src="js/ledger.js?v=33"></script>
 </body>
 </html>

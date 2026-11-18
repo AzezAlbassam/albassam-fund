@@ -7,14 +7,14 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=32";
-import { store, purified } from "./store.js?v=32";
-import { addPick, addWt, cashPick, cashProblem } from "./cashpick.js?v=32";
-import { live, state } from "./live.js?v=32";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=32";
-import { watchNews } from "./news.js?v=32";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct, lastAdd } from "./roi.js?v=32";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=32";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=33";
+import { store, purified } from "./store.js?v=33";
+import { addPick, addWt, cashPick, cashProblem } from "./cashpick.js?v=33";
+import { live, state } from "./live.js?v=33";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=33";
+import { watchNews } from "./news.js?v=33";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct, lastAdd } from "./roi.js?v=33";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=33";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -359,7 +359,7 @@ document.addEventListener("click", async (e) => {
   if (!t) return;
   const act = btn.dataset.act;
   try {
-    if (act === "share") return void (await import("./card.js?v=32")).shareCall(t);
+    if (act === "share") return void (await import("./card.js?v=33")).shareCall(t);
     if (act === "del" || act === "reopen" || act === "undo") {
       // two-step: the first click arms the button, a second one at least
       // half a second later confirms (a double-click can never do both)

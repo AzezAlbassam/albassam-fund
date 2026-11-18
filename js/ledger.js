@@ -5,10 +5,10 @@
 // so expanded rows, sparklines and reveals survive every change.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, countTo, roll, usd2, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=32";
-import { live, state } from "./live.js?v=32";
-import { derive, blendedPct, today, exitPx, lastAdd } from "./roi.js?v=32";
-import { history } from "./history.js?v=32";
+import { initShell, observeReveals, onReveal, countTo, roll, usd2, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=33";
+import { live, state } from "./live.js?v=33";
+import { derive, blendedPct, today, exitPx, lastAdd, cashPct } from "./roi.js?v=33";
+import { history } from "./history.js?v=33";
 
 initShell();
 
@@ -20,7 +20,7 @@ document.querySelectorAll(".lhead h1 .w").forEach(w => {
   w.innerHTML = [...w.textContent].map(ch => `<span class="ch" style="--i:${ci++}">${esc(ch)}</span>`).join("");
 });
 // the header: a calm line maze, no path through it
-import("./maze.js?v=32")
+import("./maze.js?v=33")
   .then(m => m.startMaze($("#lmaze"), { cols: 12, rows: 9, seed: 20260815, spin: 0.035, fit: 1, path: false }))
   .catch(err => console.warn("3D maze unavailable:", err));
 
@@ -170,6 +170,11 @@ function paintSummary() {
     stat("avgw", won.length ? mean(won) : null, pct1, "", "pos");
     stat("avgl", lost.length ? mean(lost) : null, pct1, "", "loss");
     stat("bank", banked, pct1, "", banked < 0 ? "loss" : "grad-text", true);
+    const cash = cashPct(state.trades), sized = state.trades.filter(t => isOpen(t) && t.wt > 0);
+    stat("cash", cash, v => +v.toFixed(1) + "%");
+    $("#cashBar").setAttribute("aria-label", sized.map(t => `${t.ticker} ${+t.wt}%`).concat(`cash ${+cash.toFixed(1)}%`).join(", "));
+    $("#cashBar").innerHTML = sized.map(t => `<i style="flex:${+t.wt}"><span>${esc(t.ticker)}<b> ${+(+t.wt).toFixed(1)}%</b></span></i>`).join("") +
+      (cash > 0 ? `<i class="free" style="flex:${cash}"><span>Cash</span></i>` : "");
     $("#rateBar").style.setProperty("--w", n ? won.length / n : 0);
     const pips = closed.slice(0, 40).map(t => t.finalPct > 0).sort((a, b) => b - a);
     const pk = pips.join();
@@ -249,7 +254,7 @@ list.addEventListener("click", (e) => {
   const s = e.target.closest("[data-share]");
   if (s) {   // the manager's picture of this call for WhatsApp
     const t = byId.get(s.dataset.share);
-    if (t) import("./card.js?v=32").then(m => m.shareCall(t)).catch(err => console.error("share card failed:", err));
+    if (t) import("./card.js?v=33").then(m => m.shareCall(t)).catch(err => console.error("share card failed:", err));
     return;
   }
   const b = e.target.closest(".call-head");

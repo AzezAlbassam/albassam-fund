@@ -23,7 +23,7 @@
 
 /* ---------- summary: six white tiles ---------- */
 .tally-sec{position:relative;margin-top:calc(-1 * clamp(64px,8vw,104px))}
-.tally{display:grid;grid-template-columns:minmax(0,1.7fr) repeat(5,minmax(0,1fr));gap:14px;margin:0;perspective:1200px}
+.tally{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1.7fr) repeat(5,minmax(0,1fr));gap:14px;margin:0;perspective:1200px}
 .tally>div{display:flex;flex-direction:column;gap:12px;min-width:0;padding:clamp(18px,1.8vw,24px)}
 .tally[data-stagger]:not(.in)>*{transform:translateY(56px) rotateX(-38deg) scale(.94);transform-origin:50% 100%}
 .tally dt{font:500 11px/1.4 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--text-muted)}
@@ -35,7 +35,15 @@
 /* Banked: the hero tile, the one with an ink border */
 .t-bank{justify-content:space-between;border-color:var(--ink)}
 .t-bank dd[data-s]{font-size:clamp(34px,3.4vw,50px)}
-.t-bank .t-foot{font:400 13px/1.4 var(--body);color:var(--text-secondary)}
+.t-bank .t-foot,.t-cash .t-foot{font:400 13px/1.4 var(--body);color:var(--text-secondary)}
+.t-cash{border-color:var(--ink)}
+.t-cash dd[data-s]{font-size:clamp(34px,3.4vw,50px)}
+.t-bar{display:flex;gap:3px;height:30px}
+.t-bar i{min-width:0;display:grid;place-items:center;background:var(--ink);color:var(--paper);border-radius:3px;overflow:hidden;font:500 10.5px/1 var(--mono);letter-spacing:.04em;font-style:normal}
+.t-bar i.free{background:var(--paper);color:var(--ink);border:1px dashed var(--ink)}
+.t-bar span{max-width:100%;padding:0 4px;box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-bar b{font-weight:500}
+@media (min-width:561px){.t-bar b{display:none}}
 /* win rate meter + one pip per closed call */
 .meter{position:relative;height:3px;background:rgba(11,11,12,.1);overflow:hidden;margin-top:auto}
 .meter i{position:absolute;inset:0;background:var(--ink);transform-origin:left;transform:scaleX(var(--w,0));transition:transform 1.8s var(--ease-out) .3s}
@@ -47,15 +55,15 @@
 @media (max-width:1080px){
   .tally{grid-template-columns:repeat(6,minmax(0,1fr))}
   .tally>div{grid-column:span 2}
-  .tally>.t-bank{grid-column:1/-1}
-  .tally>div:nth-child(n+5){grid-column:span 3}
+  .tally>.t-bank,.tally>.t-cash{grid-column:span 3}
+  .tally>div:nth-child(n+6){grid-column:span 3}
 }
 @media (max-width:560px){
   .tally{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-  .tally>div,.tally>div:nth-child(n+5){grid-column:auto}
-  .tally>.t-bank,.tally>div:last-child{grid-column:1/-1}
+  .tally>div,.tally>div:nth-child(n+6){grid-column:auto}
+  .tally>.t-bank,.tally>.t-cash,.tally>div:last-child{grid-column:1/-1}
   .tally dd[data-s]{font-size:26px}
-  .t-bank dd[data-s]{font-size:40px}
+  .t-bank dd[data-s],.t-cash dd[data-s]{font-size:40px}
 }
 
 /* ---------- skeleton shimmer (opacity only) ---------- */
