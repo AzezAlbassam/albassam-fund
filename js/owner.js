@@ -6,12 +6,12 @@
 // account, and Firestore rules still check every write.
 // ============================================================
 
-import { addPick, addWt, cashPick, cashProblem } from "./cashpick.js?v=31";
-import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=31";
-import { store } from "./store.js?v=31";
-import { state } from "./live.js?v=31";
-import { checkTicker, fetchProfile } from "./prices.js?v=31";
-import { today, derive } from "./roi.js?v=31";
+import { addPick, addWt, cashPick, cashProblem } from "./cashpick.js?v=32";
+import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=32";
+import { store } from "./store.js?v=32";
+import { state } from "./live.js?v=32";
+import { checkTicker, fetchProfile } from "./prices.js?v=32";
+import { today, derive, lastAdd } from "./roi.js?v=32";
 
 export async function startOwner() {
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
@@ -39,17 +39,22 @@ function mountRowTools() {
     const t = state.trades.find(x => x.id === b.dataset.id);
     if (!t) return;
     const act = b.dataset.ownAct;
+    const u = act === "undo" ? lastAdd(t) : null;
+    if (act === "undo" && !u) return;
+    const num = (v) => +(+v).toFixed(4);
     const sized = act === "buy" && t.wt > 0 && derive(t).costBasis > 0;   // a buy that draws on the cash
     const field = (label, name, ph, val = "") => `<label class="os-f"><span>${label}</span><input name="${name}" type="number" step="any" min="0" inputmode="decimal" placeholder="${ph}" value="${val}"></label>`;
     dlg.innerHTML = `<form method="dialog" class="os-form" novalidate>
-      <div class="os-head"><h2 id="otTitle">${act === "buy" ? "Buy more " : act === "sell" ? "Sell " : "Purification, "}${t.ticker}</h2><button type="button" class="os-x" aria-label="Close">×</button></div>
-      ${act === "pur" ? field("Purification % of profit", "pur", "e.g. 5", t.pur > 0 ? t.pur : "") +
+      <div class="os-head"><h2 id="otTitle">${act === "buy" ? "Buy more " : act === "sell" ? "Sell " : act === "undo" ? "Undo last buy, " : "Purification, "}${t.ticker}</h2><button type="button" class="os-x" aria-label="Close">×</button></div>
+      ${act === "undo" ? `<p class="os-undo">This takes back the buy of <b>${num(u.buy.sh)} shares at $${(+u.buy.px).toFixed(2)}</b> from ${u.buy.d}.${u.back > 0
+          ? ` Its <b>${num((+u.back).toFixed(2))}% of the pot</b> goes back to cash, and ${t.ticker} returns to ${num(u.wt)}% of the pot.` : ""} To redo it, use Buy more again.</p>`
+        : act === "pur" ? field("Purification % of profit", "pur", "e.g. 5", t.pur > 0 ? t.pur : "") +
           `<p class="os-more" style="text-align:left">${t.status === "closed" ? "The locked result is worked out again." : "Taken off the profit when the call closes. A loss has nothing to purify."}</p>`
         : `<div class="os-row">${field("Shares", "sh", "e.g. 50")}${field("Price $", "px", "e.g. 140", state.quotes[t.ticker]?.c?.toFixed(2) ?? "")}</div>
            ${sized ? field("Adds % of pot", "wt", "e.g. 5") : ""}
            <label class="os-f"><span>Date</span><input name="d" type="date" value="${today()}"></label>`}
       <p class="os-msg" role="status"></p>
-      <button class="btn os-go" type="submit">Save</button></form>`;
+      <button class="btn os-go" type="submit">${act === "undo" ? "Undo this buy" : "Save"}</button></form>`;
     const f = dlg.querySelector("form"), msg = dlg.querySelector(".os-msg");
     const say = (txt, err) => { msg.textContent = txt; msg.className = "os-msg " + (err ? "err" : "ok"); };
     dlg.querySelector(".os-x").addEventListener("click", () => dlg.close());
@@ -58,7 +63,8 @@ function mountRowTools() {
       ev.preventDefault();
       const go = f.querySelector(".os-go"); go.disabled = true;
       try {
-        if (act === "pur") {
+        if (act === "undo") await store.undoBuy(t.id);
+        else if (act === "pur") {
           const v = parseFloat(f.pur.value);
           await store.setPur(t.id, v > 0 ? Math.min(100, v) : null);
         } else {
@@ -68,9 +74,9 @@ function mountRowTools() {
           if (act === "sell" && sh > derive(t).heldSh + 1e-9) return say(`You hold ${+derive(t).heldSh.toFixed(4)} shares.`, true);
           const add = act === "buy" ? addWt(t, sh, px) : null;
           if (add && cashProblem(add)) return say(cashProblem(add), true);
-          await store.addTxn(t.id, { t: act, sh, px, d: f.d.value || today() }, add ? +(t.wt + add).toFixed(2) : null);
+          await store.addTxn(t.id, { t: act, sh, px, d: f.d.value || today(), ...(add && { wt: +add.toFixed(4) }) }, add ? +(t.wt + add).toFixed(2) : null);
         }
-        say("Saved.");
+        say(act === "undo" ? "Buy taken back." : "Saved.");
         setTimeout(() => dlg.close(), 700);
       } catch (err) { console.error(err); say(err.message || "Could not save. Try again.", true); }
       finally { go.disabled = false; }

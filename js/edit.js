@@ -7,14 +7,14 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=31";
-import { store, purified } from "./store.js?v=31";
-import { addPick, addWt, cashPick, cashProblem } from "./cashpick.js?v=31";
-import { live, state } from "./live.js?v=31";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=31";
-import { watchNews } from "./news.js?v=31";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct } from "./roi.js?v=31";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=31";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=32";
+import { store, purified } from "./store.js?v=32";
+import { addPick, addWt, cashPick, cashProblem } from "./cashpick.js?v=32";
+import { live, state } from "./live.js?v=32";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=32";
+import { watchNews } from "./news.js?v=32";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct, lastAdd } from "./roi.js?v=32";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=32";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -104,6 +104,7 @@ function cardHtml(t) {
     ${writable() ? `<div class="ctl" role="group" aria-label="Actions for ${tk}">
       <button class="act" type="button" data-act="buy">+ Buy</button>
       <button class="act" type="button" data-act="sell">− Sell</button>
+      ${lastAdd(t) ? `<button class="act" type="button" data-act="undo" aria-label="Undo the last buy of ${tk}">↩ Undo buy</button>` : ""}
       <button class="act" type="button" data-act="close">Close</button>
       <button class="act" type="button" data-act="share" aria-label="Share card for ${tk}">Share card</button>
       <button class="act" type="button" data-act="edit" aria-label="Fix ${tk} numbers">✎ Fix</button>
@@ -281,7 +282,7 @@ function openInlineForm(holder, t, act) {
     if (act === "sell" && n > d.heldSh) return fail(`You only hold ${sh(d.heldSh)} shares of ${t.ticker}.`);
     const add = act === "buy" ? addWt(t, n, px) : null;
     if (add && cashProblem(add)) return fail(cashProblem(add));
-    await store.addTxn(t.id, { t: act, sh: n, px, d: today() }, add ? +(t.wt + add).toFixed(2) : null);
+    await store.addTxn(t.id, { t: act, sh: n, px, d: today(), ...(add && { wt: +add.toFixed(4) }) }, add ? +(t.wt + add).toFixed(2) : null);
     toast(`${t.ticker}: ${act === "buy" ? "bought" : "sold"} ${sh(n)} @ ${usd2(px)}.`);
   }, holder.querySelector(`[data-act="${act}"]`));
 }
@@ -358,22 +359,26 @@ document.addEventListener("click", async (e) => {
   if (!t) return;
   const act = btn.dataset.act;
   try {
-    if (act === "share") return void (await import("./card.js?v=31")).shareCall(t);
-    if (act === "del" || act === "reopen") {
+    if (act === "share") return void (await import("./card.js?v=32")).shareCall(t);
+    if (act === "del" || act === "reopen" || act === "undo") {
       // two-step: the first click arms the button, a second one at least
       // half a second later confirms (a double-click can never do both)
-      const isDel = act === "del";
+      const isDel = act === "del", u = act === "undo" ? lastAdd(t) : null;
+      if (act === "undo" && !u) return;
+      const what = u && `the buy of ${+(+u.buy.sh).toFixed(4)} ${t.ticker} at ${usd2(+u.buy.px)}`;
       if (btn.dataset.armed) {
         if (Date.now() - +btn.dataset.armed < 500) return;
         if (isDel) { await store.remove(t.id); toast(t.ticker + " deleted."); }
+        else if (u) { await store.undoBuy(t.id); toast(`Took back ${what}.` + (u.back > 0 ? ` ${+u.back.toFixed(2)}% of the pot is cash again.` : "")); }
         else { await store.reopen(t.id); toast(t.ticker + " reopened. Live ROI resumed."); }
       } else {
         const label = btn.textContent, aria = btn.getAttribute("aria-label");
         btn.dataset.armed = String(Date.now());
         btn.textContent = "SURE?";
         btn.classList.add("warn");
-        btn.setAttribute("aria-label", isDel ? `SURE? Confirm: delete ${t.ticker} permanently` : `SURE? Confirm: reopen ${t.ticker} and clear its sale`);
+        btn.setAttribute("aria-label", isDel ? `SURE? Confirm: delete ${t.ticker} permanently` : u ? `SURE? Confirm: take back ${what}` : `SURE? Confirm: reopen ${t.ticker} and clear its sale`);
         toast(isDel ? `Click SURE? again to delete ${t.ticker} permanently.`
+              : u ? `Click SURE? again to take back ${what}.`
                     : `Click SURE? again to reopen ${t.ticker}. Its sale price and result will be cleared.`, true);
         setTimeout(() => {
           if (!btn.isConnected) return;

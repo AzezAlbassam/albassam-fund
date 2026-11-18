@@ -18,8 +18,8 @@
 //   createdAt server timestamp      (ordering)
 // ============================================================
 
-import { DEMO, firebaseConfig } from "./config.js?v=31";
-import { blendedPct, derive, exitPx, today } from "./roi.js?v=31";
+import { DEMO, firebaseConfig } from "./config.js?v=32";
+import { blendedPct, derive, exitPx, lastAdd, today } from "./roi.js?v=32";
 
 const SYNCING = "Still syncing with the fund record. Try again in a moment.";
 
@@ -52,6 +52,7 @@ export const store = {
   editActive: (id, data) => impl.editActive(id, data),
   editClosed: (id, data) => impl.editClosed(id, data),
   addTxn: (id, txn, wt) => impl.addTxn(id, txn, wt),
+  undoBuy: (id) => impl.undoBuy(id),
   close: (id, closePx) => impl.close(id, closePx),
   reopen: (id) => impl.reopen(id),
   remove: (id) => impl.remove(id),
@@ -120,6 +121,12 @@ async function firestoreStore() {
     async addTxn(id, txn, wt) {   // wt: the call's new "% of pot" after a buy
       const t = find(id); if (!t) throw new Error(SYNCING);
       await fs.updateDoc(fs.doc(db, "trades", id), { txns: [...(t.txns || []), txn], ...(wt > 0 && { wt }) });
+    },
+    // Take the latest buy back: it leaves the list and its size returns to cash.
+    async undoBuy(id) {
+      const t = find(id); if (!t) throw new Error(SYNCING);
+      const u = lastAdd(t); if (!u) throw new Error("There is no buy to undo on this call.");
+      await fs.updateDoc(fs.doc(db, "trades", id), { txns: t.txns.slice(0, -1), wt: u.wt });
     },
     // Fix mistyped numbers without deleting. Active: buys are
     // replaced by one equivalent buy, partial sells stay intact.
@@ -226,6 +233,10 @@ function demoStore() {
     async addTxn(id, txn, wt) {   // wt: the call's new "% of pot" after a buy
       const t = trades.find(x => x.id === id); if (!t) return;
       t.txns = [...t.txns, txn]; if (wt > 0) t.wt = wt; emit();
+    },
+    async undoBuy(id) {
+      const t = trades.find(x => x.id === id), u = t && lastAdd(t); if (!u) return;
+      t.txns = t.txns.slice(0, -1); t.wt = u.wt; emit();
     },
     async editActive(id, { shares, price, date, wt = null, pur = null }) {
       const t = trades.find(x => x.id === id); if (!t) return;

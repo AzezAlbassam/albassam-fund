@@ -16,6 +16,20 @@ export function derive(trade) {
   return { boughtSh, soldSh, heldSh, costBasis, proceeds, avgCost };
 }
 
+// The latest buy, when it can be taken back: it has to be the newest
+// transaction of an open call and not the buy that opened it. back = the
+// "% of pot" it added, which returns to cash.
+// ponytail: buys saved before the size was stored on them (first day of
+// pot-linked buys, 2026-11-18) get it worked out from their cost; older
+// buys never changed the size, so they give nothing back.
+export function lastAdd(t) {
+  const tx = t.txns || [], b = tx.at(-1);
+  if (t.status !== "active" || tx.length < 2 || b.t !== "buy") return null;
+  const cost = derive(t).costBasis;
+  const back = !(t.wt > 0) ? 0 : b.wt ?? (b.d >= "2026-11-18" && cost > 0 ? (t.wt * b.sh * b.px) / cost : 0);
+  return { buy: b, back, wt: t.wt > 0 ? +(t.wt - back).toFixed(2) : t.wt ?? null };
+}
+
 // Share-weighted average exit price of a closed call: sells at their
 // own prices, any shares still held at close at closePx.
 export function exitPx(t) {

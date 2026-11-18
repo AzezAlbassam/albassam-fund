@@ -359,6 +359,7 @@ body.is-owner .own-acts{display:flex}
 .os-f{display:grid;gap:6px;min-width:0;font:500 13px var(--body);color:var(--text-secondary)}
 .os-f input{width:100%;min-width:0;box-sizing:border-box;-webkit-appearance:none;appearance:none;min-height:50px;padding:0 14px;border-radius:4px;border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);font:500 16px var(--body)}
 .os-f input:focus{outline:none;box-shadow:0 0 0 3px rgba(11,11,12,.12)}
+.os-undo{margin:0;font:400 15px/1.5 var(--body);color:var(--text-secondary)} .os-undo b{color:var(--ink);font-weight:600}
 .os-msg{margin:0;min-height:1.4em;font:500 14px var(--body)}
 .os-msg.err{color:var(--loss)} .os-msg.ok{color:var(--pos)}
 .os-go{width:100%}
