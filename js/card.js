@@ -11,13 +11,13 @@
 // Percent first; the stock's own price is the only dollar figure.
 // ============================================================
 
-import { state } from "./live.js?v=36";
-import { blendedPct, cashUsed, derive, exitPx, simulate, today } from "./roi.js?v=36";
-import { history } from "./history.js?v=36";
-import { pct1, usd2, day, dayYear, daysBetween } from "./shell.js?v=36";
+import { state } from "./live.js?v=37";
+import { blendedPct, cashUsed, derive, exitPx, simulate, today } from "./roi.js?v=37";
+import { history } from "./history.js?v=37";
+import { pct1, usd2, day, dayYear, daysBetween } from "./shell.js?v=37";
 
 const W = 1080, H = 1350;
-const INK = "#0B0B0C", PAPER = "#FFFFFF", CANVAS = "#DEDDD6", MUTED = "#585861", LOSS = "#D92D20", HAIR = "rgba(11,11,12,.16)";
+const GAIN = "#16A34A", INK = "#0B0B0C", PAPER = "#FFFFFF", CANVAS = "#DEDDD6", MUTED = "#585861", LOSS = "#D92D20", HAIR = "rgba(11,11,12,.16)";
 const SANS = '"Geist",system-ui,sans-serif', MONO = '"Geist Mono",ui-monospace,monospace';
 const SITE = "azezalbassam.github.io/albassam-fund";
 
@@ -92,16 +92,27 @@ async function holdLine(t, f) {
   try {
     h = await Promise.race([history(t.ticker, t.opened), new Promise(r => setTimeout(() => r(h), 7000))]);
   } catch (e) { /* drawn as "day one" */ }
-  const pts = [];
-  h.dates.forEach((d, i) => { if (d >= t.opened && d <= f.end && h.closes[i] != null) pts.push(h.closes[i]); });
+  const pts = [], ds = [];
+  h.dates.forEach((d, i) => { if (d >= t.opened && d <= f.end && h.closes[i] != null) { pts.push(h.closes[i]); ds.push(d); } });
   const live = isOpen(t) && state.quotes[t.ticker]?.c;
-  if (live && h.dates.at(-1) !== f.end) pts.push(live);
-  return pts;
+  if (live && h.dates.at(-1) !== f.end) { pts.push(live); ds.push(f.end); }
+  return { pts, ds };
+}
+
+// Green marks on the line: each later buy that lowered the average, and
+// each sell. [date, label] pairs.
+function marks(t) {
+  const out = [], tx = t.txns || [];
+  tx.forEach((x, i) => {
+    if (i && x.t === "buy" && +x.px < derive({ ...t, txns: tx.slice(0, i) }).avgCost) out.push([x.d, "AVG DOWN"]);
+    if (x.t === "sell") out.push([x.d, "SOLD"]);
+  });
+  return out;
 }
 
 export async function drawCard(t, add = false) {
   const f = cardFacts(t, undefined, undefined, add);
-  const [pts] = await Promise.all([holdLine(t, f), fonts()]);
+  const [{ pts, ds }] = await Promise.all([holdLine(t, f), fonts()]);
   const cv = document.createElement("canvas");
   cv.width = W; cv.height = H;
   const c = cv.getContext("2d");
@@ -166,6 +177,12 @@ export async function drawCard(t, add = false) {
     line(gx0, xy[0][1], gx1, xy[0][1], 2, MUTED, [4, 10]);
     c.beginPath(); c.lineWidth = 7; c.lineJoin = c.lineCap = "round"; c.strokeStyle = f.loss ? LOSS : INK;
     xy.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke();
+    marks(t).forEach(([d, label], n) => {
+      let i = ds.findIndex(v => v >= d); if (i < 0) i = ds.length - 1;
+      const [x, y] = xy[i], up = y - gy0 > 44 || n % 2;   // the label sits above unless the point is at the top
+      c.fillStyle = GAIN; c.strokeStyle = PAPER; c.lineWidth = 5; c.beginPath(); c.arc(x, y, 14, 0, 7); c.fill(); c.stroke();
+      text(label, Math.min(Math.max(x, gx0 + 50), gx1 - 50), up ? y - 28 : y + 46, `600 19px ${MONO}`, GAIN, "center", "2px");
+    });
     const [ex, ey] = xy.at(-1);
     c.fillStyle = PAPER; c.strokeStyle = INK; c.lineWidth = 5; c.beginPath(); c.arc(xy[0][0], xy[0][1], 11, 0, 7); c.fill(); c.stroke();
     c.fillStyle = f.loss ? "rgba(217,45,32,.18)" : "rgba(11,11,12,.12)"; c.beginPath(); c.arc(ex, ey, 30, 0, 7); c.fill();

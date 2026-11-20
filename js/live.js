@@ -4,12 +4,14 @@
 //   live(what => render(state))   what: "trades" | "settings" | "quotes"
 // ============================================================
 
-import { initStore } from "./store.js?v=36";
-import { loadSplits, splitAdjust } from "./roi.js?v=36";
-import { startPrices, watchTickers, quotes } from "./prices.js?v=36";
-import { DEMO } from "./config.js?v=36";
+import { initStore } from "./store.js?v=37";
+import { loadSplits, splitAdjust } from "./roi.js?v=37";
+import { startPrices, watchTickers, quotes } from "./prices.js?v=37";
+import { DEMO } from "./config.js?v=37";
 
-export const state = { trades: [], pot: 100000, quotes, ready: false, cached: false };
+// potUsd: the whole pot in dollars today, what every "% of pot" buy is
+// sized on (161k is the owner's figure from Nov 2026, until he saves one).
+export const state = { trades: [], pot: 100000, potUsd: 161000, quotes, ready: false, cached: false };
 
 // The last snapshot is kept on the device so a returning visitor sees
 // numbers at once; the live Firestore feed replaces it within seconds.
@@ -21,14 +23,14 @@ export async function live(onChange) {
   try {
     const c = JSON.parse(localStorage.getItem(CACHE));
     if (c?.trades?.length && !DEMO) {
-      Object.assign(state, { trades: c.trades.map(splitAdjust), pot: c.pot || state.pot, ready: true, cached: true });
+      Object.assign(state, { trades: c.trades.map(splitAdjust), pot: c.pot || state.pot, potUsd: c.potUsd || state.potUsd, ready: true, cached: true });
       watchTickers(c.trades.filter(t => t.status === "active").map(t => t.ticker));
       onChange("trades");
     }
   } catch (e) { console.error(e); /* no storage or a bad snapshot: wait for the live feed */ }
   const save = () => {
     if (DEMO) return;   // practice data must never replace the family's record on this device
-    try { localStorage.setItem(CACHE, JSON.stringify({ trades: state.trades, pot: state.pot })); } catch (e) {}
+    try { localStorage.setItem(CACHE, JSON.stringify({ trades: state.trades, pot: state.pot, potUsd: state.potUsd })); } catch (e) {}
   };
   return initStore((trades) => {
     state.trades = trades.map(({ createdAt, ...t }) => t);
@@ -39,6 +41,7 @@ export async function live(onChange) {
     onChange("trades");
   }, (settings) => {
     if (settings.simStart > 0) state.pot = settings.simStart;
+    if (settings.potUsd > 0) state.potUsd = settings.potUsd;
     save();
     onChange("settings");
   });

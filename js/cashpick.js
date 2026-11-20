@@ -6,9 +6,10 @@
 // Used for a new call and for buying more of an open one.
 // ============================================================
 
-import { state } from "./live.js?v=36";
-import { checkTicker, quotes } from "./prices.js?v=36";
-import { cashPct, derive } from "./roi.js?v=36";
+import { state } from "./live.js?v=37";
+import { checkTicker, quotes } from "./prices.js?v=37";
+import { store } from "./store.js?v=37";
+import { cashPct } from "./roi.js?v=37";
 
 const fmt = (v) => +(+v).toFixed(1) + "%";
 
@@ -45,74 +46,63 @@ export function cashPick(wtInput, onPick) {
   return { refresh: paint, box };
 }
 
-// Buying more of a sized call. Its "% of pot" stands for all the money
-// put into it, so a buy adds pot share in step with its cost: twice the
-// cost so far = twice the size. addWt gives that share for a buy.
-export const addWt = (t, sh, px) => {
-  const cost = derive(t).costBasis;
-  return t.wt > 0 && cost > 0 && sh > 0 && px > 0 ? (sh * px * t.wt) / cost : null;
-};
+// The whole pot in dollars (a shared setting). Every "% of pot" buy is
+// sized on it: 1% of the pot = potUsd / 100 dollars.
+export const potUsd = () => state.potUsd;
 
-// The buy-more form: "Adds % of pot" (with the cash picker under it) and
-// Shares move together through the price. Whichever was typed last leads.
-export function addPick(t, shIn, pxIn, wtIn) {
-  const perPct = derive(t).costBasis / t.wt;   // cost of 1% of the pot in this call
-  let lead = "sh";
+// What share of the pot a buy of sh shares at px is (sized calls only).
+export const addWt = (t, sh, px) => (t.wt > 0 && sh > 0 && px > 0 ? ((sh * px) / potUsd()) * 100 : null);
+
+// "Pot size $" under the cash buttons: shows what 1% is, and the owner
+// can change it (saved for every device when the field is left).
+function potField(pick, onChange) {
+  pick.box.insertAdjacentHTML("beforeend", `<label class="cp-own cp-pot"><span>Pot size $</span><input type="number" min="0" step="any" inputmode="decimal" aria-label="The whole pot in dollars"><span data-one></span></label>`);
+  const potIn = pick.box.querySelector(".cp-pot input"), one = pick.box.querySelector("[data-one]");
+  const pot = () => parseFloat(potIn.value) || potUsd();
+  const paint = () => { one.textContent = `1% = $${Math.round(pot() / 100).toLocaleString("en-US")}`; };
+  potIn.addEventListener("input", () => { paint(); onChange(); });
+  potIn.addEventListener("change", async () => {
+    const v = parseFloat(potIn.value);
+    if (!(v > 0) || v === state.potUsd) return;
+    state.potUsd = v;
+    try { await store.setPotUsd(v); } catch (e) { console.error(e); one.textContent = "Not saved. Try again."; }
+  });
+  const refresh = () => { if (document.activeElement !== potIn) potIn.value = potUsd(); paint(); };
+  refresh();
+  return { pot, refresh };
+}
+
+// Shares and "% of pot" move together through the price and the pot size.
+// Whichever was typed last leads. Used by the new-call and buy-more forms.
+function sizePick(shIn, pxIn, wtIn, lead) {
   const sync = () => {
-    const px = parseFloat(pxIn.value);
-    if (px > 0 && lead === "wt") { const w = parseFloat(wtIn.value); shIn.value = w > 0 ? +((w * perPct) / px).toFixed(4) : ""; }
-    else if (px > 0) { const w = addWt(t, parseFloat(shIn.value), px); wtIn.value = w ? +w.toFixed(2) : ""; }
-    pick.refresh();
+    const px = parseFloat(pxIn.value), p = potF.pot();
+    if (px > 0 && lead === "wt") { const w = parseFloat(wtIn.value); shIn.value = w > 0 ? +(((w / 100) * p) / px).toFixed(4) : ""; }
+    else if (px > 0 && lead === "sh") { const sh = parseFloat(shIn.value); wtIn.value = sh > 0 ? +(((sh * px) / p) * 100).toFixed(2) : ""; }
+    potF.refresh(); pick.refresh();
   };
   const pick = cashPick(wtIn, () => { lead = "wt"; sync(); });
+  const potF = potField(pick, sync);
   wtIn.addEventListener("input", () => { lead = "wt"; sync(); });
   shIn.addEventListener("input", () => { lead = "sh"; sync(); });
   pxIn.addEventListener("input", sync);
   sync();
+  return { sync, refresh: () => { potF.refresh(); sync(); } };
 }
 
-// The pot in dollars, so a new call's "% of pot" can become shares.
-// The site only stores percents, so it is read off the open sized calls
-// (money in them / their % of pot) unless the owner typed it on this
-// device. ponytail: an estimate; the owner's own number wins.
-const POT = "af:potUsd";
-export function potUsd() {
-  try { const v = +localStorage.getItem(POT); if (v > 0) return v; } catch (e) {}
-  let cost = 0, wt = 0;
-  for (const t of state.trades) if (t.status === "active" && t.wt > 0) { cost += derive(t).costBasis; wt += t.wt; }
-  return wt > 0 && cost > 0 ? Math.round((cost / wt) * 100) : state.pot;
-}
+// Buying more of an open, sized call.
+export const addPick = (t, shIn, pxIn, wtIn) => sizePick(shIn, pxIn, wtIn, "sh");
 
-// The new-call form: picking a % of the pot fills Shares from the
-// price, and the price fills from the live quote once the ticker is in.
+// A new call: picking a % of the pot fills Shares, and the price fills
+// from the live quote once the ticker is in.
 export function newPick(tkIn, shIn, pxIn, wtIn) {
-  let lead = "wt";
-  const pick = cashPick(wtIn, () => { lead = "wt"; sync(); });
-  pick.box.insertAdjacentHTML("beforeend", `<label class="cp-own cp-pot"><span>Pot size $</span><input type="number" min="0" step="any" inputmode="decimal" aria-label="The whole pot in dollars"><span data-one></span></label>`);
-  const potIn = pick.box.querySelector(".cp-pot input"), one = pick.box.querySelector("[data-one]");
-  const sync = () => {
-    const pot = parseFloat(potIn.value) || potUsd(), px = parseFloat(pxIn.value), w = parseFloat(wtIn.value);
-    one.textContent = `1% = $${Math.round(pot / 100).toLocaleString("en-US")}`;
-    if (lead === "wt" && px > 0 && w > 0) shIn.value = +(((w / 100) * pot) / px).toFixed(4);
-    pick.refresh();
-  };
-  const fillPx = async () => {
+  const p = sizePick(shIn, pxIn, wtIn, "wt");
+  tkIn.addEventListener("change", async () => {
     const tk = tkIn.value.trim().toUpperCase();
     if (!tk || pxIn.value) return;
-    if ((await checkTicker(tk)) && quotes[tk]?.c > 0 && !pxIn.value) { pxIn.value = +quotes[tk].c.toFixed(2); sync(); }
-  };
-  potIn.addEventListener("input", () => {
-    const v = parseFloat(potIn.value);
-    try { localStorage.setItem(POT, v > 0 ? v : ""); } catch (e) {}
-    sync();
+    if ((await checkTicker(tk)) && quotes[tk]?.c > 0 && !pxIn.value) { pxIn.value = +quotes[tk].c.toFixed(2); p.sync(); }
   });
-  tkIn.addEventListener("change", fillPx);
-  wtIn.addEventListener("input", () => { lead = "wt"; sync(); });
-  shIn.addEventListener("input", () => { lead = "sh"; });
-  pxIn.addEventListener("input", sync);
-  const refresh = () => { if (document.activeElement !== potIn) potIn.value = potUsd(); sync(); };
-  refresh();
-  return { refresh };
+  return p;
 }
 
 // Why a buy of this size cannot go through (or "" if it can).
