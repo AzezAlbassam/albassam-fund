@@ -18,8 +18,8 @@
 //   createdAt server timestamp      (ordering)
 // ============================================================
 
-import { DEMO, firebaseConfig } from "./config.js?v=37";
-import { blendedPct, derive, exitPx, lastAdd, loadSplits, splitAdjust, today } from "./roi.js?v=37";
+import { DEMO, firebaseConfig } from "./config.js?v=38";
+import { blendedPct, derive, exitPx, lastAdd, loadSplits, splitAdjust, today } from "./roi.js?v=38";
 
 const SYNCING = "Still syncing with the fund record. Try again in a moment.";
 
@@ -60,7 +60,6 @@ export const store = {
   setPur: (id, pur) => impl.setPur(id, pur),
   setProfile: (id, profile) => impl.setProfile(id, profile),
   setSimStart: (v) => impl.setSimStart(v),
-  setPotUsd: (v) => impl.setPotUsd(v),
 };
 
 /* ----------------------- Firestore ----------------------- */
@@ -95,9 +94,6 @@ async function firestoreStore() {
     },
     async setSimStart(v) {
       await fs.setDoc(fs.doc(db, "meta", "settings"), { simStart: v }, { merge: true });
-    },
-    async setPotUsd(v) {
-      await fs.setDoc(fs.doc(db, "meta", "settings"), { potUsd: v }, { merge: true });
     },
     async add({ ticker, shares, price, date, name = "", logo = "", wt = null, pur = null, cash = null }) {
       await fs.addDoc(col, {
@@ -221,7 +217,6 @@ function demoStore() {
     subscribe(fn) { cb = fn; emit(); },
     watchSettings(fn) { settingsCb = fn; settingsCb({}); },
     async setSimStart(v) { settingsCb({ simStart: v }); },
-    async setPotUsd(v) { settingsCb({ potUsd: v }); },
     async add({ ticker, shares, price, date, name = "", logo = "", wt = null, pur = null, cash = null }) {
       trades.unshift({ id: uid(), ticker, name, logo, wt, pur, status: "active",
         opened: date || today(), closed: null, closePx: null, finalPct: null,

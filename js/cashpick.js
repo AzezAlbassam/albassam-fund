@@ -6,10 +6,9 @@
 // Used for a new call and for buying more of an open one.
 // ============================================================
 
-import { state } from "./live.js?v=37";
-import { checkTicker, quotes } from "./prices.js?v=37";
-import { store } from "./store.js?v=37";
-import { cashPct } from "./roi.js?v=37";
+import { state } from "./live.js?v=38";
+import { checkTicker, quotes } from "./prices.js?v=38";
+import { cashPct, simulate } from "./roi.js?v=38";
 
 const fmt = (v) => +(+v).toFixed(1) + "%";
 
@@ -46,27 +45,22 @@ export function cashPick(wtInput, onPick) {
   return { refresh: paint, box };
 }
 
-// The whole pot in dollars (a shared setting). Every "% of pot" buy is
-// sized on it: 1% of the pot = potUsd / 100 dollars.
-export const potUsd = () => state.potUsd;
+// The whole pot in dollars: the starting pot plus every gain banked so
+// far ($100K and +68.6% banked = $168.6K). Grows by itself as calls close.
+// Every "% of pot" buy is sized on it: 1% of the pot = potUsd / 100.
+export const potUsd = () => Math.round(state.pot * (1 + simulate(state.trades, {}, state.pot).realizedPct / 100));
 
 // What share of the pot a buy of sh shares at px is (sized calls only).
 export const addWt = (t, sh, px) => (t.wt > 0 && sh > 0 && px > 0 ? ((sh * px) / potUsd()) * 100 : null);
 
-// "Pot size $" under the cash buttons: shows what 1% is, and the owner
-// can change it (saved for every device when the field is left).
+// "Pot size $" under the cash buttons: shows what 1% is. Changing it
+// only sizes this one buy.
 function potField(pick, onChange) {
   pick.box.insertAdjacentHTML("beforeend", `<label class="cp-own cp-pot"><span>Pot size $</span><input type="number" min="0" step="any" inputmode="decimal" aria-label="The whole pot in dollars"><span data-one></span></label>`);
   const potIn = pick.box.querySelector(".cp-pot input"), one = pick.box.querySelector("[data-one]");
   const pot = () => parseFloat(potIn.value) || potUsd();
   const paint = () => { one.textContent = `1% = $${Math.round(pot() / 100).toLocaleString("en-US")}`; };
   potIn.addEventListener("input", () => { paint(); onChange(); });
-  potIn.addEventListener("change", async () => {
-    const v = parseFloat(potIn.value);
-    if (!(v > 0) || v === state.potUsd) return;
-    state.potUsd = v;
-    try { await store.setPotUsd(v); } catch (e) { console.error(e); one.textContent = "Not saved. Try again."; }
-  });
   const refresh = () => { if (document.activeElement !== potIn) potIn.value = potUsd(); paint(); };
   refresh();
   return { pot, refresh };
