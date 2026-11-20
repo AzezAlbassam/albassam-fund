@@ -11,10 +11,10 @@
 // Percent first; the stock's own price is the only dollar figure.
 // ============================================================
 
-import { state } from "./live.js?v=35";
-import { blendedPct, derive, exitPx, simulate, today } from "./roi.js?v=35";
-import { history } from "./history.js?v=35";
-import { pct1, usd2, day, dayYear, daysBetween } from "./shell.js?v=35";
+import { state } from "./live.js?v=36";
+import { blendedPct, cashUsed, derive, exitPx, simulate, today } from "./roi.js?v=36";
+import { history } from "./history.js?v=36";
+import { pct1, usd2, day, dayYear, daysBetween } from "./shell.js?v=36";
 
 const W = 1080, H = 1350;
 const INK = "#0B0B0C", PAPER = "#FFFFFF", CANVAS = "#DEDDD6", MUTED = "#585861", LOSS = "#D92D20", HAIR = "rgba(11,11,12,.16)";
@@ -23,6 +23,9 @@ const SITE = "azezalbassam.github.io/albassam-fund";
 
 const isOpen = (t) => t.status !== "closed";
 const share = (t) => (t.wt > 0 ? +Number(t.wt).toFixed(1) + "%" : null);
+const p2 = (v) => +(+v).toFixed(2) + "%";
+// "Used 50% of the remaining cash (19% of the pot)" for a sized buy
+const usedLine = (u, pot = true) => (u ? `Used ${p2(u.of)} of the remaining cash` + (pot ? ` (${p2(u.pot)} of the pot)` : "") : "");
 
 // The latest buy on an open call that already had one: the average before
 // and after it, and how much bigger it made the position. null = no add.
@@ -32,7 +35,7 @@ export function addFacts(t) {
   if (!isOpen(t) || i < 1 || !tx.slice(0, i).some(x => x.t === "buy")) return null;
   const was = derive({ ...t, txns: tx.slice(0, i) }), now = derive({ ...t, txns: tx.slice(0, i + 1) }), b = tx[i];
   return {
-    date: b.d, px: +b.px, was: was.avgCost, now: now.avgCost,
+    date: b.d, px: +b.px, was: was.avgCost, now: now.avgCost, used: cashUsed(state.trades, t, b),
     move: ((now.avgCost - was.avgCost) / was.avgCost) * 100,
     grew: was.heldSh > 0 ? (b.sh / was.heldSh) * 100 : null,
   };
@@ -47,7 +50,7 @@ export function cardFacts(t, quotes = state.quotes, on = today(), add = false) {
   if (a) {
     const m = +a.move.toFixed(1);
     return {
-      kind: "add", pct, held, end, loss: false, note: "",
+      kind: "add", pct, held, end, loss: false, note: usedLine(a.used),
       chip: m < 0 ? "AVERAGED DOWN" : "ADDED MORE",
       label: m < 0 ? "AVERAGE PRICE LOWERED BY" : m > 0 ? "AVERAGE PRICE RAISED BY" : "AVERAGE PRICE UNCHANGED",
       hero: Math.abs(m).toFixed(1) + "%",
@@ -64,7 +67,8 @@ export function cardFacts(t, quotes = state.quotes, on = today(), add = false) {
     label: { new: "SHARE OF THE POT", open: "RETURN SO FAR", closed: "RETURN ON THIS CALL" }[kind],
     hero: kind === "new" ? share(t) ?? "NEW" : pct == null ? "…" : pct1(pct),
     loss: kind !== "new" && pct != null && pct < 0,
-    note: t.pur > 0 ? (open ? `${+t.pur}% purification at close` : `after ${+t.pur}% purification`) : "",
+    note: [kind === "new" && usedLine(cashUsed(state.trades, t, t.txns?.[0]), false),
+      t.pur > 0 && (open ? `${+t.pur}% purification at close` : `after ${+t.pur}% purification`)].filter(Boolean).join("  ·  "),
     stats: [
       kind === "new" ? ["OPENED", day(t.opened)] : ["SHARE OF POT", share(t) ?? "Unsized"],
       open ? ["BOUGHT AT", d.avgCost > 0 ? usd2(d.avgCost) : "…"]
@@ -150,7 +154,9 @@ export async function drawCard(t, add = false) {
   let size = 250;
   do { c.font = `700 ${size}px ${SANS}`; c.letterSpacing = "-8px"; size -= 10; } while (c.measureText(f.hero).width > CW - 112 && size > 90);
   text(f.hero, L - 8, 596 + size * 0.86, c.font, f.loss ? LOSS : INK, "left", "-8px");
-  if (f.note) text(f.note, L, 596 + size * 0.86 + 54, `400 28px ${SANS}`, MUTED);
+  let ns = 30;   // a long note shrinks to fit the card
+  do { c.font = `500 ${ns}px ${SANS}`; c.letterSpacing = "0px"; } while (c.measureText(f.note).width > CW - 112 && --ns > 18);
+  if (f.note) text(f.note, L, 596 + size * 0.86 + 56, c.font, INK);
 
   // the hold, drawn: a dashed line at the entry price, then every close
   const gx0 = L, gx1 = R, gy0 = 916, gy1 = 1044;

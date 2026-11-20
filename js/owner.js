@@ -6,12 +6,12 @@
 // account, and Firestore rules still check every write.
 // ============================================================
 
-import { addPick, addWt, cashProblem, newPick } from "./cashpick.js?v=35";
-import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=35";
-import { store } from "./store.js?v=35";
-import { state } from "./live.js?v=35";
-import { checkTicker, fetchProfile } from "./prices.js?v=35";
-import { today, derive, lastAdd } from "./roi.js?v=35";
+import { addPick, addWt, cashProblem, newPick } from "./cashpick.js?v=36";
+import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=36";
+import { store } from "./store.js?v=36";
+import { state } from "./live.js?v=36";
+import { checkTicker, fetchProfile } from "./prices.js?v=36";
+import { today, derive, lastAdd, cashPct } from "./roi.js?v=36";
 
 export async function startOwner() {
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
@@ -74,7 +74,7 @@ function mountRowTools() {
           if (act === "sell" && sh > derive(t).heldSh + 1e-9) return say(`You hold ${+derive(t).heldSh.toFixed(4)} shares.`, true);
           const add = act === "buy" ? addWt(t, sh, px) : null;
           if (add && cashProblem(add)) return say(cashProblem(add), true);
-          await store.addTxn(t.id, { t: act, sh, px, d: f.d.value || today(), asOf: today(), ...(add && { wt: +add.toFixed(4) }) }, add ? +(t.wt + add).toFixed(2) : null);
+          await store.addTxn(t.id, { t: act, sh, px, d: f.d.value || today(), asOf: today(), ...(add && { wt: +add.toFixed(4), cash: +cashPct(state.trades).toFixed(4) }) }, add ? +(t.wt + add).toFixed(2) : null);
         }
         say(act === "undo" ? "Buy taken back." : "Saved.");
         setTimeout(() => dlg.close(), 700);
@@ -142,7 +142,7 @@ export function mount() {   // exported so the sheet can be exercised without a 
       }
       const profile = await fetchProfile(ticker);
       const pv = parseFloat(f.pur.value);
-      await store.add({ ticker, shares, price, date, wt: wtv > 0 ? Math.min(100, wtv) : null, pur: pv > 0 ? Math.min(100, pv) : null, ...profile });
+      await store.add({ ticker, shares, price, date, wt: wtv > 0 ? Math.min(100, wtv) : null, pur: pv > 0 ? Math.min(100, pv) : null, cash: +cashPct(state.trades).toFixed(4), ...profile });
       say(ticker + " added. Live ROI is now tracking.");
       setTimeout(() => dlg.close(), 1200);
     } catch (err) {

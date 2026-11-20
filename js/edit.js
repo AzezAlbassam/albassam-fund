@@ -7,14 +7,14 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=35";
-import { store, purified } from "./store.js?v=35";
-import { addPick, addWt, cashProblem, newPick } from "./cashpick.js?v=35";
-import { live, state } from "./live.js?v=35";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=35";
-import { watchNews } from "./news.js?v=35";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct, lastAdd } from "./roi.js?v=35";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=35";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=36";
+import { store, purified } from "./store.js?v=36";
+import { addPick, addWt, cashProblem, newPick } from "./cashpick.js?v=36";
+import { live, state } from "./live.js?v=36";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=36";
+import { watchNews } from "./news.js?v=36";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct, lastAdd } from "./roi.js?v=36";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=36";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -282,7 +282,7 @@ function openInlineForm(holder, t, act) {
     if (act === "sell" && n > d.heldSh) return fail(`You only hold ${sh(d.heldSh)} shares of ${t.ticker}.`);
     const add = act === "buy" ? addWt(t, n, px) : null;
     if (add && cashProblem(add)) return fail(cashProblem(add));
-    await store.addTxn(t.id, { t: act, sh: n, px, d: today(), asOf: today(), ...(add && { wt: +add.toFixed(4) }) }, add ? +(t.wt + add).toFixed(2) : null);
+    await store.addTxn(t.id, { t: act, sh: n, px, d: today(), asOf: today(), ...(add && { wt: +add.toFixed(4), cash: +cashPct(state.trades).toFixed(4) }) }, add ? +(t.wt + add).toFixed(2) : null);
     toast(`${t.ticker}: ${act === "buy" ? "bought" : "sold"} ${sh(n)} @ ${usd2(px)}.`);
   }, holder.querySelector(`[data-act="${act}"]`));
 }
@@ -359,7 +359,7 @@ document.addEventListener("click", async (e) => {
   if (!t) return;
   const act = btn.dataset.act;
   try {
-    if (act === "share") return void (await import("./card.js?v=35")).shareCall(t);
+    if (act === "share") return void (await import("./card.js?v=36")).shareCall(t);
     if (act === "del" || act === "reopen" || act === "undo") {
       // two-step: the first click arms the button, a second one at least
       // half a second later confirms (a double-click can never do both)
@@ -453,7 +453,7 @@ $("#addForm").addEventListener("submit", (e) => {
     }
     delete form.dataset.unverified;
     const profile = await fetchProfile(ticker);
-    await store.add({ ticker, shares, price, date, wt: wtv > 0 ? wtv : null, pur, ...profile });
+    await store.add({ ticker, shares, price, date, wt: wtv > 0 ? wtv : null, pur, cash: +cashPct(state.trades).toFixed(4), ...profile });
     form.reset();
     $("#adDate").value = today();
     toast(ticker + " added. Live ROI is now tracking.");

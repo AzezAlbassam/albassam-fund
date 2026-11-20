@@ -173,6 +173,26 @@ export function fmtMoney(v) {
 export const cashPct = (trades) =>
   Math.max(0, 100 - trades.reduce((s, t) => s + (t.status === "active" && t.wt > 0 ? +t.wt : 0), 0));
 
+// Free cash (% of pot) at the start of day d: 100 less every sized call
+// open then, at its size then (its % now, less buys added from d on).
+// Stands in for buys saved before each buy kept its own `cash`.
+export function cashOn(trades, d) {
+  let used = 0;
+  for (const t of trades) {
+    if (!(t.wt > 0) || t.opened >= d || (t.closed && t.closed < d)) continue;
+    used += t.wt - (t.txns || []).reduce((s, x) => s + (x.t === "buy" && x.wt > 0 && x.d >= d ? +x.wt : 0), 0);
+  }
+  return Math.max(0, 100 - used);
+}
+
+// How much of the free cash a sized buy used: { pot, of } in %, or null.
+// ponytail: same-day buys all count against that morning's cash
+export function cashUsed(trades, t, b) {
+  const pot = b === t.txns?.[0] ? t.wt - t.txns.reduce((s, x) => s + (x !== b && x.t === "buy" && x.wt > 0 ? +x.wt : 0), 0) : b?.wt;
+  const cash = b?.cash ?? cashOn(trades, b?.d);
+  return pot > 0 && cash > 0 ? { pot: +pot, of: Math.min(100, (pot / cash) * 100) } : null;
+}
+
 export function today() {
   return new Date().toISOString().slice(0, 10);
 }

@@ -18,8 +18,8 @@
 //   createdAt server timestamp      (ordering)
 // ============================================================
 
-import { DEMO, firebaseConfig } from "./config.js?v=35";
-import { blendedPct, derive, exitPx, lastAdd, loadSplits, splitAdjust, today } from "./roi.js?v=35";
+import { DEMO, firebaseConfig } from "./config.js?v=36";
+import { blendedPct, derive, exitPx, lastAdd, loadSplits, splitAdjust, today } from "./roi.js?v=36";
 
 const SYNCING = "Still syncing with the fund record. Try again in a moment.";
 
@@ -95,13 +95,13 @@ async function firestoreStore() {
     async setSimStart(v) {
       await fs.setDoc(fs.doc(db, "meta", "settings"), { simStart: v }, { merge: true });
     },
-    async add({ ticker, shares, price, date, name = "", logo = "", wt = null, pur = null }) {
+    async add({ ticker, shares, price, date, name = "", logo = "", wt = null, pur = null, cash = null }) {
       await fs.addDoc(col, {
         ticker, name, logo, wt, pur,
         status: "active",
         opened: date || today(),
         closed: null, closePx: null, finalPct: null,
-        txns: [{ t: "buy", sh: shares, px: price, d: date || today(), asOf: today() }],
+        txns: [{ t: "buy", sh: shares, px: price, d: date || today(), asOf: today(), ...(wt > 0 && cash != null && { cash }) }],
         createdAt: fs.serverTimestamp(),
       });
     },
@@ -217,10 +217,10 @@ function demoStore() {
     subscribe(fn) { cb = fn; emit(); },
     watchSettings(fn) { settingsCb = fn; settingsCb({}); },
     async setSimStart(v) { settingsCb({ simStart: v }); },
-    async add({ ticker, shares, price, date, name = "", logo = "", wt = null, pur = null }) {
+    async add({ ticker, shares, price, date, name = "", logo = "", wt = null, pur = null, cash = null }) {
       trades.unshift({ id: uid(), ticker, name, logo, wt, pur, status: "active",
         opened: date || today(), closed: null, closePx: null, finalPct: null,
-        txns: [{ t: "buy", sh: shares, px: price, d: date || today(), asOf: today() }] });
+        txns: [{ t: "buy", sh: shares, px: price, d: date || today(), asOf: today(), ...(wt > 0 && cash != null && { cash }) }] });
       emit();
     },
     async addClosed({ ticker, shares = 1, buyPx, sellPx, opened, closed, name = "", logo = "", wt = null, pur = null }) {
