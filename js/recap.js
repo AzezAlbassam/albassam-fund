@@ -6,10 +6,10 @@
 // With no ?m it shows the last finished month.
 // ============================================================
 
-import { initShell, observeReveals, countTo, pct1, pts1, day, esc, logoHtml } from "./shell.js?v=39";
-import { live, state } from "./live.js?v=39";
-import { today } from "./roi.js?v=39";
-import { loadRace, monthly } from "./series.js?v=39";
+import { initShell, observeReveals, countTo, pct1, pts1, day, esc, logoHtml } from "./shell.js?v=40";
+import { live, state } from "./live.js?v=40";
+import { today } from "./roi.js?v=40";
+import { loadRace, monthly } from "./series.js?v=40";
 
 const $ = (id) => document.getElementById(id);
 const NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];

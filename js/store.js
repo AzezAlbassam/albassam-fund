@@ -18,8 +18,8 @@
 //   createdAt server timestamp      (ordering)
 // ============================================================
 
-import { DEMO, firebaseConfig } from "./config.js?v=39";
-import { blendedPct, derive, exitPx, lastAdd, loadSplits, splitAdjust, today } from "./roi.js?v=39";
+import { DEMO, firebaseConfig } from "./config.js?v=40";
+import { blendedPct, derive, exitPx, lastAdd, loadSplits, splitAdjust, today } from "./roi.js?v=40";
 
 const SYNCING = "Still syncing with the fund record. Try again in a moment.";
 
@@ -54,7 +54,6 @@ export const store = {
   editClosed: (id, data) => impl.editClosed(id, data),
   addTxn: (id, txn, wt) => impl.addTxn(id, txn, wt),
   undoBuy: (id) => impl.undoBuy(id),
-  resizeTxns: (id, txns) => impl.resizeTxns(id, txns),
   close: (id, closePx) => impl.close(id, closePx),
   reopen: (id) => impl.reopen(id),
   remove: (id) => impl.remove(id),
@@ -123,12 +122,6 @@ async function firestoreStore() {
     async addTxn(id, txn, wt) {   // wt: the call's new "% of pot" after a buy
       const t = find(id); if (!t) throw new Error(SYNCING);
       await fs.updateDoc(fs.doc(db, "trades", id), { txns: [...(t.txns || []), txn], ...(wt > 0 && { wt }) });
-    },
-    // Shares rescaled to the pot (resize in roi.js). The old list is kept on
-    // the call as txnsBefore, so the change can be undone by hand.
-    async resizeTxns(id, txns) {
-      const t = find(id); if (!t) throw new Error(SYNCING);
-      await fs.updateDoc(fs.doc(db, "trades", id), { txns, txnsBefore: t.txns });
     },
     // Take the latest buy back: it leaves the list and its size returns to cash.
     async undoBuy(id) {
@@ -242,7 +235,6 @@ function demoStore() {
       const t = trades.find(x => x.id === id); if (!t) return;
       t.txns = [...t.txns, txn]; if (wt > 0) t.wt = wt; emit();
     },
-    async resizeTxns(id, txns) { const t = trades.find(x => x.id === id); t.txnsBefore = t.txns; t.txns = txns; emit(); },
     async undoBuy(id) {
       const t = trades.find(x => x.id === id), u = t && lastAdd(t); if (!u) return;
       t.txns = t.txns.slice(0, -1); t.wt = u.wt; emit();

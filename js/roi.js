@@ -193,23 +193,6 @@ export function cashUsed(trades, t, b) {
   return pot > 0 && cash > 0 ? { pot: +pot, of: Math.min(100, (pot / cash) * 100) } : null;
 }
 
-// Shares that add up to the pot: an open, sized call whose shares cost more
-// or less than its "% of pot" of the pot in dollars gets them rescaled.
-// The opening part (the first buy, buys with no size of their own, sells)
-// scales as one, so its average and return stay the same; each sized add
-// becomes its % of the pot at its own price. null = already adds up.
-export function resize(t, pot) {
-  if (t.status !== "active" || !(t.wt > 0) || !(pot > 0) || !t.txns?.length) return null;
-  const sized = (x, i) => i > 0 && x.t === "buy" && x.wt > 0;
-  const base = t.wt - t.txns.reduce((s, x, i) => s + (sized(x, i) ? +x.wt : 0), 0);
-  const baseCost = t.txns.reduce((s, x, i) => s + (x.t === "buy" && !sized(x, i) ? x.sh * x.px : 0), 0);
-  if (!(base > 0) || !(baseCost > 0)) return null;
-  const k = (base / 100) * pot / baseCost, r4 = (v) => +v.toFixed(4);
-  const txns = t.txns.map((x, i) => ({ ...x, sh: r4(sized(x, i) ? ((x.wt / 100) * pot) / x.px : x.sh * k) }));
-  const off = txns.some((x, i) => Math.abs(x.sh - t.txns[i].sh) > 0.005 * t.txns[i].sh);
-  return off ? txns : null;
-}
-
 export function today() {
   return new Date().toISOString().slice(0, 10);
 }
