@@ -7,14 +7,14 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=34";
-import { store, purified } from "./store.js?v=34";
-import { addPick, addWt, cashPick, cashProblem } from "./cashpick.js?v=34";
-import { live, state } from "./live.js?v=34";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=34";
-import { watchNews } from "./news.js?v=34";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct, lastAdd } from "./roi.js?v=34";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=34";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=35";
+import { store, purified } from "./store.js?v=35";
+import { addPick, addWt, cashProblem, newPick } from "./cashpick.js?v=35";
+import { live, state } from "./live.js?v=35";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=35";
+import { watchNews } from "./news.js?v=35";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct, lastAdd } from "./roi.js?v=35";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=35";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -53,7 +53,7 @@ function toast(text, isErr) {
 const fail = (m) => (toast(m, true), false);
 
 /* ----------------------- render: full ----------------------- */
-const newCallCash = cashPick($("#adWt"));   // "use 50% of the remaining cash"
+const newCallCash = newPick($("#adTicker"), $("#adShares"), $("#adPrice"), $("#adWt"));   // "use 50% of the remaining cash"
 function renderAll() {
   newCallCash.refresh();
   const active = state.trades.filter(t => t.status === "active");
@@ -359,7 +359,7 @@ document.addEventListener("click", async (e) => {
   if (!t) return;
   const act = btn.dataset.act;
   try {
-    if (act === "share") return void (await import("./card.js?v=34")).shareCall(t);
+    if (act === "share") return void (await import("./card.js?v=35")).shareCall(t);
     if (act === "del" || act === "reopen" || act === "undo") {
       // two-step: the first click arms the button, a second one at least
       // half a second later confirms (a double-click can never do both)

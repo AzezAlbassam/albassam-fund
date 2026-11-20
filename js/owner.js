@@ -6,12 +6,12 @@
 // account, and Firestore rules still check every write.
 // ============================================================
 
-import { addPick, addWt, cashPick, cashProblem } from "./cashpick.js?v=34";
-import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=34";
-import { store } from "./store.js?v=34";
-import { state } from "./live.js?v=34";
-import { checkTicker, fetchProfile } from "./prices.js?v=34";
-import { today, derive, lastAdd } from "./roi.js?v=34";
+import { addPick, addWt, cashProblem, newPick } from "./cashpick.js?v=35";
+import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=35";
+import { store } from "./store.js?v=35";
+import { state } from "./live.js?v=35";
+import { checkTicker, fetchProfile } from "./prices.js?v=35";
+import { today, derive, lastAdd } from "./roi.js?v=35";
 
 export async function startOwner() {
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
@@ -101,8 +101,8 @@ export function mount() {   // exported so the sheet can be exercised without a 
       <div class="os-head"><h2 id="osTitle">New call</h2><button type="button" class="os-x" aria-label="Close">×</button></div>
       <label class="os-f"><span>Ticker (US market)</span><input name="ticker" type="text" placeholder="e.g. RKLB" maxlength="10" autocomplete="off" autocapitalize="characters" spellcheck="false" required></label>
       <div class="os-row">
-        <label class="os-f"><span>Shares bought</span><input name="shares" type="number" step="any" min="0" inputmode="decimal" placeholder="e.g. 100"></label>
-        <label class="os-f"><span>Avg buy price $</span><input name="price" type="number" step="any" min="0" inputmode="decimal" placeholder="e.g. 21.40"></label>
+        <label class="os-f"><span>Shares bought</span><input name="shares" type="number" step="any" min="0" inputmode="decimal" placeholder="Fills from % of pot"></label>
+        <label class="os-f"><span>Avg buy price $</span><input name="price" type="number" step="any" min="0" inputmode="decimal" placeholder="Fills from live price"></label>
       </div>
       <div class="os-row">
         <label class="os-f"><span>Entry date</span><input name="date" type="date"></label>
@@ -115,7 +115,7 @@ export function mount() {   // exported so the sheet can be exercised without a 
     </form>`;
   document.body.appendChild(dlg);
   const f = dlg.querySelector("form"), msg = dlg.querySelector(".os-msg"), go = dlg.querySelector(".os-go");
-  const cash = cashPick(f.wt);
+  const cash = newPick(f.ticker, f.shares, f.price, f.wt);
   const say = (t, err) => { msg.textContent = t; msg.className = "os-msg " + (err ? "err" : "ok"); };
 
   fab.addEventListener("click", () => { f.reset(); delete f.dataset.unverified; f.date.value = today(); say(""); cash.refresh(); dlg.showModal(); setTimeout(() => f.ticker.focus(), 50); });

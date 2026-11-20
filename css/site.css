@@ -338,6 +338,7 @@ body.is-owner .own-acts{display:flex}
 .cp-btn[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 .cp-btn:disabled,.cp-own input:disabled{opacity:.4;cursor:not-allowed}
 .cp-own{display:inline-flex;align-items:center;gap:8px;font:400 13.5px var(--body);color:var(--text-secondary)}
+.cp-own.cp-pot input{width:110px}
 .cp-own input{width:74px;min-height:40px;padding:0 10px;border-radius:4px;border:1px solid var(--text-muted);background:var(--paper);color:var(--ink);font:500 16px var(--body)}
 @media (pointer:coarse){.cp-btn,.cp-own input{min-height:44px}}
 
