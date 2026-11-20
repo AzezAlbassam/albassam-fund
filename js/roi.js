@@ -5,6 +5,32 @@
 // cost of all buys) / total cost of all buys.
 // ============================================================
 
+// Stock splits, from data/splits.json ({ "SNDK": [["2026-11-20", 8]] }),
+// kept up to date by the market-data Action from Yahoo's split events.
+// A split multiplies the shares and divides the price of every transaction
+// made before it, so the average and the return line up with today's price.
+// asOf marks numbers already in post-split shares: an adjusted transaction
+// gets the split date, and anything typed in fresh gets today. That keeps
+// it from being split twice when a call is saved back.
+let SPLITS = {};
+export async function loadSplits() {
+  try { SPLITS = await (await fetch(new URL("../data/splits.json", import.meta.url), { cache: "no-cache" })).json(); }
+  catch (e) { console.warn("splits not loaded:", e); }
+}
+export function splitAdjust(t) {
+  const list = (SPLITS[t.ticker] || []).filter(([d]) => d <= (t.closed || today()));
+  if (!list.length || !t.txns?.length) return t;
+  let hit = [];
+  const txns = t.txns.map(x => {
+    let y = x;
+    for (const [d, r] of list) if ((y.asOf || y.d) < d && r > 0) { y = { ...y, sh: y.sh * r, px: y.px / r, asOf: d }; hit.push([d, r]); }
+    return y;
+  });
+  if (!hit.length) return t;
+  hit = [...new Map(hit.map(h => [h[0], h])).values()];
+  return { ...t, txns, splits: hit };
+}
+
 export function derive(trade) {
   let boughtSh = 0, costBasis = 0, soldSh = 0, proceeds = 0;
   for (const tx of trade.txns || []) {

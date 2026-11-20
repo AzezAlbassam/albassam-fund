@@ -4,9 +4,10 @@
 //   live(what => render(state))   what: "trades" | "settings" | "quotes"
 // ============================================================
 
-import { initStore } from "./store.js?v=33";
-import { startPrices, watchTickers, quotes } from "./prices.js?v=33";
-import { DEMO } from "./config.js?v=33";
+import { initStore } from "./store.js?v=34";
+import { loadSplits, splitAdjust } from "./roi.js?v=34";
+import { startPrices, watchTickers, quotes } from "./prices.js?v=34";
+import { DEMO } from "./config.js?v=34";
 
 export const state = { trades: [], pot: 100000, quotes, ready: false, cached: false };
 
@@ -14,12 +15,13 @@ export const state = { trades: [], pot: 100000, quotes, ready: false, cached: fa
 // numbers at once; the live Firestore feed replaces it within seconds.
 const CACHE = "af:snap:v1";
 
-export function live(onChange) {
+export async function live(onChange) {
   startPrices(() => onChange("quotes"));
+  await loadSplits();   // a tiny file from our own site: the saved snapshot needs it too
   try {
     const c = JSON.parse(localStorage.getItem(CACHE));
     if (c?.trades?.length && !DEMO) {
-      Object.assign(state, { trades: c.trades, pot: c.pot || state.pot, ready: true, cached: true });
+      Object.assign(state, { trades: c.trades.map(splitAdjust), pot: c.pot || state.pot, ready: true, cached: true });
       watchTickers(c.trades.filter(t => t.status === "active").map(t => t.ticker));
       onChange("trades");
     }

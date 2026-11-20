@@ -4,7 +4,12 @@ Daily closes for every ticker the fund has ever called, plus the two
 benchmarks (GLD for gold, ^GSPC for the S&P 500), saved as one JSON
 file the site reads from its own domain. No CORS proxy, no API key.
 
-Run by .github/workflows/market-data.yml twice a day on weekdays.
+Also keeps data/splits.json: every stock split of a called ticker, from
+Yahoo's split events, or spotted when Yahoo's adjusted closes suddenly
+sit a whole multiple away from the saved ones (Yahoo can be a day late
+with the event). The site uses it to put old buys in today's shares.
+
+Run by .github/workflows/market-data.yml three times a day on weekdays.
 Usage: python3 tools/market_data.py <out.json>
 """
 import json, os, sys, time, datetime as dt
@@ -23,7 +28,7 @@ def closes(tk, start):
     p2 = int(time.time()) + 86400
     for host in ("query1", "query2"):
         u = (f"https://{host}.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(tk)}"
-             f"?period1={p1}&period2={p2}&interval=1d")
+             f"?period1={p1}&period2={p2}&interval=1d&events=split")
         try:
             with urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=25) as r:
                 res = json.load(r)["chart"]["result"][0]
@@ -37,11 +42,51 @@ def closes(tk, start):
                 else:
                     ds.append(d); cs.append(round(c, 4))
             meta = res.get("meta", {})
-            return {"d": ds, "c": cs, "name": meta.get("shortName") or meta.get("longName") or ""}
+            sp = [[dt.datetime.fromtimestamp(v["date"], dt.timezone.utc).strftime("%Y-%m-%d"), v["numerator"] / v["denominator"]]
+                  for v in (res.get("events") or {}).get("splits", {}).values() if v.get("denominator")]
+            return {"d": ds, "c": cs, "name": meta.get("shortName") or meta.get("longName") or "", "splits": sp}
         except Exception as e:
             print(f"  {tk} via {host}: {e}", file=sys.stderr)
             time.sleep(2)
     return None
+
+
+def spotted(old, new):
+    """Split ratio when every shared close moved by the same whole multiple, else None."""
+    a = dict(zip(old["d"], old["c"]))
+    r = sorted(a[d] / c for d, c in zip(new["d"], new["c"]) if d in a and c and a[d])
+    if len(r) < 3:
+        return None
+    m = r[len(r) // 2]
+    if any(abs(x / m - 1) > 0.02 for x in r):
+        return None
+    for k in (m, 1 / m):   # forward split, or a reverse one
+        n = round(k)
+        if n >= 2 and abs(k / n - 1) < 0.02:
+            return float(n) if k == m else 1 / n
+    return None
+
+
+def save_splits(path, found):
+    try:
+        have = json.load(open(path))
+    except Exception:
+        have = {}
+    for tk, items in found.items():
+        cur = have.get(tk, [])
+        for item in items:
+            d, r = item[0], item[1]
+            # an event that lands within a week of one already kept, at the same
+            # ratio, is the same split: Yahoo's own date wins over a spotted one
+            same = [x for x in cur if abs(x[1] - r) < 1e-6 and
+                    abs((dt.date.fromisoformat(x[0]) - dt.date.fromisoformat(d)).days) <= 7]
+            if not same:
+                cur.append(list(item))
+            elif len(item) == 2 and len(same[0]) > 2:
+                cur[cur.index(same[0])] = [d, r]
+        have[tk] = sorted(cur)
+    with open(path, "w") as f:
+        json.dump(have, f, separators=(",", ":"))
 
 
 def main():
@@ -62,6 +107,14 @@ def main():
         old = json.load(open(out))
     except Exception:
         pass
+    found = {tk: s.pop("splits") for tk, s in series.items() if s.get("splits")}
+    today = dt.datetime.now(dt.timezone(dt.timedelta(hours=-5))).date().isoformat()   # New York
+    for tk, s in old.get("series", {}).items():
+        r = tk in series and spotted(s, series[tk])
+        if r:
+            print(f"  {tk}: split {r:g} spotted in the closes")
+            found.setdefault(tk, []).append([today, r, "spotted"])
+    save_splits(os.path.join(os.path.dirname(os.path.abspath(out)), "splits.json"), found)
     for tk, s in old.get("series", {}).items():
         if tk not in series:   # a failed ticker keeps yesterday's data
             series[tk] = s

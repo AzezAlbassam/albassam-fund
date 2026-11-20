@@ -6,12 +6,12 @@
 // account, and Firestore rules still check every write.
 // ============================================================
 
-import { addPick, addWt, cashPick, cashProblem } from "./cashpick.js?v=33";
-import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=33";
-import { store } from "./store.js?v=33";
-import { state } from "./live.js?v=33";
-import { checkTicker, fetchProfile } from "./prices.js?v=33";
-import { today, derive, lastAdd } from "./roi.js?v=33";
+import { addPick, addWt, cashPick, cashProblem } from "./cashpick.js?v=34";
+import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=34";
+import { store } from "./store.js?v=34";
+import { state } from "./live.js?v=34";
+import { checkTicker, fetchProfile } from "./prices.js?v=34";
+import { today, derive, lastAdd } from "./roi.js?v=34";
 
 export async function startOwner() {
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
@@ -74,7 +74,7 @@ function mountRowTools() {
           if (act === "sell" && sh > derive(t).heldSh + 1e-9) return say(`You hold ${+derive(t).heldSh.toFixed(4)} shares.`, true);
           const add = act === "buy" ? addWt(t, sh, px) : null;
           if (add && cashProblem(add)) return say(cashProblem(add), true);
-          await store.addTxn(t.id, { t: act, sh, px, d: f.d.value || today(), ...(add && { wt: +add.toFixed(4) }) }, add ? +(t.wt + add).toFixed(2) : null);
+          await store.addTxn(t.id, { t: act, sh, px, d: f.d.value || today(), asOf: today(), ...(add && { wt: +add.toFixed(4) }) }, add ? +(t.wt + add).toFixed(2) : null);
         }
         say(act === "undo" ? "Buy taken back." : "Saved.");
         setTimeout(() => dlg.close(), 700);

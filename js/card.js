@@ -11,10 +11,10 @@
 // Percent first; the stock's own price is the only dollar figure.
 // ============================================================
 
-import { state } from "./live.js?v=33";
-import { blendedPct, derive, exitPx, simulate, today } from "./roi.js?v=33";
-import { history } from "./history.js?v=33";
-import { pct1, usd2, day, dayYear, daysBetween } from "./shell.js?v=33";
+import { state } from "./live.js?v=34";
+import { blendedPct, derive, exitPx, simulate, today } from "./roi.js?v=34";
+import { history } from "./history.js?v=34";
+import { pct1, usd2, day, dayYear, daysBetween } from "./shell.js?v=34";
 
 const W = 1080, H = 1350;
 const INK = "#0B0B0C", PAPER = "#FFFFFF", CANVAS = "#DEDDD6", MUTED = "#585861", LOSS = "#D92D20", HAIR = "rgba(11,11,12,.16)";
@@ -30,7 +30,7 @@ const share = (t) => (t.wt > 0 ? +Number(t.wt).toFixed(1) + "%" : null);
 export function addFacts(t) {
   const tx = t.txns || [], i = tx.findLastIndex(x => x.t === "buy");
   if (!isOpen(t) || i < 1 || !tx.slice(0, i).some(x => x.t === "buy")) return null;
-  const was = derive({ txns: tx.slice(0, i) }), now = derive({ txns: tx.slice(0, i + 1) }), b = tx[i];
+  const was = derive({ ...t, txns: tx.slice(0, i) }), now = derive({ ...t, txns: tx.slice(0, i + 1) }), b = tx[i];
   return {
     date: b.d, px: +b.px, was: was.avgCost, now: now.avgCost,
     move: ((now.avgCost - was.avgCost) / was.avgCost) * 100,

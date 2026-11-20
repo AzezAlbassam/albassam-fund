@@ -5,10 +5,10 @@
 // so expanded rows, sparklines and reveals survive every change.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, countTo, roll, usd2, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=33";
-import { live, state } from "./live.js?v=33";
-import { derive, blendedPct, today, exitPx, lastAdd, cashPct } from "./roi.js?v=33";
-import { history } from "./history.js?v=33";
+import { initShell, observeReveals, onReveal, countTo, roll, usd2, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=34";
+import { live, state } from "./live.js?v=34";
+import { derive, blendedPct, today, exitPx, lastAdd, cashPct } from "./roi.js?v=34";
+import { history } from "./history.js?v=34";
 
 initShell();
 
@@ -20,7 +20,7 @@ document.querySelectorAll(".lhead h1 .w").forEach(w => {
   w.innerHTML = [...w.textContent].map(ch => `<span class="ch" style="--i:${ci++}">${esc(ch)}</span>`).join("");
 });
 // the header: a calm line maze, no path through it
-import("./maze.js?v=33")
+import("./maze.js?v=34")
   .then(m => m.startMaze($("#lmaze"), { cols: 12, rows: 9, seed: 20260815, spin: 0.035, fit: 1, path: false }))
   .catch(err => console.warn("3D maze unavailable:", err));
 
@@ -86,6 +86,8 @@ function txHtml(t) {
     `<li>${x.t === "sell" ? "Sold" : "Bought"} at <b>${money(x.px)}</b>${on(x.d)}</li>`);
   if (!isOpen(t) && t.closePx != null && derive(t).heldSh > 0)   // shares still held when it closed
     lines.push(`<li class="fin">Sold at <b>${money(t.closePx)}</b>${on(t.closed)}</li>`);
+  for (const [d, r] of t.splits || [])   // earlier prices are shown in today's shares
+    lines.push(`<li class="fin">Stock split ${r}-for-1${on(d)}. Earlier prices are adjusted.</li>`);
   return lines.join("");
 }
 
@@ -254,7 +256,7 @@ list.addEventListener("click", (e) => {
   const s = e.target.closest("[data-share]");
   if (s) {   // the manager's picture of this call for WhatsApp
     const t = byId.get(s.dataset.share);
-    if (t) import("./card.js?v=33").then(m => m.shareCall(t)).catch(err => console.error("share card failed:", err));
+    if (t) import("./card.js?v=34").then(m => m.shareCall(t)).catch(err => console.error("share card failed:", err));
     return;
   }
   const b = e.target.closest(".call-head");

@@ -14,12 +14,12 @@
 //   finalPct number | null          (ROI locked at close, after purification)
 //   grossPct number | null          (the ROI before purification)
 //   pur      number | null          (purification: % of the profit given away at close)
-//   txns     [{t:"buy"|"sell", sh, px, d}]
+//   txns     [{t:"buy"|"sell", sh, px, d, asOf?}]   asOf: shares already counted after splits up to that day (see roi.js)
 //   createdAt server timestamp      (ordering)
 // ============================================================
 
-import { DEMO, firebaseConfig } from "./config.js?v=33";
-import { blendedPct, derive, exitPx, lastAdd, today } from "./roi.js?v=33";
+import { DEMO, firebaseConfig } from "./config.js?v=34";
+import { blendedPct, derive, exitPx, lastAdd, loadSplits, splitAdjust, today } from "./roi.js?v=34";
 
 const SYNCING = "Still syncing with the fund record. Try again in a moment.";
 
@@ -40,6 +40,7 @@ function metaPatch(t, opened, wt, closed) {
 let impl;
 
 export async function initStore(onTrades, onSettings) {
+  await loadSplits();
   impl = DEMO ? demoStore() : await firestoreStore();
   impl.subscribe(onTrades);
   impl.watchSettings(onSettings || (() => {}));
@@ -70,7 +71,7 @@ async function firestoreStore() {
   const col = fs.collection(db, "trades");
   let cache = [];
 
-  const norm = (d) => ({ id: d.id, ...d.data() });
+  const norm = (d) => splitAdjust({ id: d.id, ...d.data() });
   const find = (id) => cache.find(t => t.id === id);
 
   return {
@@ -100,7 +101,7 @@ async function firestoreStore() {
         status: "active",
         opened: date || today(),
         closed: null, closePx: null, finalPct: null,
-        txns: [{ t: "buy", sh: shares, px: price, d: date || today() }],
+        txns: [{ t: "buy", sh: shares, px: price, d: date || today(), asOf: today() }],
         createdAt: fs.serverTimestamp(),
       });
     },
@@ -114,7 +115,7 @@ async function firestoreStore() {
         opened: opened || today(),
         closed: closed || today(),
         closePx: sellPx, grossPct, finalPct: purified(grossPct, pur),
-        txns: [{ t: "buy", sh: shares, px: buyPx, d: opened || today() }],
+        txns: [{ t: "buy", sh: shares, px: buyPx, d: opened || today(), asOf: today() }],
         createdAt: fs.serverTimestamp(),
       });
     },
@@ -137,7 +138,7 @@ async function firestoreStore() {
         return fs.updateDoc(fs.doc(db, "trades", id), { ...metaPatch(t, date, wt), pur });
       const sells = (t.txns || []).filter(x => x.t === "sell");
       await fs.updateDoc(fs.doc(db, "trades", id), {
-        opened: date, wt, pur, txns: [{ t: "buy", sh: shares, px: price, d: date }, ...sells],
+        opened: date, wt, pur, txns: [{ t: "buy", sh: shares, px: price, d: date, asOf: today() }, ...sells],
       });
     },
     async editClosed(id, { buyPx, sellPx, opened, closed, wt = null, pur = null }) {
@@ -151,7 +152,7 @@ async function firestoreStore() {
       await fs.updateDoc(fs.doc(db, "trades", id), {
         opened, closed, closePx: sellPx, wt, pur,
         grossPct: g, finalPct: purified(g, pur),
-        txns: [{ t: "buy", sh, px: buyPx, d: opened }],
+        txns: [{ t: "buy", sh, px: buyPx, d: opened, asOf: today() }],
       });
     },
     async close(id, closePx) {
@@ -219,7 +220,7 @@ function demoStore() {
     async add({ ticker, shares, price, date, name = "", logo = "", wt = null, pur = null }) {
       trades.unshift({ id: uid(), ticker, name, logo, wt, pur, status: "active",
         opened: date || today(), closed: null, closePx: null, finalPct: null,
-        txns: [{ t: "buy", sh: shares, px: price, d: date || today() }] });
+        txns: [{ t: "buy", sh: shares, px: price, d: date || today(), asOf: today() }] });
       emit();
     },
     async addClosed({ ticker, shares = 1, buyPx, sellPx, opened, closed, name = "", logo = "", wt = null, pur = null }) {
@@ -227,7 +228,7 @@ function demoStore() {
       trades.unshift({ id: uid(), ticker, name, logo, wt, pur, status: "closed",
         opened: opened || today(), closed: closed || today(),
         closePx: sellPx, grossPct: g, finalPct: purified(g, pur),
-        txns: [{ t: "buy", sh: shares, px: buyPx, d: opened || today() }] });
+        txns: [{ t: "buy", sh: shares, px: buyPx, d: opened || today(), asOf: today() }] });
       emit();
     },
     async addTxn(id, txn, wt) {   // wt: the call's new "% of pot" after a buy
@@ -245,7 +246,7 @@ function demoStore() {
       if (shares === d.boughtSh && samePx(price, d.avgCost)) { Object.assign(t, metaPatch(t, date, wt)); return emit(); }
       const sells = t.txns.filter(x => x.t === "sell");
       t.opened = date; t.wt = wt;
-      t.txns = [{ t: "buy", sh: shares, px: price, d: date }, ...sells];
+      t.txns = [{ t: "buy", sh: shares, px: price, d: date, asOf: today() }, ...sells];
       emit();
     },
     async editClosed(id, { buyPx, sellPx, opened, closed, wt = null, pur = null }) {
@@ -256,7 +257,7 @@ function demoStore() {
       const sh = d.boughtSh || 1;
       t.opened = opened; t.closed = closed; t.closePx = sellPx; t.wt = wt;
       t.grossPct = ((sellPx - buyPx) / buyPx) * 100; t.finalPct = purified(t.grossPct, pur);
-      t.txns = [{ t: "buy", sh, px: buyPx, d: opened }];
+      t.txns = [{ t: "buy", sh, px: buyPx, d: opened, asOf: today() }];
       emit();
     },
     async close(id, closePx) {

@@ -11,7 +11,7 @@
 // to a letter badge if a logo doesn't exist.
 // ============================================================
 
-import { DEMO, FINNHUB_KEY, PRICE_REFRESH_MS } from "./config.js?v=33";
+import { DEMO, FINNHUB_KEY, PRICE_REFRESH_MS } from "./config.js?v=34";
 
 const USE_FINNHUB = !FINNHUB_KEY.startsWith("__");
 const FINNHUB = "https://finnhub.io/api/v1";
@@ -106,7 +106,7 @@ export function cnbcQuote(q) {
   if (xl > 0 && q.curmktstatus !== "REG_MKT")
     return { c: xl, pc: last, dp: ((xl - last) / last) * 100, ext: x.type === "PRE_MKT" ? "pre" : "post" };
   const pc = num(q.previous_day_closing);
-  return { c: last, pc, dp: num(q.change_pct) ?? (pc ? ((last - pc) / pc) * 100 : null) };
+  return { c: last, pc, dp: pc ? ((last - pc) / pc) * 100 : num(q.change_pct) };
 }
 
 // Company name + logo, fetched once when a position is added.

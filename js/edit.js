@@ -7,14 +7,14 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=33";
-import { store, purified } from "./store.js?v=33";
-import { addPick, addWt, cashPick, cashProblem } from "./cashpick.js?v=33";
-import { live, state } from "./live.js?v=33";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=33";
-import { watchNews } from "./news.js?v=33";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct, lastAdd } from "./roi.js?v=33";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=33";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=34";
+import { store, purified } from "./store.js?v=34";
+import { addPick, addWt, cashPick, cashProblem } from "./cashpick.js?v=34";
+import { live, state } from "./live.js?v=34";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=34";
+import { watchNews } from "./news.js?v=34";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct, lastAdd } from "./roi.js?v=34";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=34";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -282,7 +282,7 @@ function openInlineForm(holder, t, act) {
     if (act === "sell" && n > d.heldSh) return fail(`You only hold ${sh(d.heldSh)} shares of ${t.ticker}.`);
     const add = act === "buy" ? addWt(t, n, px) : null;
     if (add && cashProblem(add)) return fail(cashProblem(add));
-    await store.addTxn(t.id, { t: act, sh: n, px, d: today(), ...(add && { wt: +add.toFixed(4) }) }, add ? +(t.wt + add).toFixed(2) : null);
+    await store.addTxn(t.id, { t: act, sh: n, px, d: today(), asOf: today(), ...(add && { wt: +add.toFixed(4) }) }, add ? +(t.wt + add).toFixed(2) : null);
     toast(`${t.ticker}: ${act === "buy" ? "bought" : "sold"} ${sh(n)} @ ${usd2(px)}.`);
   }, holder.querySelector(`[data-act="${act}"]`));
 }
@@ -359,7 +359,7 @@ document.addEventListener("click", async (e) => {
   if (!t) return;
   const act = btn.dataset.act;
   try {
-    if (act === "share") return void (await import("./card.js?v=33")).shareCall(t);
+    if (act === "share") return void (await import("./card.js?v=34")).shareCall(t);
     if (act === "del" || act === "reopen" || act === "undo") {
       // two-step: the first click arms the button, a second one at least
       // half a second later confirms (a double-click can never do both)
