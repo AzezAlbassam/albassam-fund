@@ -6,12 +6,13 @@
 // account, and Firestore rules still check every write.
 // ============================================================
 
-import { addPick, addWt, cashProblem, newPick } from "./cashpick.js?v=38";
-import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=38";
-import { store } from "./store.js?v=38";
-import { state } from "./live.js?v=38";
-import { checkTicker, fetchProfile } from "./prices.js?v=38";
-import { today, derive, lastAdd, cashPct } from "./roi.js?v=38";
+import { addPick, addWt, cashProblem, newPick } from "./cashpick.js?v=39";
+import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=39";
+import { store } from "./store.js?v=39";
+import { state } from "./live.js?v=39";
+import { checkTicker, fetchProfile } from "./prices.js?v=39";
+import { today, derive, lastAdd, cashPct, resize } from "./roi.js?v=39";
+import { potUsd } from "./cashpick.js?v=39";
 
 export async function startOwner() {
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
@@ -85,8 +86,23 @@ function mountRowTools() {
   });
 }
 
+// Calls whose shares don't add up to their % of the pot get fixed once,
+// on the owner's signed-in visit, as soon as the live record is in.
+async function fixShares() {
+  for (let i = 0; i < 60 && !(state.ready && !state.cached); i++) await new Promise(r => setTimeout(r, 500));
+  if (!state.ready || state.cached) return;
+  for (const t of state.trades) {
+    // ponytail: a one-time repair of the calls entered before the pot size was fixed (Nov 20);
+    // a later call is sized on the pot of its day and must not move when the pot grows
+    if (t.txnsBefore || t.opened > "2026-11-20") continue;
+    const txns = resize(t, potUsd());
+    if (txns) try { await store.resizeTxns(t.id, txns); console.info("shares fixed:", t.ticker); } catch (e) { console.error(e); }
+  }
+}
+
 export function mount() {   // exported so the sheet can be exercised without a sign-in
   mountRowTools();
+  fixShares();
   const fab = document.createElement("button");
   fab.type = "button";
   fab.className = "owner-fab";

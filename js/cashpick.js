@@ -6,9 +6,9 @@
 // Used for a new call and for buying more of an open one.
 // ============================================================
 
-import { state } from "./live.js?v=38";
-import { checkTicker, quotes } from "./prices.js?v=38";
-import { cashPct, simulate } from "./roi.js?v=38";
+import { state } from "./live.js?v=39";
+import { checkTicker, quotes } from "./prices.js?v=39";
+import { cashPct, simulate } from "./roi.js?v=39";
 
 const fmt = (v) => +(+v).toFixed(1) + "%";
 
