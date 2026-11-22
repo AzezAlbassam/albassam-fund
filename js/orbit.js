@@ -11,6 +11,8 @@ import * as THREE from "three";
 import { LineSegments2 } from "three/addons/lines/LineSegments2.js";
 import { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js";
 import { LineMaterial } from "three/addons/lines/LineMaterial.js";
+import { esc } from "./shell.js?v=41";
+import { share } from "./roi.js?v=41";
 
 const RADII = [2.1, 2.75, 3.4];
 const TILTS = [[0.0, 0.0], [0.28, 0.35], [-0.22, -0.4]];
@@ -68,22 +70,25 @@ export async function startOrbit(canvas, labelsEl, onPick) {
   let planets = [];
   const planetGeo = new THREE.IcosahedronGeometry(1, 0), planetEdges = edgesOf(planetGeo);
   function set(trades, pctOf) {
+    const was = new Map(planets.map(p => [p.t.id, p]));   // a live price tick must not send the planets back to the start
     for (const p of planets) { p.ring.remove(p.mesh); p.mat.dispose(); mats.splice(mats.indexOf(p.mat), 1); p.label.remove(); }
     planets = trades.map((t, i) => {
       const pct = pctOf(t), kind = t.status === "active" ? "open" : (pct ?? 0) < 0 ? "loss" : "win";
-      const ri = i % 3, r = RADII[ri];
-      const size = 0.13 + Math.sqrt(Math.max(t.wt || 4, 4)) * 0.034;
+      const ri = i % 3, r = RADII[ri], old = was.get(t.id);
+      const size = 0.13 + Math.sqrt(Math.max(share(t, trades) || 4, 4)) * 0.034;
       const mat = lineMat(COL[kind], 1.3);
       const mesh = new THREE.Mesh(planetGeo, paper);
       mesh.add(new LineSegments2(planetEdges, mat));
-      mesh.scale.setScalar(size);
-      mesh.rotation.set(i * 0.7, i * 1.3, 0);
+      mesh.scale.setScalar(old?.mesh.scale.x ?? size);   // the frame loop eases it to the new size
+      old ? mesh.rotation.copy(old.mesh.rotation) : mesh.rotation.set(i * 0.7, i * 1.3, 0);
       rings[ri].add(mesh);
       const label = document.createElement("span");
-      label.innerHTML = `${t.ticker} <i class="${kind}">${pct == null ? "" : (pct >= 0 ? "+" : "-") + Math.abs(pct).toFixed(1) + "%"}</i>`;
+      label.innerHTML = `${esc(t.ticker)} <i class="${kind}">${pct == null ? "" : (pct >= 0 ? "+" : "-") + Math.abs(pct).toFixed(1) + "%"}</i>`;
       labelsEl.appendChild(label);
-      return { t, mesh, mat, label, ring: rings[ri], r, a: i * 2.399963, speed: 0.34 / Math.sqrt(r) * (1 + (i % 4) * 0.08), size };
+      return { t, mesh, mat, label, ring: rings[ri], r, a: old?.a ?? i * 2.399963, speed: 0.34 / Math.sqrt(r) * (1 + (i % 4) * 0.08), size };
     });
+    selected &&= planets.find(p => p.t.id === selected.t.id) || null;   // keep a tapped planet picked
+    hovered &&= planets.find(p => p.t.id === hovered.t.id) || null;
   }
 
   /* ---------- interaction: drag to spin, tap to pick ---------- */

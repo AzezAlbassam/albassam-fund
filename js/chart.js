@@ -10,7 +10,7 @@
 //   c.view({ bench: "gold"|"spx"|"both", range: "1M"|"3M"|"ALL", unit: "pct"|"usd" });
 // ============================================================
 
-import { onReveal, observeReveals, reducedMotion, day, shortUsd } from "./shell.js?v=40";
+import { onReveal, observeReveals, reducedMotion, day, shortUsd } from "./shell.js?v=41";
 
 const NS = "http://www.w3.org/2000/svg";
 const RANGES = { "1M": 22, "3M": 64 };
@@ -31,13 +31,15 @@ const CLS = { fund: "fund", gold: "gold", spx: "spx", tasi: "tasi" };
 export function raceChart(el) {
   el.classList.add("race");
   el.innerHTML = `
-    <svg role="img" aria-label="Loading the race"></svg>
+    <svg role="img" aria-label="Loading the chart"></svg>
     <div class="race-tip" aria-hidden="true"></div>
     <div class="race-lead" aria-hidden="true"></div>
-    <div class="race-empty">Loading the race…</div>`;
+    <div class="race-empty">Loading the chart…</div>`;
   const svg = el.querySelector("svg"), tip = el.querySelector(".race-tip"),
     leadEl = el.querySelector(".race-lead"), empty = el.querySelector(".race-empty");
-  let race = null, cut = null;
+  let race = null, cut = null, lastX = null;
+  // a message in place of the lines, for screen readers too
+  const say = (msg) => { empty.textContent = msg; empty.hidden = false; svg.setAttribute("aria-label", msg); };
   const opts = { bench: "gold", range: "ALL", unit: "pct" };
 
   // the lines draw themselves the first time the chart scrolls into view
@@ -95,7 +97,7 @@ export function raceChart(el) {
     if (n > 45) {
       xl.push([0, day(cut.days[0]).split(" ")[0], "start"]);
       cut.days.forEach((d, i) => { if (i && d.slice(5, 7) !== cut.days[i - 1].slice(5, 7)) xl.push([i, day(d).split(" ")[0]]); });
-      if (xl.length > 1 && xl[1][0] < n * 0.08) xl.shift();   // month change right at the start: keep just one
+      if (xl.length > 1 && X(xl[1][0]) - X(xl[0][0]) < 44) xl.shift();   // next month label within 44px of the first: keep just one
     }
     else { const every = Math.max(1, Math.round(n / (narrow ? 3 : 5))); for (let i = 0; i < n; i += every) xl.push([i, day(cut.days[i])]); }
 
@@ -135,6 +137,7 @@ export function raceChart(el) {
   function bindHover(X, Y, pad, W, n) {
     const cross = svg.querySelector(".cross"), dots = [...svg.querySelectorAll(".dot")];
     const at = (clientX) => {
+      lastX = clientX;
       const r = svg.getBoundingClientRect();
       const x = Math.min(Math.max(clientX - r.left, pad.l), W - pad.r);
       const i = Math.round((x - pad.l) / ((W - pad.l - pad.r) || 1) * (n - 1));
@@ -144,12 +147,14 @@ export function raceChart(el) {
       tip.innerHTML = `<div class="d">${day(cut.days[i])}, ${cut.days[i].slice(0, 4)}</div>` +
         visible().map(k => `<div class="r"><span class="k ${CLS[k]}">${NAMES[k]}</span><b>${fmtV(cut[k][i])}</b></div>`).join("");
       const left = +cx > W / 2 ? +cx - tip.offsetWidth - 16 : +cx + 16;
-      tip.style.left = Math.max(0, left) + "px";
+      tip.style.left = Math.max(0, Math.min(left, W - tip.offsetWidth)) + "px";   // inside the chart on both sides
       el.classList.add("hover");
     };
     svg.onpointermove = (e) => at(e.clientX);
     svg.onpointerdown = (e) => at(e.clientX);
     svg.onpointerleave = () => el.classList.remove("hover");
+    // a redraw under a resting pointer (a price tick) puts the crosshair back on the line
+    if (el.classList.contains("hover")) at(lastX);
   }
 
   function tickLabel(t) {
@@ -160,13 +165,13 @@ export function raceChart(el) {
   return {
     set(r) {
       race = r;
-      if (!r) { empty.textContent = "The race starts with the first sized call."; empty.hidden = false; svg.innerHTML = ""; leadEl.innerHTML = ""; return; }
+      if (!r) { say("The chart starts with the first sized call."); svg.innerHTML = ""; leadEl.innerHTML = ""; return; }
       render();
       if (reducedMotion.matches) el.classList.add("drawn");
     },
     view(o) { Object.assign(opts, o); render(); },
     get opts() { return { ...opts }; },
-    fail(msg) { empty.textContent = msg; empty.hidden = false; },
+    fail: say,
   };
 }
 

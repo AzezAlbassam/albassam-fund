@@ -6,7 +6,7 @@ rules_version = '2';
 // BOTH apps sharing it:
 //   /trades/**       — Albassam Fund (stock calls tracker)
 //   /familyOffice/** — Albassam Private Family Office
-//   /portfolios/**, /racers/**, /members/**, /joinRequests/** — Albassam Fund family race
+//   /portfolios/**, /racers/**, /members/**, /joinRequests/** — old family race (closed, data kept)
 // Keep this file identical in the albassam-fund and
 // albassam-office repos; deploying from either then yields the
 // same ruleset.
@@ -33,25 +33,14 @@ service cloud.firestore {
       allow write: if isOwner();
     }
 
-    // Albassam Fund family race. Each member's holdings live in
-    // /portfolios/{their uid}: ONLY that signed-in member can read or
-    // write them (the manager included, nobody else can), and they are
-    // stored sealed with the member's own passcode (a `box` the site
-    // encrypts before saving), so even the console shows no stocks. What the
-    // board shows is published separately to /racers/{uid}: a name and a
-    // return %, never a day-by-day line (a line can give the stocks away).
-    // Public read; only the member writes it; the manager may remove a
-    // racer from the board.
-    // (/members and /joinRequests are from the earlier ask-to-join step.)
+    // Old family race. The Family section was removed 2026-11-16: the data
+    // stays, nobody can add or change it. /portfolios/{uid} (holdings sealed
+    // with the member's passcode) is that member's only; /racers/{uid} (a
+    // name and a return %) is no longer public, only the manager and that
+    // member see it. Members may still delete their own docs.
+    // To bring the board back, restore the write rules from albassam-fund commit bcfaee1 (albassam-office 402d98b).
     function isSelf(uid) {
       return request.auth != null && request.auth.uid == uid;
-    }
-
-    // Anyone signed in with a verified email can join (the link is only
-    // shared in the family); the manager can take a racer off the board.
-    function isMember() {
-      return request.auth != null
-        && request.auth.token.email_verified == true;
     }
 
     match /members/{email} {
@@ -61,42 +50,17 @@ service cloud.firestore {
 
     match /joinRequests/{uid} {
       allow read, delete: if isOwner() || isSelf(uid);
-      allow create, update: if isSelf(uid)
-        && request.auth.token.email_verified == true
-        && request.resource.data.keys().hasOnly(['email', 'name', 'at'])
-        && request.resource.data.email == request.auth.token.email
-        && request.resource.data.name is string
-        && request.resource.data.name.size() <= 40
-        && request.resource.data.at == request.time;
+      allow create, update: if false;
     }
 
     match /portfolios/{uid} {
       allow read, delete: if isSelf(uid);
-      allow create, update: if isSelf(uid) && isMember()
-        && request.resource.data.keys().hasOnly(['box', 'name', 'show', 'updatedAt'])
-        && request.resource.data.box is map
-        && request.resource.data.box.keys().hasOnly(['v', 'salt', 'iv', 'ct'])
-        && request.resource.data.box.ct is string
-        && request.resource.data.box.ct.size() < 400000
-        && request.resource.data.name is string
-        && request.resource.data.name.size() <= 24
-        && request.resource.data.show is bool
-        && request.resource.data.updatedAt == request.time;
+      allow create, update: if false;
     }
 
     match /racers/{uid} {
-      allow read: if true;
-      allow delete: if isSelf(uid) || isOwner();
-      allow create, update: if isSelf(uid) && isMember()
-        && request.resource.data.keys().hasOnly(['name', 'pct', 'c', 'updatedAt'])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() >= 1
-        && request.resource.data.name.size() <= 24
-        && request.resource.data.pct is number
-        && request.resource.data.c is int
-        && request.resource.data.c >= 0
-        && request.resource.data.c < 50
-        && request.resource.data.updatedAt == request.time;
+      allow read, delete: if isOwner() || isSelf(uid);
+      allow create, update: if false;
     }
 
     // Albassam Private Family Office: config doc + subcollections

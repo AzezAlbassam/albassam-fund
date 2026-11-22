@@ -8,3 +8,6 @@ reports/
 
 # design-lint hook cache
 .impeccable/
+
+# Python cache from the tools
+__pycache__/

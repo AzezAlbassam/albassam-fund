@@ -19,7 +19,6 @@
 .dh-in{opacity:0;transform:translateY(22px);animation:fadeUp 1s var(--ease-out) forwards;animation-delay:var(--d,0s)}
 @keyframes fadeUp{to{opacity:1;transform:none}}
 .dh-side{display:flex;flex-direction:column;align-items:flex-end;gap:10px;min-width:0}
-.demo-chip{margin:0;min-height:32px;padding:8px 14px;line-height:1.4;color:var(--ink);border:1px dashed var(--ink);background:var(--paper);text-transform:none;letter-spacing:.04em}
 .auth{display:flex;align-items:center;gap:12px;min-width:0;padding:8px 8px 8px 12px;border:1px solid var(--line);border-radius:999px;background:var(--panel)}
 .avatar:empty{display:none}
 .avatar img{width:36px;height:36px;border-radius:50%;border:1px solid var(--ink);filter:grayscale(1)}
@@ -138,7 +137,7 @@ main:has(#gate:not([hidden])) .dh-title .gyro{display:none}   /* the gate card c
   transform:scaleX(0);transform-origin:left center;transition:transform 1.2s var(--ease-out)}
 .bar i.neg{left:0;background:var(--loss);transform-origin:right center}
 .call .meta{margin:0;font:500 12px/1.5 var(--mono);color:var(--text-muted)}
-.ctl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:6px;padding-top:16px;border-top:1px solid var(--line)}
+.ctl{display:flex;flex-wrap:wrap;gap:6px;padding-top:16px;border-top:1px solid var(--line)}   /* up to 8 pills: each as wide as its label */
 .ctl .act{padding:0 8px}
 
 /* small action pills (cards, rows, pot): hairline, ink fill on hover, red when armed */
@@ -150,7 +149,7 @@ main:has(#gate:not([hidden])) .dh-title .gyro{display:none}   /* the gate card c
 .act:hover{color:var(--paper);transform:translateY(-1px)}
 .act:hover::before{opacity:1}
 .act:active{transform:scale(.96)}
-.act.del{margin-left:auto}
+.act.del{margin-left:auto;min-width:64px}   /* room for SURE?: arming never rewraps the row */
 .act.warn,.act.warn:hover{color:var(--loss);border-color:var(--loss);background:var(--paper);font-family:var(--mono);letter-spacing:.08em}
 .act.warn:hover{color:var(--paper);background:var(--loss)}
 .act.warn::before{inset:-2px;background:none;border:1px solid var(--loss);opacity:1;animation:armed 1.1s var(--ease-out) infinite}
@@ -197,7 +196,7 @@ main:has(#gate:not([hidden])) .dh-title .gyro{display:none}   /* the gate card c
 .crow-id span{display:block;font-size:13px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .crow-info{display:contents}
 .crow-info p{display:grid;gap:2px;margin:0;font:400 13px/1.45 var(--mono);font-variant-numeric:tabular-nums;color:var(--text-secondary)}
-.crow-acts{display:flex;gap:6px}
+.crow-acts{display:flex;flex-wrap:wrap;gap:6px}
 .crow .inline-form{margin-top:14px}
 @media (max-width:1180px){
   .crow-main{grid-template-columns:auto minmax(0,1fr) auto}

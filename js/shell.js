@@ -4,11 +4,16 @@
 // build stamp and the "new version" bar. Plus small formatters.
 // ============================================================
 
-import { BUILD } from "./config.js?v=40";
+import { BUILD, DEMO } from "./config.js?v=41";
+import { today } from "./roi.js?v=41";
 
 export const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
 export function initShell() {
+  // practice data says so on every page (the desk has its own chip)
+  if (DEMO && !document.getElementById("demoChip"))
+    document.body.insertAdjacentHTML("afterbegin", '<p class="chip demo-chip" role="status">Demo data, not the live fund.</p>');
+
   // environment: a few sparks drifting up (seeded, so identical every load)
   const env = document.querySelector(".env");
   if (env && !env.querySelector("i")) {
@@ -46,7 +51,8 @@ export function initShell() {
   const applyStill = (on) => {
     document.body.classList.toggle("still", on);
     document.querySelectorAll("video").forEach(v => (on ? v.pause() : v.play().catch(() => {})));
-    document.querySelectorAll("[data-motion-toggle]").forEach(b => { b.textContent = on ? "Play motion" : "Pause motion"; b.setAttribute("aria-pressed", String(on)); });
+    // a plain button named for what a tap does (no aria-pressed: the name already changes)
+    document.querySelectorAll("[data-motion-toggle]").forEach(b => { b.textContent = on ? "Play motion" : "Pause motion"; });
     window.dispatchEvent(new CustomEvent("motion", { detail: { still: on } }));
   };
   document.querySelectorAll("[data-motion-toggle]").forEach(b => b.addEventListener("click", () => {
@@ -74,7 +80,7 @@ export function initShell() {
   // the owner's "+ New call" button, only on a device where the manager signed in
   try {
     if (localStorage.getItem("af:owner") === "1" && !document.getElementById("addForm"))
-      import("./owner.js?v=40").then(m => m.startOwner()).catch(e => console.warn("quick add unavailable:", e));
+      import("./owner.js?v=41").then(m => m.startOwner()).catch(e => console.warn("quick add unavailable:", e));
   } catch (e) { /* storage blocked */ }
 
   // "Get the app": install on the phone's home screen
@@ -218,7 +224,8 @@ export const usd0 = (v) => (v < 0 ? "-$" : "$") + Math.round(Math.abs(v)).toLoca
 export const usd2 = (v) => v == null || isNaN(v) ? "…" :
   "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const signedUsd = (v) => (v >= 0 ? "+" : "-") + "$" + Math.round(Math.abs(v)).toLocaleString("en-US");
-export const pct1 = (p) => p == null || isNaN(p) ? "…" : (p >= 0 ? "+" : "-") + Math.abs(p).toFixed(1) + "%";
+// anything that rounds to 0.0 prints as a plain, uncoloured "0.0%" (never "-0.0%")
+export const pct1 = (p) => p == null || isNaN(p) ? "…" : Math.abs(p) < 0.05 ? "0.0%" : (p > 0 ? "+" : "-") + Math.abs(p).toFixed(1) + "%";
 export const pctBig = (p) => p == null || isNaN(p) ? "…" : Math.abs(p) < 1000 ? pct1(p)
   : (p >= 0 ? "+" : "-") + Math.round(Math.abs(p)).toLocaleString("en-US") + "%";
 export const pts1 = (p) => (p >= 0 ? "+" : "-") + Math.abs(p).toFixed(1) + " pts";
@@ -230,8 +237,11 @@ export const daysBetween = (a, b) => Math.max(0, Math.round((Date.parse(b) - Dat
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // The label for a quote's day move: "today", or the session outside regular hours.
-export const sessionWord = (q) => (q?.ext === "pre" ? "pre-market" : q?.ext === "post" ? "after hours" : "today");
-export const pctClass = (p) => p == null ? "" : p >= 0 ? "pos" : "neg";
+// When a day's move happened: live extended hours, else the session date the
+// price carries (a saved close, or a Sunday's Friday close) unless that is today.
+export const sessionWord = (q) => (q?.ext === "pre" ? "pre-market" : q?.ext === "post" ? "after hours"
+  : q?.d && q.d < today() ? "on " + day(q.d) : q?.saved ? "last close" : "today");
+export const pctClass = (p) => p == null || isNaN(p) || Math.abs(p) < 0.05 ? "" : p > 0 ? "pos" : "neg";   // same zero band as pct1
 
 // Company logo with a letter-badge fallback.
 export function logoHtml(t) {

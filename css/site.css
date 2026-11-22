@@ -27,7 +27,7 @@
   --display:"Geist",system-ui,sans-serif;
   --body:"Geist",system-ui,sans-serif;
   --mono:"Geist Mono",ui-monospace,monospace;
-  --wrap:1240px; --gutter:clamp(16px,4vw,40px);
+  --wrap:1240px; --gutter:max(clamp(16px,4vw,40px),env(safe-area-inset-left,0px),env(safe-area-inset-right,0px));   /* clears the notch in landscape */
   --nav-h:76px; --r:6px;
 }
 
@@ -132,6 +132,9 @@ h3{font-size:clamp(18px,2vw,22px);letter-spacing:-.02em}
   letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--line-strong);color:var(--text-secondary)}
 .chip.material{color:var(--paper);background:var(--ink)}
 .chip.rumor{color:var(--text-secondary);border-style:dashed}
+.demo-chip{margin:0;min-height:32px;padding:8px 14px;line-height:1.4;color:var(--ink);border:1px dashed var(--ink);background:var(--paper);text-transform:none;letter-spacing:.04em}
+/* demo mode on the public pages: pinned just under the nav, taps pass through */
+body>.demo-chip{position:absolute;z-index:49;top:calc(var(--nav-h) + env(safe-area-inset-top));left:50%;translate:-50% 0;width:max-content;max-width:calc(100vw - 32px);pointer-events:none}
 @media (pointer:coarse){
   .btn,.seg button,.nav-links a,.link-arrow,.brand{min-height:44px}
   .seg button{display:inline-flex;align-items:center;justify-content:center;min-width:44px}
@@ -287,8 +290,8 @@ h3{font-size:clamp(18px,2vw,22px);letter-spacing:-.02em}
 @media (pointer:coarse){.foot .brand{margin:-12px 0 0}.install-link,.manager-link{min-height:44px}}
 
 /* ---------- toast (update bar) ---------- */
-.bar-note{position:fixed;left:50%;bottom:18px;translate:-50% 0;z-index:60;padding:12px 18px;border-radius:999px;background:var(--ink);color:var(--paper);
-  border:1px solid var(--ink);font:500 14px var(--body);cursor:pointer}
+.bar-note{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));translate:-50% 0;z-index:60;padding:12px 18px;border-radius:999px;background:var(--ink);color:var(--paper);
+  width:max-content;max-width:calc(100vw - 32px);border:1px solid var(--ink);font:500 14px var(--body);cursor:pointer}   /* one line on phones, clear of the home bar */
 
 /* ---------- pause: hidden tab or the viewer's own motion toggle ---------- */
 body.paused *,body.paused *::before,body.paused *::after,
@@ -338,7 +341,7 @@ body.is-owner .own-acts{display:flex}
 .cp-btn[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 .cp-btn:disabled,.cp-own input:disabled{opacity:.4;cursor:not-allowed}
 .cp-own{display:inline-flex;align-items:center;gap:8px;font:400 13.5px var(--body);color:var(--text-secondary)}
-.cp-own.cp-pot input{width:110px}
+.cp-pot{margin:0;font:500 13.5px var(--mono);letter-spacing:.02em;color:var(--ink)}
 .cp-own input{width:74px;min-height:40px;padding:0 10px;border-radius:4px;border:1px solid var(--text-muted);background:var(--paper);color:var(--ink);font:500 16px var(--body)}
 @media (pointer:coarse){.cp-btn,.cp-own input{min-height:44px}}
 
@@ -347,6 +350,7 @@ body.is-owner .own-acts{display:flex}
   min-height:54px;padding:0 22px;border:1px solid var(--ink);border-radius:999px;background:var(--ink);color:var(--paper);font:500 15px/1 var(--body);cursor:pointer;
   box-shadow:0 14px 34px -14px rgba(0,0,0,.5);animation:fabIn .6s var(--ease-out) both}
 .owner-fab span{font:500 22px/1 var(--display)}
+body:has(.owner-fab) .bar-note{bottom:calc(max(18px,env(safe-area-inset-bottom)) + 66px)}   /* update bar sits above the button: 54px + 12px gap */
 @keyframes fabIn{from{opacity:0;transform:translateY(20px) scale(.9)}}
 .owner-sheet{width:min(520px,calc(100vw - 24px));padding:0;border:1px solid var(--ink);border-radius:var(--r);color:var(--ink);background:var(--paper)}
 .owner-sheet::backdrop{background:rgba(255,255,255,.75);backdrop-filter:blur(3px)}

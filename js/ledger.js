@@ -5,10 +5,11 @@
 // so expanded rows, sparklines and reveals survive every change.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, countTo, roll, usd2, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=40";
-import { live, state } from "./live.js?v=40";
-import { derive, blendedPct, today, exitPx, lastAdd, cashPct } from "./roi.js?v=40";
-import { history } from "./history.js?v=40";
+import { initShell, observeReveals, onReveal, countTo, roll, usd0, usd2, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=41";
+import { live, state } from "./live.js?v=41";
+import { derive, blendedPct, today, exitPx, lastAdd, cashPct, share, bankedPct, sizePts } from "./roi.js?v=41";
+import { potUsd } from "./cashpick.js?v=41";
+import { history } from "./history.js?v=41";
 
 initShell();
 
@@ -20,7 +21,7 @@ document.querySelectorAll(".lhead h1 .w").forEach(w => {
   w.innerHTML = [...w.textContent].map(ch => `<span class="ch" style="--i:${ci++}">${esc(ch)}</span>`).join("");
 });
 // the header: a calm line maze, no path through it
-import("./maze.js?v=40")
+import("./maze.js?v=41")
   .then(m => m.startMaze($("#lmaze"), { cols: 12, rows: 9, seed: 20260815, spin: 0.035, fit: 1, path: false }))
   .catch(err => console.warn("3D maze unavailable:", err));
 
@@ -34,7 +35,8 @@ let byId = new Map();
 /* ----------------------- per-call numbers ----------------------- */
 const isOpen = (t) => t.status !== "closed";
 const pctOf = (t) => isOpen(t) ? blendedPct(t, state.quotes[t.ticker]?.c ?? null) : (t.finalPct ?? null);
-const potPts = (t, p) => (t.wt > 0 && p != null ? (t.wt * p) / 100 : null);   // % the call added to the pot
+const sz = (t) => share(t, state.trades);   // "% of pot": an open call's share of today's pot (roi.js)
+const potPts = (t, p) => (t.wt > 0 && p != null ? (sz(t) * p) / 100 : null);   // % the call added to the pot
 const endOf = (t) => (isOpen(t) ? today() : t.closed || t.opened || "");
 const money = (v) => (v == null || isNaN(v) ? "…" : usd2(Number(v)));
 const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
@@ -50,7 +52,8 @@ const FILTERS = {
 const SORTS = {
   new: (a, b) => cmp(endOf(b), endOf(a)) || cmp(b.opened || "", a.opened || ""),
   gain: (a, b) => (pctOf(b) ?? LOW) - (pctOf(a) ?? LOW),
-  size: (a, b) => (b.wt > 0 ? b.wt : LOW) - (a.wt > 0 ? a.wt : LOW) || (pctOf(b) ?? LOW) - (pctOf(a) ?? LOW),
+  // by the money in the call (points of the start), since an open and a closed "% of pot" are shares of different pots
+  size: (a, b) => (b.wt > 0 ? sizePts(b, state.trades) : LOW) - (a.wt > 0 ? sizePts(a, state.trades) : LOW) || (pctOf(b) ?? LOW) - (pctOf(a) ?? LOW),
   profit: (a, b) => (potPts(b, pctOf(b)) ?? LOW) - (potPts(a, pctOf(a)) ?? LOW),
 };
 
@@ -75,9 +78,11 @@ function pxHtml(t) {
 function potHtml(t, p) {
   if (!(t.wt > 0)) return `<span class="sz muted">Unsized</span>`;
   const v = potPts(t, p);
-  const pur = t.pur > 0 ? `<span class="sz">${isOpen(t) ? `${+t.pur}% purification at close` : `after ${+t.pur}% purification`}</span>` : "";
-  return `<span class="sz">${+Number(t.wt).toFixed(1)}% of pot</span>` + pur +
-    (v == null ? "" : `<span class="money ${v < 0 ? "loss" : "pos"}"><b>${pct1(v)}</b> on the pot</span>`);
+  // a closed loss had no profit to purify: no note
+  const pur = t.pur > 0 && (isOpen(t) || (t.grossPct ?? t.finalPct) > 0) ? `<span class="sz">${isOpen(t) ? `${+t.pur}% purification at close` : `after ${+t.pur}% purification`}</span>` : "";
+  return `<span class="sz">${+sz(t).toFixed(1)}% of pot</span>` + pur +
+    // red only for what prints as a loss (-0.1% or worse)
+    (v == null ? "" : `<span class="money ${v <= -0.05 ? "loss" : "pos"}"><b>${pct1(v)}</b> on the pot</span>`);
 }
 
 function txHtml(t) {
@@ -163,7 +168,7 @@ function paintSummary() {
   const closed = state.trades.filter(t => !isOpen(t) && t.finalPct != null);
   const won = closed.filter(t => t.finalPct > 0), lost = closed.filter(t => t.finalPct < 0);
   const mean = (a) => (a.length ? a.reduce((s, t) => s + t.finalPct, 0) / a.length : null);
-  const banked = closed.reduce((s, t) => s + (t.wt > 0 ? (t.wt * t.finalPct) / 100 : 0), 0);
+  const banked = bankedPct(state.trades);   // % of the start
   const n = closed.length, calls = state.trades.length;
   onReveal(tally, () => {
     stat("calls", calls, v => Math.round(v));
@@ -174,10 +179,11 @@ function paintSummary() {
     stat("bank", banked, pct1, "", banked < 0 ? "loss" : "grad-text", true);
     const cash = cashPct(state.trades), sized = state.trades.filter(t => isOpen(t) && t.wt > 0);
     stat("cash", cash, v => +v.toFixed(1) + "%");
-    $("#cashBar").setAttribute("aria-label", sized.map(t => `${t.ticker} ${+t.wt}%`).concat(`cash ${+cash.toFixed(1)}%`).join(", "));
+    tally.querySelector(".t-cash .t-foot").textContent = `Of the ${usd0(potUsd())} pot, not in any call`;   // percent first, dollars small
+    $("#cashBar").setAttribute("aria-label", sized.map(t => `${t.ticker} ${+sz(t).toFixed(1)}%`).concat(`cash ${+cash.toFixed(1)}%`).join(", "));
     const part = (cls, flex) => `<i class="${cls}" style="flex:${flex}"></i>`;
-    $("#cashBar").innerHTML = sized.map(t => part("", +t.wt)).join("") + (cash > 0 ? part("free", cash) : "");
-    $("#cashKey").innerHTML = sized.map(t => `<span><i></i>${esc(t.ticker)} <b>${+(+t.wt).toFixed(1)}%</b></span>`).join("") +
+    $("#cashBar").innerHTML = sized.map(t => part("", sz(t))).join("") + (cash > 0 ? part("free", cash) : "");
+    $("#cashKey").innerHTML = sized.map(t => `<span><i></i>${esc(t.ticker)} <b>${+sz(t).toFixed(1)}%</b></span>`).join("") +
       `<span><i class="free"></i>Cash <b>${+cash.toFixed(1)}%</b></span>`;
     $("#rateBar").style.setProperty("--w", n ? won.length / n : 0);
     const pips = closed.slice(0, 40).map(t => t.finalPct > 0).sort((a, b) => b - a);
@@ -258,7 +264,7 @@ list.addEventListener("click", (e) => {
   const s = e.target.closest("[data-share]");
   if (s) {   // the manager's picture of this call for WhatsApp
     const t = byId.get(s.dataset.share);
-    if (t) import("./card.js?v=40").then(m => m.shareCall(t)).catch(err => console.error("share card failed:", err));
+    if (t) import("./card.js?v=41").then(m => m.shareCall(t)).catch(err => console.error("share card failed:", err));
     return;
   }
   const b = e.target.closest(".call-head");

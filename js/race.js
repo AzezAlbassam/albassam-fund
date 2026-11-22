@@ -4,15 +4,15 @@
 // Everything re-renders from live(): trades, pot and quotes.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=40";
-import { live, state } from "./live.js?v=40";
-import { statPct } from "./roi.js?v=40";
-import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=40";
-import { raceChart, bindRaceControls } from "./chart.js?v=40";
+import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=41";
+import { live, state } from "./live.js?v=41";
+import { statPct, share } from "./roi.js?v=41";
+import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=41";
+import { raceChart, bindRaceControls } from "./chart.js?v=41";
 
 const $ = (id) => document.getElementById(id);
-const FAIL = "The race could not load right now. Try again in a minute.";
-const EMPTY = "The race starts with the first sized call.";
+const FAIL = "Analytics could not load right now. Try again in a minute.";
+const EMPTY = "Nothing to show until the first sized call.";
 // [key, name]: our fund is drawn solid ink, gold dashed grey, the S&P dotted grey (site.css)
 const SERIES = [["fund", "Our fund"], ["gold", "Gold"], ["spx", "S&amp;P 500"], ["tasi", "TASI"]];
 const RANGES = { "1M": 22, "3M": 64 };   // ponytail: mirrors chart.js RANGES (the chart does not expose its slice)
@@ -28,7 +28,7 @@ let race = null, status = "loading", key = "", seq = 0;
 /* ---------- header: the line maze, our fund's path climbing out of it ---------- */
 let maze = null;
 const phone = innerWidth < 720;
-import("./maze.js?v=40")
+import("./maze.js?v=41")
   .then(m => m.startMaze($("rhMaze"), { labelsEl: $("rhLabels"), cols: phone ? 8 : 12, rows: phone ? 7 : 9, seed: 20260712, spin: 0.035, fit: phone ? 0.92 : 1 }))
   .then(mz => { maze = mz; feedMaze(); })
   .catch(err => console.warn("3D maze unavailable:", err));
@@ -40,9 +40,9 @@ async function onLive(what) {
   if (!state.ready) return;                         // settings can land before the first trades
   bars();
   const sized = state.trades.filter(t => t.wt > 0 && t.opened);
-  const k = JSON.stringify([state.pot, sized.map(t => [t.ticker, t.status, t.opened, t.closed, t.finalPct, t.wt, t.txns])]);
-  const quotesMatter = what === "quotes" && sized.some(t => t.status === "active");
-  if (k === key && !quotesMatter) return;
+  const live = [...sized.filter(t => t.status === "active").map(t => state.quotes[t.ticker]?.c), state.quotes.GLD?.c, state.quotes[".SPX"]?.c];
+  const k = JSON.stringify([state.pot, sized.map(t => [t.ticker, t.status, t.opened, t.closed, t.finalPct, t.wt, t.txns]), live]);
+  if (k === key) return;
   key = k;
   const my = ++seq;
   if (!sized.length) { race = null; status = "empty"; chart.set(null); return paint(); }
@@ -59,7 +59,7 @@ function paint() {
   observeReveals(document);
 }
 
-/* ---------- the podium: three 3D towers ---------- */
+/* ---------- the podium: four 3D towers ---------- */
 let towers = null;
 function podium() {
   if (!towers || status !== "ok") return;
@@ -74,14 +74,14 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=40");
+    const { startTowers } = await import("./bars3d.js?v=41");
     towers = await startTowers($("pdCanvas"), $("pdLabels"), { yaw0: -0.45, pitch: 0.35, spin: 0.06 });
     podium();
   } catch (err) { console.warn("3D podium unavailable:", err); $("pdStage").classList.add("fallback"); }
 }, { rootMargin: "500px 0px" }).observe($("pdStage"));
 
 const note = (msg) => `<p class="state-note${status === "loading" ? " busy" : ""}">${msg}</p>`;
-const stateMsg = () => status === "empty" ? EMPTY : status === "failed" ? FAIL : "Loading the race…";
+const stateMsg = () => status === "empty" ? EMPTY : status === "failed" ? FAIL : "Loading…";
 
 /* ---------- headline strip under the lede ---------- */
 function strip() {
@@ -118,7 +118,8 @@ function legend() {
 function numbers() {
   const box = $("nbBox");
   if (status !== "ok") { box.innerHTML = note(stateMsg()); $("nbSpan").textContent = ""; return; }
-  const S = Object.fromEntries(SERIES.map(([k]) => [k, seriesStats(race.days, race[k])]));
+  const own = race.tasiOwn?.v.length > 2 ? race.tasiOwn : null;   // TASI's own Sun-Thu sessions
+  const S = Object.fromEntries(SERIES.map(([k]) => [k, k === "tasi" && own ? seriesStats(own.days, own.v) : seriesStats(race.days, race[k])]));
   $("nbSpan").textContent = `${dayYear(race.first)} to ${dayYear(race.days[race.days.length - 1])}`;
   const pc = (v) => Math.abs(v) < 0.05 ? `<span class="v">0.0%</span>` : `<span class="v ${v < 0 ? "neg" : "pos"}">${pct1(v)}</span>`;
   const dayCell = (x) => x ? `${pc(x.pct)}<small>${day(x.d)}</small>` : `<span class="muted">Too early</span>`;
@@ -152,6 +153,7 @@ function months() {
     <tbody>${SERIES.map(([k, name], r) => `<tr class="${k}"><th scope="row">${name}</th>${M.map((m, c) =>
       `<td class="${m[k] < 0 ? "neg" : ""}" style="--a:${tint(m[k])};--i:${r + c}">${pct1(m[k])}</td>`).join("")}</tr>`).join("")}</tbody>
   </table>`;
+  if (!box._end) { box._end = true; box.scrollLeft = box.scrollWidth; }   // phones: open on the latest month; later repaints keep the viewer's place
   playOnce(box.closest("[data-reveal]"));
 }
 
@@ -160,7 +162,8 @@ function bars() {
   const el = $("leadBars");
   const rows = state.trades
     .filter(t => t.wt > 0 && (t.status === "closed" || t.status === "active"))
-    .map(t => { const p = statPct(t, state.quotes); return p == null ? null : { t, p, pts: t.wt / 100 * p }; })
+    // an open call's share is of today's pot, a closed call's of the pot it was sized on
+    .map(t => { const p = statPct(t, state.quotes), w = share(t, state.trades); return p == null ? null : { t, p, w, pts: w / 100 * p }; })
     .filter(Boolean)
     .sort((a, b) => b.p - a.p);   // the return leads; what it added to the pot comes second
   if (!rows.length) { el.innerHTML = `<li class="state-note">${EMPTY}</li>`; return; }
@@ -170,7 +173,7 @@ function bars() {
   el.innerHTML = rows.map((r, i) => `
     <li class="lb-row${r.p < 0 ? " loss" : ""}" style="--i:${Math.min(i, 12)}">
       <div class="lb-name">${logoHtml(r.t)}<span><b>${esc(r.t.ticker)}</b>
-        <small>${+(+r.t.wt).toFixed(1)}% of pot${r.t.status === "active" ? " · open" : ""}</small></span></div>
+        <small>${+r.w.toFixed(1)}% of pot${r.t.status === "active" ? " ·&nbsp;open" : ""}</small></span></div>
       <div class="lb-track" aria-hidden="true"><i class="lb-bar" style="width:${(Math.abs(r.p) / span * 100).toFixed(2)}%;--d:${Math.min(i, 12) * 70}ms"></i></div>
       <div class="lb-val"><b>${pct1(r.p)}</b><small>${pct1(r.pts)} on the pot</small></div>
     </li>`).join("");
@@ -204,4 +207,5 @@ setTimeout(() => {
   status = "failed";
   chart.fail("Still connecting to the fund. Check your connection, then refresh.");
   paint();
+  $("leadBars").innerHTML = `<li class="state-note">${FAIL}</li>`;   // bars() only runs once the feed is ready
 }, 15000);

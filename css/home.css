@@ -25,6 +25,7 @@
 .hero-big .num{font-size:clamp(64px,11vw,168px);letter-spacing:-.06em;font-weight:600}
 .hero-sub{margin:14px 0 0;font:400 clamp(16px,1.7vw,21px)/1.5 var(--body);color:var(--text-secondary)}
 .hero-sub b{font:500 1em var(--mono)}
+.hero-sub .spx{color:var(--text-muted)}   /* --spx is a chart-line grey: too faint for text (2.5:1) */
 .dotsep{opacity:.5;margin:0 4px}
 .nw{white-space:nowrap}
 .hero-inner .btn-row{margin-top:30px}
@@ -35,7 +36,7 @@
   .hero{justify-content:flex-end}
   .hero-shade{background:linear-gradient(0deg,var(--canvas) 0%,rgba(var(--canvas-rgb),.94) 40%,rgba(var(--canvas-rgb),.2) 62%,rgba(var(--canvas-rgb),0) 100%)}
   .hero-inner{padding-top:46vh}
-  .hero-inner .btn-row .btn{flex:1}
+  .hero-inner .btn-row .btn{flex:1;padding:0 14px;text-align:center}
 }
 
 /* ---------- bento scoreboard ---------- */
@@ -144,12 +145,17 @@
 .pos-card dl{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin:18px 0 0}
 .pos-card dt{font:500 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted)}
 .pos-card dd{margin:5px 0 0;font:500 14px var(--mono)}
-/* the cash card: the pot as one bar, ink for what is invested, paper for cash */
+/* the cash card: the pot as one bar, ink for what is invested, paper for cash,
+   named in a key under it (as on Portfolio; own names: .t-bar is the top calls' bar here) */
 .cash-card .logo.ph{font-family:var(--mono)}
-.cash-bar{display:flex;gap:3px;height:44px;margin-top:22px}
-.cash-bar i{min-width:0;display:grid;place-items:center;background:var(--ink);color:var(--paper);border-radius:3px;overflow:hidden;font:500 11px/1 var(--mono);letter-spacing:.06em;font-style:normal}
-.cash-bar i.free{background:var(--paper);color:var(--ink);border:1px dashed var(--ink)}
-.cash-bar span{padding:0 6px;white-space:nowrap}
+.cash-bar{display:flex;gap:3px;height:14px;margin-top:22px}
+.cash-bar i,.cash-key i{min-width:3px;background:var(--ink);border-radius:3px}
+.cash-bar i.free,.cash-key i.free{background:var(--paper);border:1px dashed var(--ink);box-sizing:border-box}
+.cash-key{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:12px;font:500 12.5px/1.2 var(--mono);letter-spacing:.02em;color:var(--ink)}
+.cash-key span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.cash-key i{width:10px;height:10px;border-radius:2px}
+.cash-key b{font-weight:500;color:var(--text-secondary)}
+.cash-pot{margin-top:12px}
 
 /* ---------- the wire ---------- */
 .wire-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr);gap:clamp(28px,6vw,80px);align-items:start}

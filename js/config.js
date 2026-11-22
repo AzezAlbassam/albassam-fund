@@ -28,7 +28,7 @@ export const PRICE_REFRESH_MS = 15000;   // one small request for all open calls
 // with ?demo=1 in the URL (handy for testing design changes
 // without touching the real database).
 export const DEMO = firebaseConfig.apiKey.startsWith("__") ||
-  new URLSearchParams(location.search).has("demo");
+  new URLSearchParams(location.search).get("demo") === "1";   // ?demo=0 or a bare ?demo stays live
 
 // Build number, read from this module's own ?v= query — single
 // source of truth, bumped by the deploy step.

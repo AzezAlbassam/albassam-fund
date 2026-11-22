@@ -6,12 +6,12 @@
 // ============================================================
 
 import { initShell, observeReveals, onReveal, roll, countTo, reducedMotion, usd0, pct1, pctBig, pts1, shortUsd,
-         day, esc, pctClass, logoHtml, daysBetween, sessionWord } from "./shell.js?v=40";
-import { live, state } from "./live.js?v=40";
-import { loadRace, raceSummary } from "./series.js?v=40";
-import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=40";
-import { simulate, statPct, derive, blendedPct, cashPct } from "./roi.js?v=40";
-import { watchNews } from "./news.js?v=40";
+         day, esc, pctClass, logoHtml, daysBetween, sessionWord } from "./shell.js?v=41";
+import { live, state } from "./live.js?v=41";
+import { loadRace, raceSummary } from "./series.js?v=41";
+import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=41";
+import { simulate, statPct, derive, blendedPct, cashPct, share, potK } from "./roi.js?v=41";
+import { watchNews } from "./news.js?v=41";
 
 const $ = (s, r = document) => r.querySelector(s);
 initShell();
@@ -20,7 +20,7 @@ initShell();
 const media = $("#heroMedia");
 let maze = null;
 const phone = innerWidth < 720;
-import("./maze.js?v=40")
+import("./maze.js?v=41")
   .then(m => m.startMaze($("#maze"), { labelsEl: $("#mzLabels"), cols: phone ? 9 : 16, rows: phone ? 11 : 11, fit: phone ? 1.12 : 1 }))
   .then(mz => { maze = mz; feedMaze(); onHeroScroll(); })
   .catch(err => { console.warn("3D maze unavailable:", err); media.classList.add("fallback"); });
@@ -40,8 +40,8 @@ document.querySelectorAll(".hero-title .hl").forEach(w => {
 });
 
 /* =================== DATA =================== */
-let race = null, raceKey = "", raceFailed = false, recordKey = "", tickerKey = "", orbit = null, orbitKey = "";
-const RACE_FAIL = "The race could not load right now. Try again in a minute.";
+let race = null, raceKey = "", raceFailed = false, retryT = 0, recordKey = "", tickerKey = "", orbit = null, orbitKey = "";
+const RACE_FAIL = "The chart could not load right now. Try again in a minute.";
 const chart = raceChart($("#raceChart"));
 chart.view({ bench: "both" });
 bindRaceControls($("#raceControls"), chart);
@@ -50,7 +50,7 @@ $("#raceControls").addEventListener("click", () => setTimeout(legend, 0));
 async function refreshRace() {
   const openSized = state.trades.filter(t => t.status === "active" && t.wt > 0);
   const key = JSON.stringify([state.pot, state.trades.map(t => [t.id, t.ticker, t.status, t.wt, t.finalPct, t.opened, t.closed, t.txns]),
-    openSized.map(t => state.quotes[t.ticker]?.c)]);
+    openSized.map(t => state.quotes[t.ticker]?.c), state.quotes.GLD?.c, state.quotes[".SPX"]?.c]);   // live gold and S&P (series.js) move the leads too
   if (key === raceKey) return;
   raceKey = key;
   const r = await loadRace(state.trades, state.pot, state.quotes);
@@ -59,7 +59,9 @@ async function refreshRace() {
   raceFailed = !race && state.trades.some(t => t.wt > 0);
   chart.set(race);
   feedMaze();
-  if (raceFailed) chart.fail(RACE_FAIL);
+  clearTimeout(retryT);
+  // a failed load tries again in a minute: off-hours no price tick would ever retry it
+  if (raceFailed) { chart.fail(RACE_FAIL); retryT = setTimeout(() => { raceKey = ""; refreshRace(); }, 60000); }
   legend(); renderScore(); renderBars(); renderForecast();
 }
 
@@ -110,14 +112,14 @@ function legend() {
     `<span class="muted">as of ${day(s.asOf)}</span>`;
 }
 
-/* ---------- top calls (by what they added to the pot) ---------- */
+/* ---------- top calls (by the return each row prints, the same order as Analytics) ---------- */
 function renderTop() {
   const rows = state.trades.filter(t => t.wt > 0).map(t => ({ t, p: pctOf(t) })).filter(r => r.p != null)
-    .map(r => ({ ...r, pts: r.t.wt / 100 * r.p })).sort((a, b) => b.pts - a.pts).slice(0, 5);
-  const max = Math.max(...rows.map(r => Math.abs(r.pts)), 1e-9);
+    .sort((a, b) => b.p - a.p).slice(0, 5);
+  const max = Math.max(...rows.map(r => Math.abs(r.p)), 1e-9);
   const list = $("#topList");
   list.innerHTML = rows.map(r => `<li>${logoHtml(r.t)}<div class="t-name"><b>${esc(r.t.ticker)}</b><small>${esc(r.t.name || "")}</small>
-      <div class="t-bar"><i style="--w:${(Math.abs(r.pts) / max).toFixed(3)}"></i></div></div>
+      <div class="t-bar"><i style="--w:${(Math.abs(r.p) / max).toFixed(3)}"></i></div></div>
       <span class="t-pct ${pctClass(r.p)}">${pct1(r.p)}</span></li>`).join("") || `<li class="muted">No sized calls yet.</li>`;
   onReveal($(".b-top").closest("[data-stagger]"), () => requestAnimationFrame(() => list.classList.add("in")));
 }
@@ -178,21 +180,23 @@ function renderRecord() {
       <div class="cc-top">${logoHtml(t)}<div><b>${esc(t.ticker)}</b><small>${esc(t.name || "")}</small></div></div>
       <p class="cc-pct ${pctClass(t.finalPct)}">${pct1(t.finalPct)}</p>
       <p class="cc-meta">${day(t.opened)} → ${day(t.closed)}${t.wt > 0 ? " · " + t.wt + "% of pot" : ""}</p>
-      <p class="cc-gain ${pctClass(t.finalPct)}">${t.wt > 0 ? pct1(t.wt * t.finalPct / 100) + " on the pot" : "Unsized"}</p></li>`;
+      <p class="cc-gain ${pctClass(t.wt > 0 ? t.wt * t.finalPct / 100 : null)}">${t.wt > 0 ? pct1(t.wt * t.finalPct / 100) + " on the pot" : "Unsized"}</p></li>`;
   }).join("") || `<li class="muted">Closed calls land here with their result locked in.</li>`;
   row.setAttribute("data-stagger", "");
   observeReveals(row.parentElement);
 }
 
 /* ---------- on the book ---------- */
-// What is not invested: the pot as one bar, a slice per open call, the rest cash.
+// What is not invested: the pot as one bar, a slice per open call, the rest
+// cash, named in a key under it (a small call's slice is too thin for its name).
 function cashCard(active) {
-  const cash = cashPct(state.trades), sized = active.filter(t => t.wt > 0);
+  const cash = cashPct(state.trades), sized = active.filter(t => t.wt > 0).map(t => [t, share(t, state.trades)]);
   return `<article class="glass pos-card cash-card" data-reveal>
     <div class="top"><span class="logo ph" aria-hidden="true">$</span><div><div class="tk">Remaining cash</div><div class="nm">Not in any call</div></div>
       <div class="roi"><b>${+cash.toFixed(1)}%</b><small>of the pot</small></div></div>
-    <div class="cash-bar" role="img" aria-label="${sized.map(t => `${esc(t.ticker)} ${+t.wt}%`).join(", ")}, cash ${+cash.toFixed(1)}%">${sized.map(t =>
-      `<i style="flex:${+t.wt}"><span>${esc(t.ticker)}</span></i>`).join("")}${cash > 0 ? `<i class="free" style="flex:${cash}"><span>Cash</span></i>` : ""}</div>
+    <div class="cash-bar" aria-hidden="true">${sized.map(([, w]) => `<i style="flex:${w}"></i>`).join("")}${cash > 0 ? `<i class="free" style="flex:${cash}"></i>` : ""}</div>
+    <div class="cash-key">${sized.map(([t, w]) => `<span><i></i>${esc(t.ticker)} <b>${+w.toFixed(1)}%</b></span>`).join("")}<span><i class="free"></i>Cash <b>${+cash.toFixed(1)}%</b></span></div>
+    <p class="s-foot cash-pot">Of the ${usd0(state.pot * potK(state.trades))} pot</p>
   </article>`;
 }
 function renderBook(liveOnly) {
@@ -216,7 +220,7 @@ function renderBook(liveOnly) {
       <div class="top">${logoHtml(t)}<div><div class="tk">${esc(t.ticker)}</div><div class="nm">${esc(t.name)}</div></div>
         <div class="roi"><b data-f="pct" class="${pctClass(p)}">${pct1(p)}</b><small data-f="today">${q?.dp != null ? pct1(q.dp) + " " + sessionWord(q) : ""}</small></div></div>
       <dl><div><dt>Avg cost</dt><dd>$${d.avgCost.toFixed(2)}</dd></div><div><dt>Now</dt><dd data-f="px">${q ? "$" + q.c.toFixed(2) : "…"}</dd></div>
-        <div><dt>Share of pot</dt><dd>${t.wt > 0 ? t.wt + "%" : "Unsized"}</dd></div><div><dt>Opened</dt><dd>${day(t.opened)}</dd></div></dl>
+        <div><dt>Share of pot</dt><dd>${t.wt > 0 ? +share(t, state.trades).toFixed(2) + "%" : "Unsized"}</dd></div><div><dt>Opened</dt><dd>${day(t.opened)}</dd></div></dl>
     </article>`;
   }).join("") + cashCard(active) : `<div class="glass glow book-empty" data-reveal>
       <div><h3>All cash.</h3><p>Every gain is banked. The next call shows up here the minute it opens.</p></div></div>`;
@@ -226,12 +230,12 @@ function renderBook(liveOnly) {
 /* ---------- the 3D orbit, started when its section comes near ---------- */
 const stage = $("#orbitStage");
 function renderOrbitCard(t) {
-  const p = pctOf(t), card = $("#orbitCard");
+  const p = pctOf(t), w = share(t, state.trades), card = $("#orbitCard");
   card.innerHTML = `<div class="oc-top">${logoHtml(t)}<div><b>${esc(t.ticker)}</b><small>${esc(t.name || "")}</small></div>
       <span class="oc-pct ${pctClass(p)}">${pct1(p)}</span></div>
     <dl><div><dt>Dates</dt><dd>${day(t.opened)} → ${t.status === "active" ? "now" : day(t.closed)}</dd></div>
-      <div><dt>Pot share</dt><dd>${t.wt > 0 ? t.wt + "%" : "Unsized"}</dd></div>
-      <div><dt>On the pot</dt><dd class="${pctClass(p)}">${t.wt > 0 && p != null ? pct1(t.wt * p / 100) : "…"}</dd></div></dl>`;
+      <div><dt>Pot share</dt><dd>${w > 0 ? +w.toFixed(2) + "%" : "Unsized"}</dd></div>
+      <div><dt>On the pot</dt><dd class="${pctClass(w > 0 && p != null ? w * p / 100 : null)}">${w > 0 && p != null ? pct1(w * p / 100) : "…"}</dd></div></dl>`;
 }
 function feedOrbit() {
   if (!orbit || !state.ready) return;
@@ -244,7 +248,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startOrbit } = await import("./orbit.js?v=40");
+    const { startOrbit } = await import("./orbit.js?v=41");
     orbit = await startOrbit($("#orbit"), $("#orbitLabels"), renderOrbitCard);
     feedOrbit();
   } catch (err) {
@@ -307,7 +311,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=40");
+    const { startTowers } = await import("./bars3d.js?v=41");
     fc.towers = await startTowers($("#fcCanvas"), $("#fcLabels"));
     renderForecast();
   } catch (err) { console.warn("3D forecast unavailable:", err); $("#fcStage").classList.add("fallback"); }
@@ -315,9 +319,10 @@ new IntersectionObserver(async ([e], obs) => {
 
 /* =================== LIVE FEED (last: the device cache calls back at once) =================== */
 live((what) => {
+  if (!state.ready) return;   // settings can land before the first trades: nothing to draw yet
   if (what === "quotes") {
     renderBook(true); renderScore(); renderTicker(); feedOrbit();
-    if (state.trades.some(t => t.status === "active" && t.wt > 0)) refreshRace();
+    refreshRace();   // its key skips a tick that moves nothing (open calls, gold, S&P)
     return;
   }
   renderScore(); renderBook(); renderRecord(); renderTicker(); feedOrbit();
@@ -330,4 +335,12 @@ live((what) => {
   chart.fail(RACE_FAIL);
   $("#newsList").innerHTML = `<div class="empty">The wire could not load right now.</div>`;
 });
-setTimeout(() => { if (!state.ready) chart.fail("Still connecting to the fund. Check your connection, then refresh."); }, 15000);
+setTimeout(() => {
+  if (state.ready) return;
+  const msg = "Still connecting to the fund. Check your connection, then refresh.";
+  chart.fail(msg);
+  const live = $("[data-liveline]");   // the first screen too: its first text node only, so a late snapshot still fills the spans
+  if (live?.firstChild?.nodeType === 3) live.firstChild.textContent = "Still connecting to the fund. ";
+  $("#bookList .muted").textContent = msg;   // in place: a new data-reveal card would stay hidden
+  $("#newsList").innerHTML = `<div class="empty">${msg}</div>`;
+}, 15000);

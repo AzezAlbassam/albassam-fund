@@ -3,7 +3,9 @@ name: market data
 # site so the browser never needs a CORS proxy for history.
 on:
   schedule:
-    - cron: "30 12 * * 1-5"   # before the New York open: splits show up here
+    # GitHub starts scheduled runs 2-8 h late, so the split-morning runs go out
+    # early enough to land before the 14:30 UTC open
+    - cron: "17 6,9 * * 1-5"
     - cron: "5 17 * * 1-5"    # midday New York
     - cron: "20 21 * * 1-5"   # after the close
   workflow_dispatch:
@@ -19,5 +21,5 @@ jobs:
       - run: |
           git config user.name "market-data bot"
           git config user.email "actions@users.noreply.github.com"
-          git add data/market.json data/splits.json
+          git add data/market.json data/splits.json data/trades.json
           git diff --cached --quiet || (git commit -m "market data" && git push)

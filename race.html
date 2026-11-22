@@ -23,13 +23,24 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://firestore.googleapis.com">
-<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin>
-<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
+<!-- every CDN module is pinned by sha384. These two preloads carry their own: the importmap below does not cover a preload above it. A version bump needs new hashes (curl -sL URL | openssl dgst -sha384 -binary | openssl base64 -A): a stale Firebase one leaves the page with no data -->
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin integrity="sha384-JU5BZoPLFT50NKsen0cKt0RTuYeiJ8LaXWA97AZ+JjLppaQ72oIFUVre0Vb/MBYO">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin integrity="sha384-4945sCngUQDV87Ya/YMj0C/CtNaGKMyhUP6ilixT6PaLNU/Wfb64r91sLpw+uD/q">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/site.css?v=40">
-<link rel="stylesheet" href="css/race.css?v=40">
+<link rel="stylesheet" href="css/site.css?v=41">
+<link rel="stylesheet" href="css/race.css?v=41">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"},
+"integrity":{
+"https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js":"sha384-JU5BZoPLFT50NKsen0cKt0RTuYeiJ8LaXWA97AZ+JjLppaQ72oIFUVre0Vb/MBYO",
+"https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js":"sha384-4945sCngUQDV87Ya/YMj0C/CtNaGKMyhUP6ilixT6PaLNU/Wfb64r91sLpw+uD/q",
+"https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js":"sha384-zD+VnXMUMWCArv4u3Gxh8to370Q7NeoMtDYNNhnw8711mv1amoE8p4oDmdc7d7xy",
+"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js":"sha384-GY5FqjttLCFRt/McQbyaVdCk2O1IQtOeX8Py6NfD89BIAsIyJFRl4UgSXrk2vXAk",
+"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/lines/Line2.js":"sha384-svIqR2W/RlXb3d4T+bDn3JO+LXLbacA7GpMAUDJxTOFyZmVogvDRaOS7KZBRxcxc",
+"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/lines/LineGeometry.js":"sha384-nfFqbe33KO97I7jZXjW73quBqqskqqj64WZycLNDzn0GGGI3aoWLZzuy8i0jeYmU",
+"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/lines/LineSegments2.js":"sha384-nm+9Od/cYIb15jGaA1U2Geoo18K/i9fF2fZ4KbI2rZydtfYxqwtWRlbvdVfiECU5",
+"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/lines/LineSegmentsGeometry.js":"sha384-2bbjHgEUXo9c3VW3OaZV638VYLXKhlNhNStU2D1Jm77zamWSQVYZak2p/Z0bZrmh",
+"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/lines/LineMaterial.js":"sha384-bLpiIpNrFJ+EMb4Upzkap/Bc9Ul2wLoUMEfFm0PmZfyywMUYUsc5X98AuAYwwjq1"}}</script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -63,7 +74,7 @@
         <h1 id="rhTitle"><span class="w" style="--i:0">Every</span> <span class="w" style="--i:1">day,</span> <span class="w" style="--i:2">against</span> <span class="w grad-text" style="--i:3">the bar.</span></h1>
         <p class="lede">Our fund against gold, the S&amp;P 500 and TASI, from the same starting pot.</p>
         <div class="rh-strip" id="strip" data-state="loading">
-          <p class="rh-since" id="since">Loading the race…</p>
+          <p class="rh-since" id="since">Loading…</p>
           <dl>
             <div class="lane fund tilt"><dt>Our fund</dt><dd class="num grad-text" data-k="fund"><span class="sk"></span></dd></div>
             <div class="lane gold tilt"><dt>Gold</dt><dd class="num gold" data-k="gold"><span class="sk"></span></dd></div>
@@ -76,13 +87,13 @@
   </section>
 
   <!-- the big chart -->
-  <section class="section rc" aria-label="The race chart">
+  <section class="section rc" aria-label="Performance chart">
     <div class="wrap">
       <div class="glass glow rc-panel" data-reveal>
         <div class="race-controls" id="raceControls">
           <div class="seg" role="group" aria-label="Compare with">
             <button type="button" data-bench="gold" aria-pressed="true">vs Gold</button>
-            <button type="button" data-bench="spx" aria-pressed="false">vs S&amp;P 500</button>
+            <button type="button" data-bench="spx" aria-pressed="false">vs S&amp;P</button>
             <button type="button" data-bench="tasi" aria-pressed="false">vs TASI</button>
             <button type="button" data-bench="both" aria-pressed="false">All</button>
           </div>
@@ -102,17 +113,17 @@
     </div>
   </section>
 
-  <!-- the podium: our fund, gold and the S&P 500 as 3D towers -->
+  <!-- the podium: our fund, gold, the S&P 500 and TASI as 3D towers -->
   <section class="section pd" aria-labelledby="pdTitle">
     <div class="wrap pd-grid">
       <div>
         <p class="kicker" data-reveal>The podium</p>
-        <h2 id="pdTitle" data-reveal>Same start, three heights.</h2>
+        <h2 id="pdTitle" data-reveal>Same start, four heights.</h2>
         <p class="lede" data-reveal>Each tower is the return since the first call, on its own path. Drag to spin it.</p>
       </div>
       <div class="glass glow pd-card" data-reveal>
         <div class="pd-stage" id="pdStage">
-          <canvas id="pdCanvas" role="img" aria-label="3D podium: our fund, gold and the S&amp;P 500"></canvas>
+          <canvas id="pdCanvas" role="img" aria-label="3D podium: our fund, gold, the S&amp;P 500 and TASI"></canvas>
           <div class="t3-labels" id="pdLabels" aria-hidden="true"></div>
         </div>
       </div>
@@ -158,7 +169,7 @@
       <div class="split-head" data-reveal>
         <p class="kicker">Attribution</p>
         <h2 id="lbTitle">Every call, by its return.</h2>
-        <p class="lede">Each bar is one call's return. Underneath: what it added to the pot, given its share.</p>
+        <p class="lede">Each bar is one call's return. Underneath: what it added to the pot, given its share. Open calls count on today's pot, closed calls on the pot they were sized on.</p>
       </div>
       <ol class="lb glass" id="leadBars" data-reveal role="list">
         <li class="state-note busy">Loading the calls…</li>
@@ -194,7 +205,7 @@
         <b>Albassam Fund</b>
       </a>
       <p>Albassam Fund. A family record of every call since July 4, 2026.</p>
-      <p>Prices from Yahoo Finance and may be delayed.</p>
+      <p>Prices from CNBC and Yahoo Finance; they may be delayed.</p>
       <p class="legal"><b>Not investment advice.</b> This site is a record of our own trades, shared for information only. It is not a recommendation to buy or sell anything. Past results do not promise future results; you can lose money. Decide for yourself.
         <span lang="ar" dir="rtl"><b>ليست توصية استثمارية.</b> هذا الموقع سجل لصفقاتنا الخاصة ويُعرض للاطلاع فقط، وليس دعوة للشراء أو البيع. النتائج السابقة لا تضمن النتائج القادمة، والخسارة واردة. القرار قرارك.</span></p>
       <p><button class="install-link" type="button" data-install>Get the app on your phone</button></p>
@@ -206,6 +217,6 @@
   </div>
 </footer>
 
-<script type="module" src="js/race.js?v=40"></script>
+<script type="module" src="js/race.js?v=41"></script>
 </body>
 </html>

@@ -11,7 +11,7 @@
 // to a letter badge if a logo doesn't exist.
 // ============================================================
 
-import { DEMO, FINNHUB_KEY, PRICE_REFRESH_MS } from "./config.js?v=40";
+import { DEMO, FINNHUB_KEY, PRICE_REFRESH_MS } from "./config.js?v=41";
 
 const USE_FINNHUB = !FINNHUB_KEY.startsWith("__");
 const FINNHUB = "https://finnhub.io/api/v1";
@@ -46,7 +46,8 @@ export function savedSeries() {
   if (!saved || Date.now() - savedAt > 6e5) {
     savedAt = Date.now();
     saved = fetch(new URL("../data/market.json?t=" + Math.floor(savedAt / 6e5), import.meta.url))
-      .then(r => (r.ok ? r.json() : {})).then(j => j.series || {}).catch(() => ({}));
+      .then(r => (r.ok ? r.json() : Promise.reject(r.status))).then(j => j.series || {})
+      .catch(() => { saved = null; return {}; });   // failed: the next call asks again instead of keeping {} for 10 min
   }
   return saved;
 }
@@ -60,13 +61,13 @@ async function refresh() {
     const h = s[tk];
     if (quotes[tk] || !h?.c?.length) continue;
     const c = h.c[h.c.length - 1], pc = h.c[h.c.length - 2] ?? null;
-    quotes[tk] = { c, pc, dp: pc ? ((c - pc) / pc) * 100 : null, saved: true };
+    quotes[tk] = { c, pc, dp: pc ? ((c - pc) / pc) * 100 : null, saved: true, d: h.d?.[h.d.length - 1] };
     seeded = true;
   }
   if (seeded) onUpdate(quotes);
   const live = await cnbcQuotes(tickers);   // one request for every ticker
   await Promise.all(tickers.map(async (tk) => {
-    const q = live[tk] || await fallbackQuote(tk);
+    const q = live[tk] || (tk.startsWith(".") ? null : await fallbackQuote(tk));   // ".SPX" is CNBC-only
     if (q) quotes[tk] = q;
   }));
   onUpdate(quotes);
@@ -103,10 +104,11 @@ export function cnbcQuote(q) {
   const last = num(q?.last);
   if (q?.code !== 0 || !(last > 0)) return null;
   const x = q.ExtendedMktQuote, xl = num(x?.last);
+  // d: the New York session this price belongs to (the race gives a newer one its own day)
   if (xl > 0 && q.curmktstatus !== "REG_MKT")
-    return { c: xl, pc: last, dp: ((xl - last) / last) * 100, ext: x.type === "PRE_MKT" ? "pre" : "post" };
+    return { c: xl, pc: last, dp: ((xl - last) / last) * 100, ext: x.type === "PRE_MKT" ? "pre" : "post", d: String(x.last_time ?? "").slice(0, 10) };
   const pc = num(q.previous_day_closing);
-  return { c: last, pc, dp: pc ? ((last - pc) / pc) * 100 : num(q.change_pct) };
+  return { c: last, pc, dp: pc ? ((last - pc) / pc) * 100 : num(q.change_pct), d: String(q.last_time ?? "").slice(0, 10) };
 }
 
 // Company name + logo, fetched once when a position is added.
@@ -122,7 +124,8 @@ export async function fetchProfile(ticker) {
       }
     } catch (e) { /* fall through */ }
   }
-  return { name: names[ticker] || "", logo };
+  if (!names[ticker]) await cnbcQuotes([ticker]);   // a past call's ticker was never quoted on this page
+  return { name: names[ticker] || (await savedSeries())[ticker]?.name || "", logo };   // CNBC names no SKYT
 }
 
 // Quick validity check when adding a ticker.
@@ -135,7 +138,7 @@ export async function checkTicker(ticker) {
   const h = (await savedSeries())[ticker];
   if (h?.c?.length) {
     const c = h.c[h.c.length - 1], pc = h.c[h.c.length - 2] ?? null;
-    quotes[ticker] ??= { c, pc, dp: pc ? ((c - pc) / pc) * 100 : null, saved: true };
+    quotes[ticker] ??= { c, pc, dp: pc ? ((c - pc) / pc) * 100 : null, saved: true, d: h.d?.[h.d.length - 1] };
     return true;
   }
   return false;
@@ -167,12 +170,14 @@ export async function proxiedJson(url) {
 async function yahooQuote(tk) {
   const j = await proxiedJson(
     `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(tk)}?interval=1d&range=2d`);
-  const meta = j?.chart?.result?.[0]?.meta;
+  const res = j?.chart?.result?.[0], meta = res?.meta;
   const c = meta?.regularMarketPrice;
   if (c == null) return null;
-  if (meta.shortName || meta.longName) names[tk] = meta.shortName || meta.longName;
-  const pc = meta.chartPreviousClose ?? meta.previousClose ?? null;
-  return { c, pc, dp: pc ? ((c - pc) / pc) * 100 : null };
+  // the bar before the last one: chartPreviousClose is the close BEFORE the 2-day range (two sessions back)
+  const closes = (res.indicators?.quote?.[0]?.close || []).filter(v => v != null);
+  const pc = closes.length > 1 ? closes[closes.length - 2] : meta.chartPreviousClose ?? meta.previousClose ?? null;
+  const d = meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000).toLocaleDateString("en-CA", { timeZone: "America/New_York" }) : undefined;
+  return { c, pc, dp: pc ? ((c - pc) / pc) * 100 : null, d };
 }
 
 /* ----------------------- Finnhub ----------------------- */

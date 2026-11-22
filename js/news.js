@@ -6,8 +6,8 @@
 // same CORS mirrors the price feed uses.
 // ============================================================
 
-import { DEMO } from "./config.js?v=40";
-import { proxiedJson } from "./prices.js?v=40";
+import { DEMO } from "./config.js?v=41";
+import { proxiedJson } from "./prices.js?v=41";
 
 const NEWS_REFRESH_MS = 5 * 60 * 1000;   // headlines refresh every 5 min
 const MAX_PER_TICKER = 3, MAX_TOTAL = 12;
@@ -76,20 +76,25 @@ async function refresh() {
     return;
   }
   const items = DEMO ? demoItems() : await fetchAll();
+  // the mirror failed: headlines already up stay; with none, say so rather than "Quiet"
+  if (!items) { if (!box.querySelector(".news-row")) box.innerHTML = `<div class="empty">The wire could not load right now.</div>`; return; }
   render(box, items);
 }
 
 async function fetchAll() {
   const seen = new Set();
   const all = [];
+  let missed = false;   // a ticker the news mirror never answered for
   await Promise.all(watchlist.map(async (w) => {
     const j = await proxiedJson(
       `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(w.tk)}&newsCount=12&quotesCount=0`);
+    if (!Array.isArray(j?.news)) { missed = true; return; }
     const rel = relevanceRe(w);
     let kept = 0;
-    for (const n of j?.news || []) {
+    for (const n of j.news) {
       if (kept >= MAX_PER_TICKER) break;
-      if (!n.title || !(n.relatedTickers || []).includes(w.tk)) continue;
+      // links come through a free proxy: only web links reach an href
+      if (!n.title || !/^https?:\/\//i.test(n.link || "") || !(n.relatedTickers || []).includes(w.tk)) continue;
       if (!rel.test(n.title)) continue;
       const kind = classify(n.title);
       if (!kind) continue;
@@ -100,7 +105,8 @@ async function fetchAll() {
       kept++;
     }
   }));
-  return all.sort((a, b) => b.t - a.t).slice(0, MAX_TOTAL);
+  // ponytail: "Quiet" only when every ticker was really checked
+  return missed && !all.length ? null : all.sort((a, b) => b.t - a.t).slice(0, MAX_TOTAL);
 }
 
 function render(box, items) {

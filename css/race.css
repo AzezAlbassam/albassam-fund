@@ -143,6 +143,9 @@
 /* no WebGL: a plain drafting grid holds the space */
 .pd-stage.fallback{border-radius:var(--r);background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:32px 32px}
 
+/* five columns (with TASI) need the full width: this table stacks below 1200px */
+@media (max-width:1199px){.nb .split{grid-template-columns:minmax(0,1fr)}.nb .split-head{position:static}}
+
 /* ---------- tablets and phones ---------- */
 @media (max-width:900px){
   .split{grid-template-columns:minmax(0,1fr)}
@@ -166,12 +169,15 @@
   .hm{border-spacing:5px;min-width:calc(84px + var(--m,4) * 66px)}
   .hm col.lab{width:78px}
   .hm tbody th{position:sticky;left:0;z-index:1;background:var(--panel-solid);padding-right:6px;font-size:11px;letter-spacing:.08em}
+  .hm thead td{position:sticky;left:0;z-index:1;background:var(--panel-solid)}
+  .nb-table tbody th,.nb-table thead td{position:sticky;left:0;z-index:1;background-image:linear-gradient(var(--panel-solid),var(--panel-solid))}
   .hm tbody th::before{display:none}
   .hm thead th{padding:4px 8px 2px}
   .hm tbody td{min-width:0;padding:16px 6px;font-size:14px;letter-spacing:-.03em}
   .lb{padding:4px 16px}
   .lb-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name val" "bar bar";gap:12px 14px}
   .lb-name{grid-area:name} .lb-val{grid-area:val} .lb-track{grid-area:bar;height:8px}
+  .lb-name small{white-space:normal}   /* a long "% of pot · open" wraps instead of running under the value */
   .hw-list li::before{font-size:72px}
 }
 /* four lanes in one row are narrower than "+61.9%" on a phone: two by two */

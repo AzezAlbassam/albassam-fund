@@ -3,24 +3,30 @@
 // the S&P 500 from the same starting pot.
 //
 // Fund = the BANKING model used everywhere else (roi.js simulate,
-// monthly_report.py): each call is sized by its "% of pot" (wt).
-// Closed calls bank wt × final %, open calls count wt × live %.
-// Day by day, a call only counts from its open date, is marked at
-// that day's close (buys/sells after that day ignored) and banks
-// its final % from its close date on. Unsized calls don't count.
+// monthly_report.py): each call is sized by its "% of pot", counted in
+// points of the start (roi.js sizePts). Closed calls bank size × final
+// %, open calls count size × live %. Day by day, a call only counts
+// from its open date, at the size it had that day, is marked at that
+// day's close (buys/sells after that day ignored) and banks its final
+// % from its close date on. Unsized calls don't count.
 // Gold = GLD, S&P 500 = ^GSPC, rebased to the pot the day before
 // the first call.
 // ============================================================
 
-import { history, stepper } from "./history.js?v=40";
+import { history, stepper } from "./history.js?v=41";
+import { watchTickers } from "./prices.js?v=41";
+import { DEMO } from "./config.js?v=41";
+import { afterClose, sizePts } from "./roi.js?v=41";
 
 export const GOLD = "GLD", SPX = "^GSPC", TASI = "^TASI.SR";   // TASI: the Saudi market, in SAR (a % is a %)
+const SPX_LIVE = ".SPX";   // CNBC's name for the S&P 500 (TASI has no live source)
 
 // Fetch everything the race needs. Resolves null if no sized calls
 // or the benchmark history could not be loaded.
 export async function loadRace(trades, pot, quotes = {}) {
   const sized = trades.filter(t => t.wt > 0 && t.opened);
   if (!sized.length) return null;
+  if (!DEMO) watchTickers([GOLD, SPX_LIVE], "bench");   // live benchmarks ride in the same single quote request
   const first = sized.reduce((m, t) => (t.opened < m ? t.opened : m), "9999-99-99");
   const tks = [...new Set(sized.map(t => t.ticker))];
   const [gold, spx, tasi, ...hs] = await Promise.all([GOLD, SPX, TASI, ...tks].map(tk => history(tk, first)));
@@ -38,6 +44,14 @@ export function buildRace({ trades, hist, gold, spx, tasi, pot, quotes = {}, fir
   if (i0 === -1) i0 = cal.length;
   const days = cal.slice(Math.max(0, i0 - 1));        // baseline: last close before the first call
   if (!days.length) return null;
+  // The saved closes land after the US close: live prices from a newer
+  // session get their own day, so today's move is never dated yesterday.
+  // ponytail: Finnhub fallback quotes carry no date, so while CNBC is down
+  // and Finnhub answers, the live move sits on the last saved day as before.
+  const lq = tk => (quotes[tk]?.saved ? null : quotes[tk]);
+  const qd = [...trades.filter(t => t.status === "active").map(t => t.ticker), GOLD, SPX_LIVE]
+    .reduce((m, tk) => (lq(tk)?.d > m ? lq(tk).d : m), "");
+  if (qd > days.at(-1)) days.push(qd);
 
   const at = Object.fromEntries(Object.entries(hist).map(([tk, h]) => [tk, stepper(h)]));
   const g = stepper(gold), s = stepper(spx), ta = stepper(tasi);   // TASI trades Sun-Thu: a day it is shut keeps its last close
@@ -51,14 +65,14 @@ export function buildRace({ trades, hist, gold, spx, tasi, pot, quotes = {}, fir
     for (const t of trades) {
       const livePx = now && t.status === "active" ? quotes[t.ticker]?.c : null;
       if (t.opened > d && !(now && (t.status === "closed" || livePx != null))) continue;
-      const w = t.wt / 100;
-      if (t.status === "closed" && (now || (t.closed || t.opened) <= d)) { c += w * (t.finalPct || 0) / 100; continue; }
-      const r = pctAt(t, livePx ?? at[t.ticker]?.(d), now ? "9999-12-31" : d);
-      if (r != null) c += w * r / 100;
+      if (t.status === "closed" && (now || (t.closed || t.opened) <= d)) { c += sizePts(t, trades) * (t.finalPct || 0) / 1e4; continue; }
+      const px = livePx ?? at[t.ticker]?.(d);
+      const r = pctAt(t, px == null ? null : px * afterClose(t), now ? "9999-12-31" : d);
+      if (r != null) c += sizePts(t, trades, now ? null : d) * r / 1e4;   // the size it had that day
     }
     fund.push(pot * (1 + c));
-    goldV.push(pot * g(d) / g0);
-    spxV.push(pot * s(d) / s0);
+    goldV.push(pot * ((now && lq(GOLD)?.c) || g(d)) / g0);
+    spxV.push(pot * ((now && lq(SPX_LIVE)?.c) || s(d)) / s0);
     tasiV.push(pot * (ta(d) ?? ta0) / ta0);
   });
 
@@ -67,7 +81,10 @@ export function buildRace({ trades, hist, gold, spx, tasi, pot, quotes = {}, fir
     if (t.opened >= days[0]) markers.push({ d: t.opened, tk: t.ticker, kind: "open" });
     if (t.status === "closed" && t.closed) markers.push({ d: t.closed, tk: t.ticker, kind: "close", pct: t.finalPct });
   }
-  return { days, fund, gold: goldV, spx: spxV, tasi: tasiV, pot, first, markers };
+  // TASI on its own calendar (Sun-Thu), same base and end as the line: for its stats row only
+  const i1 = Math.max(0, tasi.dates.findLastIndex(d => d <= days[0])), tasiOwn = { days: [], v: [] };
+  tasi.dates.forEach((d, i) => { if (i >= i1 && d <= days.at(-1)) { tasiOwn.days.push(d); tasiOwn.v.push(pot * tasi.closes[i] / tasi.closes[i1]); } });
+  return { days, fund, gold: goldV, spx: spxV, tasi: tasiV, tasiOwn, pot, first, markers };
 }
 
 // A call's blended % on day d, using only its trades up to that day.

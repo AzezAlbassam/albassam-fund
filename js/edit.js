@@ -7,14 +7,15 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=40";
-import { store, purified } from "./store.js?v=40";
-import { addPick, addWt, cashProblem, newPick } from "./cashpick.js?v=40";
-import { live, state } from "./live.js?v=40";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=40";
-import { watchNews } from "./news.js?v=40";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct, lastAdd } from "./roi.js?v=40";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=40";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=41";
+import { store, purified } from "./store.js?v=41";
+import { addPick, addWt, cashProblem, kNow, newPick, potUsd, unreadable } from "./cashpick.js?v=41";
+import { healRecord } from "./owner.js?v=41";
+import { live, state } from "./live.js?v=41";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=41";
+import { watchNews } from "./news.js?v=41";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct, lastAdd, parseNum, share } from "./roi.js?v=41";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=41";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -94,7 +95,7 @@ function cardHtml(t) {
     <dl class="kv">
       <div><dt>Live price</dt><dd data-f="px">${WAIT}</dd></div>
       <div><dt>Avg cost</dt><dd>${money(d.avgCost)}</dd></div>
-      ${t.wt > 0 ? `<div><dt>Pot share</dt><dd>${esc(t.wt)}%</dd></div>
+      ${t.wt > 0 ? `<div><dt>Pot share</dt><dd>${+share(t, state.trades).toFixed(2)}%</dd></div>
       <div><dt>On the pot</dt><dd data-f="onpot">${WAIT}</dd></div>` : ""}
       ${t.pur > 0 ? `<div><dt>Purification</dt><dd>${esc(t.pur)}% at close</dd></div>` : ""}
       ${canWrite ? `<div><dt>Shares held</dt><dd>${sh(d.heldSh)}${d.soldSh ? ` <small>sold ${sh(d.soldSh)}</small>` : ""}</dd></div>` : ""}
@@ -128,7 +129,7 @@ function rowHtml(t, i) {
       <div class="crow-info">
         <p><span>${esc(day(t.opened))} → ${esc(dayYear(t.closed))}</span><span class="muted">${heldFor(t.opened, t.closed || today())}</span></p>
         <p><span>Bought ${money(d.avgCost)} → Sold ${money(sellPx)}</span></p>
-        ${t.pur > 0 && t.grossPct != null ? `<p><span class="muted">${pct1(t.grossPct)} before ${esc(t.pur)}% purification</span></p>` : ""}
+        ${t.pur > 0 && t.grossPct > 0 ? `<p><span class="muted">${pct1(t.grossPct)} before ${esc(t.pur)}% purification</span></p>` : ""}
         <p>${t.wt > 0 && p != null
           ? `<span>${esc(t.wt)}% of pot</span><span data-onpot="${t.wt * p}"></span>`
           : `<span class="muted">No pot size yet</span>`}</p>
@@ -168,7 +169,7 @@ function updateLive() {
     bar.className = p < 0 ? "neg" : "";
     bar.style.transform = `scaleX(${p == null ? 0 : Math.min(Math.abs(p), 100) / 100})`;
     const op = f("onpot");
-    if (op) setOnPot(op, p == null ? null : t.wt * p);
+    if (op) setOnPot(op, p == null ? null : share(t, state.trades) * p);
   }
   for (const el of document.querySelectorAll("#closedList [data-onpot]"))
     setOnPot(el, +el.dataset.onpot, " on the pot");
@@ -181,8 +182,10 @@ function updateLive() {
   countTo(ret, sim.totalPct, pct1);
   ret.className = "num " + pctClass(sim.totalPct);
   $("#kPot").textContent = shortUsd(state.pot);
+  const pot = potUsd();   // the start plus everything banked: what every "% of pot" buy is sized on
+  $("#kPotNow").textContent = `${usd0(pot)} · 1% = ${usd0(pot / 100)}`;
   const unsized = state.trades.filter(t => !(t.wt > 0)).length;
-  $("#kMeta").textContent = `Banked ${pct1(sim.realizedPct)} · open ${pct1(sim.openPct)} · cash ${+cashPct(state.trades).toFixed(1)}% of pot` +
+  $("#kMeta").textContent = `Banked ${pct1(sim.realizedPct)} · open calls ${pct1(sim.openPct)} of the pot · cash ${+cashPct(state.trades).toFixed(1)}%` +
     (unsized ? ` · ${unsized} call${unsized > 1 ? "s" : ""} with no pot size yet` : "");
   roll($("#kOpen"), String(st.nOpen));
   roll($("#kClosed"), String(st.nClosed));
@@ -192,12 +195,30 @@ function updateLive() {
 
 /* ----------------------- inline form plumbing ----------------------- */
 // purification: a share of the profit, 0 to 100 (blank = none)
-const purOf = (v) => { const x = parseFloat(v); return x > 0 ? Math.min(100, x) : null; };
+const purOf = (v) => { const x = parseNum(v); return x > 0 ? Math.min(100, x) : null; };
 const fld = (label, attrs) => `<label class="fld"><span>${label}</span><input ${attrs}></label>`;
-const num = (label, key, val = "") =>
-  fld(label, `type="number" step="any" min="0" inputmode="decimal" data-in="${key}" value="${esc(val)}"`);
+// type=text: Chrome's type=number drops a typed "," (41,5 -> 415); parseNum reads it
+const num = (label, key, val = "", more = "") =>
+  fld(label, `type="text" inputmode="decimal" autocomplete="off" data-in="${key}" value="${esc(val)}" ${more}`);
 const date = (label, key, val = "") => fld(label, `type="date" data-in="${key}" value="${esc(val)}"`);
 const val = (box, k) => box.querySelector(`[data-in="${k}"]`).value;
+
+// How much more of today's pot the open calls would hold if t changed: a Fix
+// that sizes it up, or a Reopen (which also takes its banked gain back out of
+// the pot). cashProblem() then checks it against the free cash.
+// ponytail: a Fix that also changes shares or price folds the buys at their
+// average k (store.js), a hair off this; fine for a guard.
+// After an edit to a closed call moves the pot: the open calls can end up
+// holding more than all of it (the free cash is then below zero). Say so.
+const overNote = () => {
+  const used = state.trades.reduce((s, x) => s + (x.status === "active" ? share(x, state.trades) : 0), 0);
+  return used > 100.005 ? ` The open calls now hold ${+used.toFixed(2)}% of the pot, more than all of it.` : "";
+};
+
+function extraShare(t, change) {
+  const used = (all) => all.reduce((s, x) => s + (x.status === "active" ? share(x, all) : 0), 0);
+  return used(state.trades.map(x => (x.id === t.id ? { ...x, ...change } : x))) - used(state.trades);
+}
 
 function formBody(title, fields, go) {
   return `<p class="fl">${title}</p><div class="if-fields">${fields}</div>
@@ -221,6 +242,7 @@ function wireForm(box, go, opener) {
   }));
   const goBtn = box.querySelector("[data-go]");
   goBtn.addEventListener("click", async () => {
+    if (unreadable(box)) return fail(unreadable(box));
     goBtn.disabled = true;
     try {
       if ((await go()) !== false) {
@@ -270,19 +292,23 @@ function openInlineForm(holder, t, act) {
   const inp = (k) => box.querySelector(`[data-in="${k}"]`);
   if (sized) addPick(t, inp("sh"), inp("px"), inp("wt"));
   wireForm(box, async () => {
-    const px = parseFloat(val(box, "px"));
+    const px = parseNum(val(box, "px"));
     if (!(px > 0)) return fail("Enter a valid price.");
     if (act === "close") {
       await store.close(t.id, px);
       toast(`${t.ticker} closed at ${usd2(px)}. ROI locked in.`);
       return;
     }
-    const n = parseFloat(val(box, "sh"));
+    const n = parseNum(val(box, "sh"));
     if (!(n > 0)) return fail("Enter a number of shares.");
-    if (act === "sell" && n > d.heldSh) return fail(`You only hold ${sh(d.heldSh)} shares of ${t.ticker}.`);
+    if (act === "sell" && n > d.heldSh + 1e-9) return fail(`You only hold ${sh(d.heldSh)} shares of ${t.ticker}.`);
     const add = act === "buy" ? addWt(t, n, px) : null;
     if (add && cashProblem(add)) return fail(cashProblem(add));
-    await store.addTxn(t.id, { t: act, sh: n, px, d: today(), asOf: today(), ...(add && { wt: +add.toFixed(4), cash: +cashPct(state.trades).toFixed(4) }) }, add ? +(t.wt + add).toFixed(2) : null);
+    await store.addTxn(t.id, { t: act, sh: n, px, d: today(), asOf: today(), ...(add && { wt: +add.toFixed(4), cash: +cashPct(state.trades).toFixed(4), k: kNow() }) }, add ? +(t.wt + add).toFixed(2) : null);
+    if (act === "sell" && n >= d.heldSh - 1e-9) {   // nothing left: the call ends on this sale (d = before it)
+      await store.close(t.id, px);
+      return void toast(`${t.ticker}: sold all ${sh(n)} @ ${usd2(px)}. Call closed, result locked in.`);
+    }
     toast(`${t.ticker}: ${act === "buy" ? "bought" : "sold"} ${sh(n)} @ ${usd2(px)}.`);
   }, holder.querySelector(`[data-act="${act}"]`));
 }
@@ -294,8 +320,10 @@ function openEditForm(holder, t) {
   const d = derive(t);
   const tk = esc(t.ticker);
   const avg = d.avgCost ? d.avgCost.toFixed(2) : "";
-  const wtIn = fld("% of pot", `type="number" step="any" min="0" max="100" inputmode="decimal" data-in="wt" value="${t.wt > 0 ? esc(t.wt) : ""}"`) +
-    fld("Purification % of profit", `type="number" step="any" min="0" max="100" inputmode="decimal" data-in="pur" placeholder="none" value="${t.pur > 0 ? esc(t.pur) : ""}"`);
+  // an open call's wt is its share of the pot when bought; once a later close moves the pot, say both
+  const now = t.status === "active" && t.wt > 0 ? share(t, state.trades) : null;
+  const wtIn = num(now != null && Math.abs(now - t.wt) > 0.005 ? `% of pot when bought (${+now.toFixed(2)}% of today's)` : "% of pot", "wt", t.wt > 0 ? t.wt : "") +
+    num("Purification % of profit", "pur", t.pur > 0 ? t.pur : "", `placeholder="none"`);
   if (t.status === "active") {
     box.innerHTML = formBody(`Fix ${tk}. Sells stay intact. "% of pot" sizes it in the fund value.`,
       num("Total shares", "sh", d.boughtSh) + num("Avg price $", "px", avg) + date("Entry date", "d", t.opened) + wtIn, "Save");
@@ -306,26 +334,36 @@ function openEditForm(holder, t) {
       date("Buy date", "d1", t.opened) + date("Sell date", "d2", t.closed || "") + wtIn, "Save");
   }
   wireForm(box, async () => {
-    const wtv = parseFloat(val(box, "wt"));
+    const wtv = parseNum(val(box, "wt"));
     const wt = wtv > 0 ? Math.min(100, wtv) : null, pur = purOf(val(box, "pur"));
     if (t.status === "active") {
-      const shares = parseFloat(val(box, "sh"));
-      const price = parseFloat(val(box, "px"));
+      const shares = parseNum(val(box, "sh"));
+      const price = parseNum(val(box, "px"));
       const dt = val(box, "d") || t.opened;
       if (!(shares > 0)) return fail("Enter total shares bought.");
       if (!(price > 0)) return fail("Enter the average buy price.");
+      if (dt > today()) return fail("The entry date is in the future.");
+      const next = (t.txns || []).slice(1).map(x => x.d).filter(Boolean).sort()[0];
+      if (next && dt > next) return fail(`The entry date can't be after a later buy or sell (${day(next)}).`);
+      const adds = (t.txns || []).reduce((s, x, i) => s + (i && x.t === "buy" && x.wt > 0 ? +x.wt : 0), 0);
+      if (wt != null && wt < adds - 0.005) return fail(`${t.ticker}'s later buys alone are ${+adds.toFixed(2)}% of the pot. Undo them first, or enter at least that.`);
       if (shares < d.soldSh) return fail(`You already sold ${sh(d.soldSh)} shares. Total bought can't be less.`);
+      const more = extraShare(t, { wt });   // only a bigger size draws on the free cash
+      if (more > 0 && cashProblem(more)) return fail(cashProblem(more));
       await store.editActive(t.id, { shares, price, date: dt, wt, pur });
       toast(`${t.ticker} numbers fixed.`);
     } else {
-      const buyPx = parseFloat(val(box, "buy"));
-      const sellPx = parseFloat(val(box, "sell"));
+      const buyPx = parseNum(val(box, "buy"));
+      const sellPx = parseNum(val(box, "sell"));
       const opened = val(box, "d1") || t.opened;
       const closed = val(box, "d2") || t.closed;
       if (!(buyPx > 0) || !(sellPx > 0)) return fail("Enter both buy and sell prices.");
       if (opened && closed && closed < opened) return fail("Sell date is before the buy date.");
+      if (closed > today()) return fail("The sell date is in the future.");
+      const lastD = (t.txns || []).map(x => x.d).filter(Boolean).sort().at(-1);
+      if (lastD && closed < lastD) return fail(`The sell date can't be before its last trade (${day(lastD)}).`);
       await store.editClosed(t.id, { buyPx, sellPx, opened, closed, wt, pur });
-      toast(`${t.ticker} closed call fixed.`);
+      toast(`${t.ticker} closed call fixed.` + overNote());
     }
   }, holder.querySelector('[data-act="edit"]'));
 }
@@ -339,11 +377,11 @@ function openPurForm(holder, t) {
   box.innerHTML = formBody(t.status === "closed"
       ? `Purification for ${tk}. The locked result is worked out again from ${pct1(t.grossPct ?? t.finalPct)} before purification.`
       : `Purification for ${tk}. It is taken off the profit when this call closes. A loss has nothing to purify.`,
-    fld("Purification % of profit", `type="number" step="any" min="0" max="100" inputmode="decimal" data-in="pur" placeholder="e.g. 5" value="${t.pur > 0 ? esc(t.pur) : ""}"`), "Save");
+    num("Purification % of profit", "pur", t.pur > 0 ? t.pur : "", `placeholder="e.g. 5"`), "Save");
   wireForm(box, async () => {
     const pur = purOf(val(box, "pur"));
     await store.setPur(t.id, pur);
-    toast(pur ? `${t.ticker}: ${pur}% purification${t.status === "closed" ? " applied." : " at close."}` : `${t.ticker}: no purification.`);
+    toast((pur ? `${t.ticker}: ${pur}% purification${t.status === "closed" ? " applied." : " at close."}` : `${t.ticker}: no purification.`) + overNote());
   }, holder.querySelector('[data-act="pur"]'));
 }
 
@@ -359,21 +397,27 @@ document.addEventListener("click", async (e) => {
   if (!t) return;
   const act = btn.dataset.act;
   try {
-    if (act === "share") return void (await import("./card.js?v=40")).shareCall(t);
+    if (act === "share") return void (await import("./card.js?v=41")).shareCall(t);
     if (act === "del" || act === "reopen" || act === "undo") {
       // two-step: the first click arms the button, a second one at least
       // half a second later confirms (a double-click can never do both)
       const isDel = act === "del", u = act === "undo" ? lastAdd(t) : null;
       if (act === "undo" && !u) return;
+      if (act === "reopen" && state.trades.some(x => x.id !== t.id && x.ticker === t.ticker && x.status === "active"))
+        return fail(`${t.ticker} is already an active position. Close it before reopening this one.`);
+      const more = act === "reopen" ? extraShare(t, { status: "active" })   // a reopened call needs its size in free cash again
+        : u ? extraShare(t, { txns: t.txns.slice(0, -1), wt: u.wt }) : 0;   // an undone buy hands back -more of today's pot
+      if (more > 0 && cashProblem(more)) return fail(cashProblem(more));
       const what = u && `the buy of ${+(+u.buy.sh).toFixed(4)} ${t.ticker} at ${usd2(+u.buy.px)}`;
       if (btn.dataset.armed) {
         if (Date.now() - +btn.dataset.armed < 500) return;
-        if (isDel) { await store.remove(t.id); toast(t.ticker + " deleted."); }
-        else if (u) { await store.undoBuy(t.id); toast(`Took back ${what}.` + (u.back > 0 ? ` ${+u.back.toFixed(2)}% of the pot is cash again.` : "")); }
+        if (isDel) { await store.remove(t.id); toast(t.ticker + " deleted." + overNote()); }
+        else if (u) { await store.undoBuy(t.id); toast(`Took back ${what}.` + (-more > 0.005 ? ` ${+(-more).toFixed(2)}% of the pot is cash again.` : "")); }
         else { await store.reopen(t.id); toast(t.ticker + " reopened. Live ROI resumed."); }
       } else {
         const label = btn.textContent, aria = btn.getAttribute("aria-label");
         btn.dataset.armed = String(Date.now());
+        btn.style.minWidth = btn.getBoundingClientRect().width + "px";   // SURE? keeps the pill's width: the wrapped row can't move under the confirming tap
         btn.textContent = "SURE?";
         btn.classList.add("warn");
         btn.setAttribute("aria-label", isDel ? `SURE? Confirm: delete ${t.ticker} permanently` : u ? `SURE? Confirm: take back ${what}` : `SURE? Confirm: reopen ${t.ticker} and clear its sale`);
@@ -384,6 +428,7 @@ document.addEventListener("click", async (e) => {
           if (!btn.isConnected) return;
           delete btn.dataset.armed;
           btn.textContent = label;
+          btn.style.minWidth = "";
           btn.classList.remove("warn");
           btn.setAttribute("aria-label", aria);
         }, 3500);
@@ -404,10 +449,10 @@ $("#potEdit").addEventListener("click", () => {
   if (!box.hidden) { box.hidden = true; return; }
   box.hidden = false;
   box.innerHTML = formBody("Starting pot for the simulation",
-    fld("Pot $", `type="number" step="any" min="1" inputmode="decimal" placeholder="e.g. 10000" data-in="amt" value="${esc(state.pot)}"`), "Save");
+    num("Pot $", "amt", state.pot, `placeholder="e.g. 100000"`), "Save");
   wireForm(box, async () => {
-    const v = parseFloat(val(box, "amt"));
-    if (!(v > 0)) return fail("Enter a starting amount.");
+    const v = parseNum(val(box, "amt"));
+    if (!(v > 0)) return fail("Enter a starting amount, digits only (e.g. 100000).");
     await store.setSimStart(v);
     toast(`The pot now starts from $${v.toLocaleString("en-US")}.`);
   }, $("#potEdit"));
@@ -417,9 +462,10 @@ $("#potEdit").addEventListener("click", () => {
 async function busy(form, fn) {
   const b = form.querySelector('[type="submit"]');
   b.disabled = true;
-  try { await fn(); }
+  let ok = false;
+  try { await fn(); ok = true; }
   catch (err) { console.error(err); fail(err.message || "Could not save. Try again."); }
-  finally { b.disabled = false; }
+  finally { ok ? setTimeout(() => (b.disabled = false), 1000) : (b.disabled = false); }   // a quick second tap would hit the emptied form
 }
 
 $("#adDate").value = today();
@@ -434,13 +480,15 @@ $("#addForm").addEventListener("submit", (e) => {
   e.preventDefault();
   const form = e.currentTarget;
   const ticker = $("#adTicker").value.trim().toUpperCase();
-  const shares = parseFloat($("#adShares").value);
-  const price = parseFloat($("#adPrice").value);
+  const shares = parseNum($("#adShares").value);
+  const price = parseNum($("#adPrice").value);
   const date = $("#adDate").value || today();
-  const wtv = parseFloat($("#adWt").value), pur = purOf($("#adPur").value);
+  const wtv = parseNum($("#adWt").value), pur = purOf($("#adPur").value);
   if (!ticker) return fail("Enter a ticker symbol.");
+  if (unreadable(form)) return fail(unreadable(form));
   if (!(shares > 0)) return fail("Enter how many shares you bought.");
   if (!(price > 0)) return fail("Enter your average buy price.");
+  if (date > today()) return fail("The entry date is in the future.");
   if (state.trades.some(t => t.ticker === ticker && t.status === "active"))
     return fail(ticker + " is already an active position.");
   if (cashProblem(wtv)) return fail(cashProblem(wtv));
@@ -453,9 +501,10 @@ $("#addForm").addEventListener("submit", (e) => {
     }
     delete form.dataset.unverified;
     const profile = await fetchProfile(ticker);
-    await store.add({ ticker, shares, price, date, wt: wtv > 0 ? wtv : null, pur, cash: +cashPct(state.trades).toFixed(4), ...profile });
+    await store.add({ ticker, shares, price, date, wt: wtv > 0 ? wtv : null, pur, cash: +cashPct(state.trades).toFixed(4), k: kNow(), ...profile });
     form.reset();
     $("#adDate").value = today();
+    newCallCash.refresh();   // reset() empties the box but leaves the last buy's cash check
     toast(ticker + " added. Live ROI is now tracking.");
   });
 });
@@ -465,21 +514,23 @@ $("#pastForm").addEventListener("submit", (e) => {
   e.preventDefault();
   const form = e.currentTarget;
   const ticker = $("#pcTicker").value.trim().toUpperCase();
-  const buyPx = parseFloat($("#pcBuy").value);
-  const sellPx = parseFloat($("#pcSell").value);
+  const buyPx = parseNum($("#pcBuy").value);
+  const sellPx = parseNum($("#pcSell").value);
   const opened = $("#pcOpened").value || today();   // the dates that will actually be stored
   const closed = $("#pcClosed").value || today();
-  const wtv = parseFloat($("#pcWt").value), pur = purOf($("#pcPur").value);
+  const wtv = parseNum($("#pcWt").value), pur = purOf($("#pcPur").value);
   if (!ticker) return fail("Enter a ticker symbol.");
+  if (unreadable(form)) return fail(unreadable(form));
   if (!(buyPx > 0)) return fail("Enter the buy price.");
   if (!(sellPx > 0)) return fail("Enter the sell price.");
   if (closed < opened) return fail("Sell date is before the buy date.");
+  if (closed > today()) return fail("The sell date is in the future.");
   busy(form, async () => {
     const profile = await fetchProfile(ticker);
-    await store.addClosed({ ticker, buyPx, sellPx, opened, closed, wt: wtv > 0 ? wtv : null, pur, ...profile });
+    await store.addClosed({ ticker, buyPx, sellPx, opened, closed, wt: wtv > 0 ? Math.min(100, wtv) : null, pur, ...profile });
     form.reset();
     const pct = purified(((sellPx - buyPx) / buyPx) * 100, pur);
-    toast(`${ticker} logged: ${pct >= 0 ? "+" : ""}${pct.toFixed(2)}% locked in.`);
+    toast(`${ticker} logged: ${pct >= 0 ? "+" : ""}${pct.toFixed(2)}% locked in.` + overNote());
   });
 });
 
@@ -516,6 +567,7 @@ if (DEMO) {
       if (user && !owner) toast("Signed in, but this account has no edit access. View only.", true);
       // remember the owner on this device: every page then shows the "+ New call" button
       try { owner ? localStorage.setItem("af:owner", "1") : localStorage.removeItem("af:owner"); } catch (e) {}
+      if (owner && !DEMO) healRecord();   // writes nothing once the record is complete
       renderAll();
       // arriving from a "+ New call" link: go straight to the form
       if (owner && location.hash === "#new" && !renderAll.jumped) {
@@ -544,6 +596,7 @@ live((what) => {
     if (!active.length) $("#newsList").innerHTML = WIRE_EMPTY;
     renderAll();
   } else {
+    if (what === "settings") newCallCash.refresh();   // the pot in $ moves with the starting pot
     updateLive();
   }
 }).catch(err => {

@@ -11,10 +11,10 @@
 // Percent first; the stock's own price is the only dollar figure.
 // ============================================================
 
-import { state } from "./live.js?v=40";
-import { blendedPct, cashUsed, derive, exitPx, simulate, today } from "./roi.js?v=40";
-import { history } from "./history.js?v=40";
-import { pct1, usd2, day, dayYear, daysBetween } from "./shell.js?v=40";
+import { state } from "./live.js?v=41";
+import { blendedPct, cashUsed, derive, exitPx, share, simulate, today } from "./roi.js?v=41";
+import { history } from "./history.js?v=41";
+import { pct1, usd2, day, dayYear, daysBetween } from "./shell.js?v=41";
 
 const W = 1080, H = 1350;
 const GAIN = "#16A34A", INK = "#0B0B0C", PAPER = "#FFFFFF", CANVAS = "#DEDDD6", MUTED = "#585861", LOSS = "#D92D20", HAIR = "rgba(11,11,12,.16)";
@@ -22,10 +22,10 @@ const SANS = '"Geist",system-ui,sans-serif', MONO = '"Geist Mono",ui-monospace,m
 const SITE = "azezalbassam.github.io/albassam-fund";
 
 const isOpen = (t) => t.status !== "closed";
-const share = (t) => (t.wt > 0 ? +Number(t.wt).toFixed(1) + "%" : null);
 const p2 = (v) => +(+v).toFixed(2) + "%";
-// "Used 50% of the remaining cash (19% of the pot)" for a sized buy
-const usedLine = (u, pot = true) => (u ? `Used ${p2(u.of)} of the remaining cash` + (pot ? ` (${p2(u.pot)} of the pot)` : "") : "");
+// "Used 50% of the remaining cash (19% of the pot)" for a sized buy; the cash
+// share has one decimal like the desk's form (a 50% tap on 14.25 stores 7.13)
+const usedLine = (u, pot = true) => (u ? `Used ${+(+u.of).toFixed(1)}% of the remaining cash` + (pot ? ` (${p2(u.pot)} of the pot)` : "") : "");
 
 // The latest buy on an open call that already had one: the average before
 // and after it, and how much bigger it made the position. null = no add.
@@ -61,18 +61,20 @@ export function cardFacts(t, quotes = state.quotes, on = today(), add = false) {
   }
   const kind = !open ? "closed" : held <= 1 ? "new" : "open";
   const d = derive(t), sell = open ? null : exitPx(t);
+  const w = share(t, state.trades), size = w > 0 ? +w.toFixed(1) + "%" : null;   // open: its share of today's pot
   return {
     kind, pct, held, end,
     chip: { new: "NEW CALL", open: "OPEN CALL", closed: "CALL CLOSED" }[kind],
     label: { new: "SHARE OF THE POT", open: "RETURN SO FAR", closed: "RETURN ON THIS CALL" }[kind],
-    hero: kind === "new" ? share(t) ?? "NEW" : pct == null ? "…" : pct1(pct),
+    hero: kind === "new" ? size ?? "NEW" : pct == null ? "…" : pct1(pct),
     loss: kind !== "new" && pct != null && pct < 0,
+    // a closed loss had nothing to purify (store.js purified), so it gets no note
     note: [kind === "new" && usedLine(cashUsed(state.trades, t, t.txns?.[0]), false),
-      t.pur > 0 && (open ? `${+t.pur}% purification at close` : `after ${+t.pur}% purification`)].filter(Boolean).join("  ·  "),
+      t.pur > 0 && (open ? `${+t.pur}% purification at close` : (t.grossPct ?? t.finalPct) > 0 && `after ${+t.pur}% purification`)].filter(Boolean).join("  ·  "),
     stats: [
-      kind === "new" ? ["OPENED", day(t.opened)] : ["SHARE OF POT", share(t) ?? "Unsized"],
+      kind === "new" ? ["OPENED", day(t.opened)] : ["SHARE OF POT", size ?? "Unsized"],
       open ? ["BOUGHT AT", d.avgCost > 0 ? usd2(d.avgCost) : "…"]
-        : ["ADDED TO THE POT", t.wt > 0 && pct != null ? pct1((t.wt * pct) / 100) : sell != null ? usd2(sell) : "…"],
+        : ["ADDED TO THE POT", w > 0 && pct != null ? pct1((w * pct) / 100) : sell != null ? usd2(sell) : "…"],
     ],
   };
 }
@@ -177,20 +179,23 @@ export async function drawCard(t, add = false) {
     line(gx0, xy[0][1], gx1, xy[0][1], 2, MUTED, [4, 10]);
     c.beginPath(); c.lineWidth = 7; c.lineJoin = c.lineCap = "round"; c.strokeStyle = f.loss ? LOSS : INK;
     xy.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke();
-    marks(t).forEach(([d, label], n) => {
-      let i = ds.findIndex(v => v >= d); if (i < 0) i = ds.length - 1;
-      const [x, y] = xy[i], up = y - gy0 > 44 || n % 2;   // the label sits above unless the point is at the top
-      c.fillStyle = GAIN; c.strokeStyle = PAPER; c.lineWidth = 5; c.beginPath(); c.arc(x, y, 14, 0, 7); c.fill(); c.stroke();
-      text(label, Math.min(Math.max(x, gx0 + 50), gx1 - 50), up ? y - 28 : y + 46, `600 19px ${MONO}`, GAIN, "center", "2px");
-    });
     const [ex, ey] = xy.at(-1);
     c.fillStyle = PAPER; c.strokeStyle = INK; c.lineWidth = 5; c.beginPath(); c.arc(xy[0][0], xy[0][1], 11, 0, 7); c.fill(); c.stroke();
     c.fillStyle = f.loss ? "rgba(217,45,32,.18)" : "rgba(11,11,12,.12)"; c.beginPath(); c.arc(ex, ey, 30, 0, 7); c.fill();
     c.fillStyle = f.loss ? LOSS : INK; c.beginPath(); c.arc(ex, ey, 13, 0, 7); c.fill();
+    // marks go on top: a buy or sell on the first or latest day sits on the start or end dot
+    marks(t).forEach(([d, label], n) => {
+      let i = ds.findIndex(v => v >= d); if (i < 0) i = ds.length - 1;
+      // an end point has one segment: its label goes on the other side; elsewhere above unless the point is at the top
+      const nb = i === 0 ? xy[1] : i === xy.length - 1 ? xy[i - 1] : null;
+      const [x, y] = xy[i], up = nb ? nb[1] >= y : y - gy0 > 44 || n % 2;
+      c.fillStyle = GAIN; c.strokeStyle = PAPER; c.lineWidth = 5; c.beginPath(); c.arc(x, y, 14, 0, 7); c.fill(); c.stroke();
+      text(label, Math.min(Math.max(x, gx0 + 50), gx1 - 50), up ? y - 28 : Math.min(y + 46, 1084), `600 19px ${MONO}`, GAIN, "center", "2px");
+    });
   } else {
     line(gx0, gy1 - 40, gx1, gy1 - 40, 2, MUTED, [4, 10]);
     c.fillStyle = PAPER; c.strokeStyle = INK; c.lineWidth = 5; c.beginPath(); c.arc(gx0 + 12, gy1 - 40, 11, 0, 7); c.fill(); c.stroke();
-    const cap = f.kind === "new" ? "DAY ONE. THE LINE STARTS HERE." : f.held === 0 ? "OPENED AND CLOSED THE SAME DAY." : "";
+    const cap = f.kind === "new" || (isOpen(t) && f.held === 0) ? "DAY ONE. THE LINE STARTS HERE." : f.held === 0 ? "OPENED AND CLOSED THE SAME DAY." : "";
     if (cap) text(cap, gx0 + 44, gy1 - 62, `500 22px ${MONO}`, MUTED, "left", "3px");
   }
 

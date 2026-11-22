@@ -6,10 +6,10 @@
 // With no ?m it shows the last finished month.
 // ============================================================
 
-import { initShell, observeReveals, countTo, pct1, pts1, day, esc, logoHtml } from "./shell.js?v=40";
-import { live, state } from "./live.js?v=40";
-import { today } from "./roi.js?v=40";
-import { loadRace, monthly } from "./series.js?v=40";
+import { initShell, observeReveals, countTo, pct1, pts1, day, esc, logoHtml } from "./shell.js?v=41";
+import { live, state } from "./live.js?v=41";
+import { today, wtOn } from "./roi.js?v=41";
+import { loadRace, monthly } from "./series.js?v=41";
 
 const $ = (id) => document.getElementById(id);
 const NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -30,10 +30,10 @@ export function monthCalls(trades, m) {
   const closed = trades.filter(t => t.status === "closed" && t.finalPct != null && (t.closed || t.opened || "").startsWith(m))
     .sort((a, b) => b.finalPct - a.finalPct);
   const opened = trades.filter(t => (t.opened || "").startsWith(m)).sort((a, b) => (a.opened < b.opened ? -1 : 1));
-  return { closed, opened, won: closed.filter(t => t.finalPct > 0).length };
+  return { closed, opened, won: closed.filter(t => t.finalPct > 0).length, lost: closed.filter(t => t.finalPct < 0).length };
 }
 
-let key = "", seq = 0, cur = null;
+let key = "", seq = 0, cur = null, retryT = 0;
 
 async function onLive(what) {
   if (!state.ready) return;
@@ -45,6 +45,9 @@ async function onLive(what) {
   let race = null;
   try { race = await loadRace(state.trades, state.pot, state.quotes); } catch (e) { console.warn("recap failed:", e); }
   if (my !== seq) return;
+  clearTimeout(retryT);
+  // a failed load tries again in a minute: a finished month gets no price tick to retry it
+  if (!race) retryT = setTimeout(() => { key = ""; onLive(); }, 60000);
   paint(race ? monthly(race) : null);
 }
 
@@ -89,7 +92,7 @@ function paint(M) {
   }).join("");
 
   // best, weakest, count
-  const { closed, opened, won } = monthCalls(state.trades, m);
+  const { closed, opened, won, lost } = monthCalls(state.trades, m), flat = closed.length - won - lost;
   const card = (t) => `<p class="who">${logoHtml(t)}<span>${esc(t.ticker)}</span></p>
     <p class="n${t.finalPct < 0 ? " neg" : ""}">${pct1(t.finalPct)}</p>
     <small>${day(t.opened)} → ${day(t.closed || t.opened)}${t.wt > 0 ? ` · ${pct1((t.wt * t.finalPct) / 100)} on the pot` : ""}</small>`;
@@ -98,7 +101,7 @@ function paint(M) {
   $("rcWorstK").textContent = closed.length > 1 && closed.at(-1).finalPct < 0 ? "Worst call" : "Weakest call";
   $("rcWorst").innerHTML = closed.length > 1 ? card(closed.at(-1)) : note(closed.length ? "Only one call closed." : "None to compare.");
   $("rcCount").innerHTML = closed.length
-    ? `<p class="n">${closed.length}</p><small>${won} won · ${closed.length - won} lost</small>` : none;
+    ? `<p class="n">${closed.length}</p><small>${won} won · ${lost} lost${flat ? ` · ${flat} flat` : ""}</small>` : none;
 
   // the lists
   const row = (t, right) => `<li class="rc-row">${logoHtml(t)}<span class="id"><b>${esc(t.ticker)}</b><small>${esc(t.name || "")}</small></span>${right}</li>`;
@@ -106,7 +109,7 @@ function paint(M) {
     `<span class="r"><b class="${t.finalPct < 0 ? "neg" : ""}">${pct1(t.finalPct)}</b><small>${day(t.opened)} → ${day(t.closed || t.opened)}</small></span>`)).join("")
     : note(running ? "No call has closed yet this month." : "No call closed this month.", "li");
   $("rcOpened").innerHTML = opened.length ? opened.map(t => row(t,
-    `<span class="r"><b>${t.wt > 0 ? +Number(t.wt).toFixed(1) + "% of pot" : "Unsized"}</b><small>${day(t.opened)} · ${t.status === "closed" ? "closed since" : "still open"}</small></span>`)).join("")
+    `<span class="r"><b>${t.wt > 0 ? +wtOn(t, t.opened).toFixed(1) + "% of pot" : "Unsized"}</b><small>${day(t.opened)} · ${t.status === "closed" ? "closed since" : "still open"}</small></span>`)).join("")
     : note("No new call this month.", "li");
   observeReveals(document);
 }

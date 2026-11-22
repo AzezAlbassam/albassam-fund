@@ -23,11 +23,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://firestore.googleapis.com">
-<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin>
-<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
+<!-- every CDN module is pinned by sha384. These two preloads carry their own: the importmap below does not cover a preload above it. A version bump needs new hashes (curl -sL URL | openssl dgst -sha384 -binary | openssl base64 -A): a stale Firebase one leaves the page with no data -->
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin integrity="sha384-JU5BZoPLFT50NKsen0cKt0RTuYeiJ8LaXWA97AZ+JjLppaQ72oIFUVre0Vb/MBYO">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin integrity="sha384-4945sCngUQDV87Ya/YMj0C/CtNaGKMyhUP6ilixT6PaLNU/Wfb64r91sLpw+uD/q">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/site.css?v=40">
-<link rel="stylesheet" href="css/edit.css?v=40">
+<link rel="stylesheet" href="css/site.css?v=41">
+<link rel="stylesheet" href="css/edit.css?v=41">
+<script type="importmap">{"integrity":{
+"https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js":"sha384-JU5BZoPLFT50NKsen0cKt0RTuYeiJ8LaXWA97AZ+JjLppaQ72oIFUVre0Vb/MBYO",
+"https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js":"sha384-4945sCngUQDV87Ya/YMj0C/CtNaGKMyhUP6ilixT6PaLNU/Wfb64r91sLpw+uD/q",
+"https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js":"sha384-zD+VnXMUMWCArv4u3Gxh8to370Q7NeoMtDYNNhnw8711mv1amoE8p4oDmdc7d7xy",
+"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js":"sha384-GY5FqjttLCFRt/McQbyaVdCk2O1IQtOeX8Py6NfD89BIAsIyJFRl4UgSXrk2vXAk",
+"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/lines/Line2.js":"sha384-svIqR2W/RlXb3d4T+bDn3JO+LXLbacA7GpMAUDJxTOFyZmVogvDRaOS7KZBRxcxc",
+"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/lines/LineGeometry.js":"sha384-nfFqbe33KO97I7jZXjW73quBqqskqqj64WZycLNDzn0GGGI3aoWLZzuy8i0jeYmU",
+"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/lines/LineSegments2.js":"sha384-nm+9Od/cYIb15jGaA1U2Geoo18K/i9fF2fZ4KbI2rZydtfYxqwtWRlbvdVfiECU5",
+"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/lines/LineSegmentsGeometry.js":"sha384-2bbjHgEUXo9c3VW3OaZV638VYLXKhlNhNStU2D1Jm77zamWSQVYZak2p/Z0bZrmh",
+"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/lines/LineMaterial.js":"sha384-bLpiIpNrFJ+EMb4Upzkap/Bc9Ul2wLoUMEfFm0PmZfyywMUYUsc5X98AuAYwwjq1"}}</script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -86,7 +97,8 @@
           <p class="klabel">Fund value</p>
           <p class="kpi-value"><b class="num" id="kValue"><span class="skel w-big"></span></b><span class="num" id="kRet"></span></p>
           <p class="quick-add" id="quickAdd" hidden><a class="btn" href="#newTitle">+ New call</a><a class="btn ghost" href="#pastTitle">Log a past call</a></p>
-          <p class="kpi-meta">On a <b id="kPot">$100K</b> pot
+          <p class="kpi-meta">Pot size <b id="kPotNow">…</b></p>
+          <p class="kpi-meta">Started with <b id="kPot">$100K</b>
             <button class="act" id="potEdit" type="button" aria-label="Change the starting pot" hidden>✎ pot</button></p>
           <p class="kpi-sub" id="kMeta">Counting the calls.</p>
           <div class="inline-form pot-form" id="potForm" hidden></div>
@@ -119,18 +131,18 @@
               <input id="adTicker" type="text" placeholder="e.g. RKLB" maxlength="10" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
             <div class="row2">
               <label class="fld"><span>Shares bought</span>
-                <input id="adShares" type="number" step="any" min="0" inputmode="decimal" placeholder="e.g. 100"></label>
+                <input id="adShares" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 100"></label>
               <label class="fld"><span>Avg buy price $</span>
-                <input id="adPrice" type="number" step="any" min="0" inputmode="decimal" placeholder="e.g. 21.40"></label>
+                <input id="adPrice" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 21.40"></label>
             </div>
             <div class="row2">
               <label class="fld"><span>Entry date</span>
                 <input id="adDate" type="date"></label>
               <label class="fld"><span>% of pot (optional)</span>
-                <input id="adWt" type="number" step="any" min="0" max="100" inputmode="decimal" placeholder="e.g. 65"></label>
+                <input id="adWt" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 65"></label>
             </div>
             <label class="fld"><span>Purification % of profit (optional)</span>
-                <input id="adPur" type="number" step="any" min="0" max="100" inputmode="decimal" placeholder="e.g. 5"></label>
+                <input id="adPur" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 5"></label>
             <p class="fhint">Taken off the profit when the call closes. A loss has nothing to purify.</p>
             <button class="btn" type="submit">Launch position</button>
           </form>
@@ -144,18 +156,18 @@
               <input id="pcTicker" type="text" placeholder="e.g. PLTR" maxlength="10" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
             <div class="row2">
               <label class="fld"><span>Bought at $</span>
-                <input id="pcBuy" type="number" step="any" min="0" inputmode="decimal" placeholder="e.g. 66.80"></label>
+                <input id="pcBuy" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 66.80"></label>
               <label class="fld"><span>Sold at $</span>
-                <input id="pcSell" type="number" step="any" min="0" inputmode="decimal" placeholder="e.g. 92.50"></label>
+                <input id="pcSell" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 92.50"></label>
             </div>
             <div class="row2">
               <label class="fld"><span>Buy date</span><input id="pcOpened" type="date"></label>
               <label class="fld"><span>Sell date</span><input id="pcClosed" type="date"></label>
             </div>
             <label class="fld"><span>% of pot (optional)</span>
-              <input id="pcWt" type="number" step="any" min="0" max="100" inputmode="decimal" placeholder="e.g. 25"></label>
+              <input id="pcWt" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 25"></label>
             <label class="fld"><span>Purification % of profit (optional)</span>
-                <input id="pcPur" type="number" step="any" min="0" max="100" inputmode="decimal" placeholder="e.g. 5"></label>
+                <input id="pcPur" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 5"></label>
             <button class="btn" type="submit">Log closed call</button>
           </form>
         </section>
@@ -192,7 +204,7 @@
         <b>Albassam Fund</b>
       </a>
       <p>Albassam Fund. A family record of every call since July 4, 2026.</p>
-      <p>Prices from Yahoo Finance and may be delayed.</p>
+      <p>Prices from CNBC and Yahoo Finance; they may be delayed.</p>
       <p class="legal"><b>Not investment advice.</b> This site is a record of our own trades, shared for information only. It is not a recommendation to buy or sell anything. Past results do not promise future results; you can lose money. Decide for yourself.
         <span lang="ar" dir="rtl"><b>ليست توصية استثمارية.</b> هذا الموقع سجل لصفقاتنا الخاصة ويُعرض للاطلاع فقط، وليس دعوة للشراء أو البيع. النتائج السابقة لا تضمن النتائج القادمة، والخسارة واردة. القرار قرارك.</span></p>
       <p><button class="install-link" type="button" data-install>Get the app on your phone</button></p>
@@ -204,6 +216,6 @@
   </div>
 </footer>
 
-<script type="module" src="js/edit.js?v=40"></script>
+<script type="module" src="js/edit.js?v=41"></script>
 </body>
 </html>

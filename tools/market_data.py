@@ -9,7 +9,10 @@ Yahoo's split events, or spotted when Yahoo's adjusted closes suddenly
 sit a whole multiple away from the saved ones (Yahoo can be a day late
 with the event). The site uses it to put old buys in today's shares.
 
-Run by .github/workflows/market-data.yml three times a day on weekdays.
+And data/trades.json: the whole trade record as Firestore's public REST
+API returns it, so git history can restore a deleted or overwritten call.
+
+Run by .github/workflows/market-data.yml four times a day on weekdays.
 Usage: python3 tools/market_data.py <out.json>
 """
 import json, os, sys, time, datetime as dt
@@ -26,8 +29,11 @@ UA = {"User-Agent": "Mozilla/5.0"}   # a full browser UA gets 429 from Yahoo
 def closes(tk, start):
     p1 = int(dt.datetime.strptime(start, "%Y-%m-%d").replace(tzinfo=dt.timezone.utc).timestamp()) - 10 * 86400
     p2 = int(time.time()) + 86400
-    for host in ("query1", "query2"):
-        u = (f"https://{host}.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(tk)}"
+    # Yahoo spells class shares BRK-B where CNBC and the site say BRK.B. As spelled
+    # first, so ^TASI.SR and VOD.L are never rewritten; main() saves it under tk
+    syms = dict.fromkeys([tk, tk.replace(".", "-")])
+    for sym, host in [(s, h) for s in syms for h in ("query1", "query2")]:
+        u = (f"https://{host}.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(sym)}"
              f"?period1={p1}&period2={p2}&interval=1d&events=split")
         try:
             with urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=25) as r:
@@ -46,7 +52,7 @@ def closes(tk, start):
                   for v in (res.get("events") or {}).get("splits", {}).values() if v.get("denominator")]
             return {"d": ds, "c": cs, "name": meta.get("shortName") or meta.get("longName") or "", "splits": sp}
         except Exception as e:
-            print(f"  {tk} via {host}: {e}", file=sys.stderr)
+            print(f"  {sym} via {host}: {e}", file=sys.stderr)
             time.sleep(2)
     return None
 
@@ -89,9 +95,24 @@ def save_splits(path, found):
         json.dump(have, f, separators=(",", ":"))
 
 
+def backup(path):
+    """Every trades doc, keys sorted: Firestore sends fields in a random order, and
+    unsorted the file would change (commit, rebuild the site) on every run.
+    Written only once every page came back, so a failed read never saves a short file."""
+    docs, tok = [], ""
+    while tok is not None:
+        d = R.get(f"{R.FS}/trades?pageSize=300&pageToken={urllib.parse.quote(tok)}")
+        docs += d.get("documents", [])
+        tok = d.get("nextPageToken")
+    with open(path, "w") as f:
+        json.dump({"documents": docs}, f, indent=1, sort_keys=True)
+
+
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(R.ROOT, "data", "market.json")
+    data = os.path.dirname(os.path.abspath(out))
     trades = R.fetch_trades()
+    backup(os.path.join(data, "trades.json"))
     start = min((t["opened"] for t in trades if t["opened"]), default=dt.date.today().isoformat())
     tickers = sorted({t["ticker"] for t in trades if t["ticker"]}) + BENCH
     series = {}
@@ -107,14 +128,26 @@ def main():
         old = json.load(open(out))
     except Exception:
         pass
+    sp, kept = os.path.join(data, "splits.json"), {}
+    try:
+        kept = json.load(open(sp))
+    except Exception:
+        pass
     found = {tk: s.pop("splits") for tk, s in series.items() if s.get("splits")}
-    today = dt.datetime.now(dt.timezone(dt.timedelta(hours=-5))).date().isoformat()   # New York
+    now = dt.datetime.now(dt.timezone(dt.timedelta(hours=-5))).date()   # New York
+    today, week = now.isoformat(), (now - dt.timedelta(days=7)).isoformat()
     for tk, s in old.get("series", {}).items():
         r = tk in series and spotted(s, series[tk])
-        if r:
+        if r and any(abs(r * x[1] - 1) < 0.02 and x[0] >= week for x in kept.get(tk, []) + found.get(tk, [])):
+            # closes that undo this week's split are Yahoo serving stale history, not a
+            # reverse split: keep the saved closes and record nothing.
+            # ponytail: a real split undone within the week would wait the week out (Yahoo's event still records it)
+            print(f"  {tk}: closes undo this week's split (stale Yahoo answer), keeping the saved ones")
+            del series[tk]
+        elif r:
             print(f"  {tk}: split {r:g} spotted in the closes")
             found.setdefault(tk, []).append([today, r, "spotted"])
-    save_splits(os.path.join(os.path.dirname(os.path.abspath(out)), "splits.json"), found)
+    save_splits(sp, found)
     for tk, s in old.get("series", {}).items():
         if tk not in series:   # a failed ticker keeps yesterday's data
             series[tk] = s

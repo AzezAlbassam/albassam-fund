@@ -5,16 +5,19 @@
 //   history("MU", "2026-07-01") -> { dates: ["2026-07-01", ...], closes: [..] }
 // ============================================================
 
-import { DEMO } from "./config.js?v=40";
-import { proxiedJson, savedSeries } from "./prices.js?v=40";
+import { DEMO } from "./config.js?v=41";
+import { proxiedJson, savedSeries } from "./prices.js?v=41";
 
 const TTL = 30 * 60 * 1000;
 const inflight = {};
 
 export function history(tk, from) {
-  const key = `hist:${tk}:${from}`;
-  return (inflight[key] ??= load(tk, from, key).then(v => {
-    if (!v.dates.length) delete inflight[key];   // mirrors down: let the next call retry
+  const key = `hist:${tk}:${from}`, memo = inflight[key];
+  // ponytail: asked again every 10 minutes, like savedSeries(), so a page left open picks up new closes
+  if (memo && Date.now() - memo.at < 6e5) return memo.p;
+  const m = (inflight[key] = { at: Date.now() });
+  return (m.p = load(tk, from, key).then(v => {
+    if (!v.dates.length && inflight[key] === m) delete inflight[key];   // mirrors down: let the next call retry
     return v;
   }));
 }
