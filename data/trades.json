@@ -1,0 +1,1224 @@
+{
+ "documents": [
+  {
+   "createTime": "2026-07-04T15:19:41.137054Z",
+   "fields": {
+    "closePx": {
+     "integerValue": "147"
+    },
+    "closed": {
+     "stringValue": "2026-07-04"
+    },
+    "createdAt": {
+     "timestampValue": "2026-07-04T15:19:41.116Z"
+    },
+    "finalPct": {
+     "doubleValue": 1.3793103448275863
+    },
+    "logo": {
+     "stringValue": "https://assets.parqet.com/logos/symbol/MSTR?format=png&size=64"
+    },
+    "name": {
+     "stringValue": "Strategy Inc"
+    },
+    "opened": {
+     "stringValue": "2026-07-04"
+    },
+    "status": {
+     "stringValue": "closed"
+    },
+    "ticker": {
+     "stringValue": "MSTR"
+    },
+    "txns": {
+     "arrayValue": {
+      "values": [
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-07-04"
+          },
+          "px": {
+           "integerValue": "145"
+          },
+          "sh": {
+           "integerValue": "1"
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "wt": {
+     "integerValue": "10"
+    }
+   },
+   "name": "projects/albassam-fund/databases/(default)/documents/trades/0LIpWjOPaqMdXkdCTT5T",
+   "updateTime": "2026-07-19T17:12:01.866620Z"
+  },
+  {
+   "createTime": "2026-07-04T15:21:34.303817Z",
+   "fields": {
+    "closePx": {
+     "integerValue": "172"
+    },
+    "closed": {
+     "stringValue": "2026-07-04"
+    },
+    "createdAt": {
+     "timestampValue": "2026-07-04T15:21:34.261Z"
+    },
+    "finalPct": {
+     "doubleValue": 1.7751479289940828
+    },
+    "logo": {
+     "stringValue": "https://assets.parqet.com/logos/symbol/RDDT?format=png&size=64"
+    },
+    "name": {
+     "stringValue": "Reddit, Inc."
+    },
+    "opened": {
+     "stringValue": "2026-07-04"
+    },
+    "status": {
+     "stringValue": "closed"
+    },
+    "ticker": {
+     "stringValue": "RDDT"
+    },
+    "txns": {
+     "arrayValue": {
+      "values": [
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-07-04"
+          },
+          "px": {
+           "integerValue": "169"
+          },
+          "sh": {
+           "integerValue": "1"
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "wt": {
+     "integerValue": "5"
+    }
+   },
+   "name": "projects/albassam-fund/databases/(default)/documents/trades/EkSgrGj7Urt65HFnfSPM",
+   "updateTime": "2026-11-22T19:26:58.495069Z"
+  },
+  {
+   "createTime": "2026-07-04T15:22:07.201144Z",
+   "fields": {
+    "closePx": {
+     "doubleValue": 38.55
+    },
+    "closed": {
+     "stringValue": "2026-07-04"
+    },
+    "createdAt": {
+     "timestampValue": "2026-07-04T15:22:07.160Z"
+    },
+    "finalPct": {
+     "doubleValue": 7.983193277310908
+    },
+    "logo": {
+     "stringValue": "https://assets.parqet.com/logos/symbol/SKYT?format=png&size=64"
+    },
+    "name": {
+     "stringValue": "SkyWater Technology, Inc."
+    },
+    "opened": {
+     "stringValue": "2026-07-04"
+    },
+    "status": {
+     "stringValue": "closed"
+    },
+    "ticker": {
+     "stringValue": "SKYT"
+    },
+    "txns": {
+     "arrayValue": {
+      "values": [
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-07-04"
+          },
+          "px": {
+           "doubleValue": 35.7
+          },
+          "sh": {
+           "integerValue": "1"
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "wt": {
+     "integerValue": "10"
+    }
+   },
+   "name": "projects/albassam-fund/databases/(default)/documents/trades/GvT5RXRRuJGUbf28Synv",
+   "updateTime": "2026-11-22T19:26:56.127439Z"
+  },
+  {
+   "createTime": "2026-07-04T15:28:59.696414Z",
+   "fields": {
+    "closePx": {
+     "integerValue": "850"
+    },
+    "closed": {
+     "stringValue": "2026-08-07"
+    },
+    "createdAt": {
+     "timestampValue": "2026-07-04T15:28:59.657Z"
+    },
+    "finalPct": {
+     "doubleValue": 22.25624740085441
+    },
+    "logo": {
+     "stringValue": "https://assets.parqet.com/logos/symbol/MU?format=png&size=64"
+    },
+    "name": {
+     "stringValue": "Micron Technology, Inc."
+    },
+    "opened": {
+     "stringValue": "2026-07-04"
+    },
+    "status": {
+     "stringValue": "closed"
+    },
+    "ticker": {
+     "stringValue": "MU"
+    },
+    "txns": {
+     "arrayValue": {
+      "values": [
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-07-04"
+          },
+          "px": {
+           "integerValue": "660"
+          },
+          "sh": {
+           "integerValue": "650"
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       },
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-07-29"
+          },
+          "px": {
+           "doubleValue": 774.25
+          },
+          "sh": {
+           "integerValue": "300"
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       },
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-08-07"
+          },
+          "px": {
+           "integerValue": "851"
+          },
+          "sh": {
+           "integerValue": "950"
+          },
+          "t": {
+           "stringValue": "sell"
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "wt": {
+     "integerValue": "30"
+    }
+   },
+   "name": "projects/albassam-fund/databases/(default)/documents/trades/IlyVo77h8ULsIOLuuo5X",
+   "updateTime": "2026-08-07T14:15:53.312757Z"
+  },
+  {
+   "createTime": "2026-07-04T15:28:08.073686Z",
+   "fields": {
+    "closePx": {
+     "doubleValue": 948.8
+    },
+    "closed": {
+     "stringValue": "2026-07-09"
+    },
+    "createdAt": {
+     "timestampValue": "2026-07-04T15:28:08.031Z"
+    },
+    "finalPct": {
+     "doubleValue": 43.75757575757575
+    },
+    "logo": {
+     "stringValue": "https://assets.parqet.com/logos/symbol/MU?format=png&size=64"
+    },
+    "name": {
+     "stringValue": "Micron Technology, Inc."
+    },
+    "opened": {
+     "stringValue": "2026-07-04"
+    },
+    "status": {
+     "stringValue": "closed"
+    },
+    "ticker": {
+     "stringValue": "MU"
+    },
+    "txns": {
+     "arrayValue": {
+      "values": [
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-07-04"
+          },
+          "px": {
+           "integerValue": "660"
+          },
+          "sh": {
+           "integerValue": "1"
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "wt": {
+     "integerValue": "65"
+    }
+   },
+   "name": "projects/albassam-fund/databases/(default)/documents/trades/JHUOe5QCPCNIVg514AVI",
+   "updateTime": "2026-07-09T07:18:23.643446Z"
+  },
+  {
+   "createTime": "2026-07-04T15:23:11.795261Z",
+   "fields": {
+    "closePx": {
+     "doubleValue": 12.5
+    },
+    "closed": {
+     "stringValue": "2026-08-06"
+    },
+    "createdAt": {
+     "timestampValue": "2026-07-04T15:23:11.746Z"
+    },
+    "finalPct": {
+     "doubleValue": 27.551020408163257
+    },
+    "logo": {
+     "stringValue": "https://assets.parqet.com/logos/symbol/RDW?format=png&size=64"
+    },
+    "name": {
+     "stringValue": "Redwire Corporation"
+    },
+    "opened": {
+     "stringValue": "2026-07-04"
+    },
+    "status": {
+     "stringValue": "closed"
+    },
+    "ticker": {
+     "stringValue": "RDW"
+    },
+    "txns": {
+     "arrayValue": {
+      "values": [
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-07-04"
+          },
+          "px": {
+           "doubleValue": 9.8
+          },
+          "sh": {
+           "integerValue": "2"
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "wt": {
+     "integerValue": "25"
+    }
+   },
+   "name": "projects/albassam-fund/databases/(default)/documents/trades/JLifSAmLnCrkcMqWC7AW",
+   "updateTime": "2026-08-06T13:31:14.115108Z"
+  },
+  {
+   "createTime": "2026-11-14T09:53:10.023357Z",
+   "fields": {
+    "closePx": {
+     "nullValue": null
+    },
+    "closed": {
+     "nullValue": null
+    },
+    "createdAt": {
+     "timestampValue": "2026-11-14T09:53:09.985Z"
+    },
+    "finalPct": {
+     "nullValue": null
+    },
+    "logo": {
+     "stringValue": "https://assets.parqet.com/logos/symbol/SNDK?format=png&size=64"
+    },
+    "name": {
+     "stringValue": "Sandisk Corporation"
+    },
+    "opened": {
+     "stringValue": "2026-11-13"
+    },
+    "pur": {
+     "doubleValue": 0.46
+    },
+    "status": {
+     "stringValue": "active"
+    },
+    "ticker": {
+     "stringValue": "SNDK"
+    },
+    "txns": {
+     "arrayValue": {
+      "values": [
+       {
+        "mapValue": {
+         "fields": {
+          "asOf": {
+           "stringValue": "2026-11-20"
+          },
+          "d": {
+           "stringValue": "2026-11-13"
+          },
+          "k": {
+           "doubleValue": 1.686477
+          },
+          "px": {
+           "doubleValue": 109.625
+          },
+          "sh": {
+           "doubleValue": 307.6816
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       },
+       {
+        "mapValue": {
+         "fields": {
+          "asOf": {
+           "stringValue": "2026-11-20"
+          },
+          "d": {
+           "stringValue": "2026-11-18"
+          },
+          "k": {
+           "doubleValue": 1.686477
+          },
+          "px": {
+           "doubleValue": 95.07125
+          },
+          "sh": {
+           "doubleValue": 84.2608
+          },
+          "t": {
+           "stringValue": "buy"
+          },
+          "wt": {
+           "doubleValue": 4.75
+          }
+         }
+        }
+       },
+       {
+        "mapValue": {
+         "fields": {
+          "asOf": {
+           "stringValue": "2026-11-20"
+          },
+          "cash": {
+           "doubleValue": 7.12
+          },
+          "d": {
+           "stringValue": "2026-11-20"
+          },
+          "k": {
+           "doubleValue": 1.686477
+          },
+          "px": {
+           "doubleValue": 80.74
+          },
+          "sh": {
+           "doubleValue": 74.3605
+          },
+          "t": {
+           "stringValue": "buy"
+          },
+          "wt": {
+           "doubleValue": 3.56
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "txnsBefore": {
+     "arrayValue": {
+      "values": [
+       {
+        "mapValue": {
+         "fields": {
+          "asOf": {
+           "stringValue": "2026-11-20"
+          },
+          "d": {
+           "stringValue": "2026-11-13"
+          },
+          "px": {
+           "doubleValue": 109.625
+          },
+          "sh": {
+           "doubleValue": 293.6
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       },
+       {
+        "mapValue": {
+         "fields": {
+          "asOf": {
+           "stringValue": "2026-11-20"
+          },
+          "d": {
+           "stringValue": "2026-11-18"
+          },
+          "px": {
+           "doubleValue": 95.07125
+          },
+          "sh": {
+           "doubleValue": 80.4048
+          },
+          "t": {
+           "stringValue": "buy"
+          },
+          "wt": {
+           "doubleValue": 4.75
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "wt": {
+     "doubleValue": 28.31
+    }
+   },
+   "name": "projects/albassam-fund/databases/(default)/documents/trades/O440EidtOAXrkoc2xbMi",
+   "updateTime": "2026-11-22T19:26:54.324487Z"
+  },
+  {
+   "createTime": "2026-11-20T15:48:43.291348Z",
+   "fields": {
+    "closePx": {
+     "nullValue": null
+    },
+    "closed": {
+     "nullValue": null
+    },
+    "createdAt": {
+     "timestampValue": "2026-11-20T15:48:43.191Z"
+    },
+    "finalPct": {
+     "nullValue": null
+    },
+    "logo": {
+     "stringValue": "https://assets.parqet.com/logos/symbol/NVDA?format=png&size=64"
+    },
+    "name": {
+     "stringValue": "NVIDIA Corporation"
+    },
+    "opened": {
+     "stringValue": "2026-11-20"
+    },
+    "pur": {
+     "nullValue": null
+    },
+    "status": {
+     "stringValue": "active"
+    },
+    "ticker": {
+     "stringValue": "NVDA"
+    },
+    "txns": {
+     "arrayValue": {
+      "values": [
+       {
+        "mapValue": {
+         "fields": {
+          "asOf": {
+           "stringValue": "2026-11-20"
+          },
+          "cash": {
+           "doubleValue": 14.25
+          },
+          "d": {
+           "stringValue": "2026-11-20"
+          },
+          "k": {
+           "doubleValue": 1.686477
+          },
+          "px": {
+           "doubleValue": 135.7
+          },
+          "sh": {
+           "doubleValue": 88.6117
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "wt": {
+     "doubleValue": 7.13
+    }
+   },
+   "name": "projects/albassam-fund/databases/(default)/documents/trades/Q44XCByqmKs9BS8jLjro",
+   "updateTime": "2026-11-22T19:26:53.919849Z"
+  },
+  {
+   "createTime": "2026-07-04T15:20:48.392587Z",
+   "fields": {
+    "closePx": {
+     "integerValue": "155"
+    },
+    "closed": {
+     "stringValue": "2026-07-04"
+    },
+    "createdAt": {
+     "timestampValue": "2026-07-04T15:20:48.344Z"
+    },
+    "finalPct": {
+     "doubleValue": 1.9736842105263157
+    },
+    "logo": {
+     "stringValue": "https://assets.parqet.com/logos/symbol/MSTR?format=png&size=64"
+    },
+    "name": {
+     "stringValue": "Strategy Inc"
+    },
+    "opened": {
+     "stringValue": "2026-07-04"
+    },
+    "status": {
+     "stringValue": "closed"
+    },
+    "ticker": {
+     "stringValue": "MSTR"
+    },
+    "txns": {
+     "arrayValue": {
+      "values": [
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-07-04"
+          },
+          "px": {
+           "integerValue": "152"
+          },
+          "sh": {
+           "integerValue": "1"
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "wt": {
+     "integerValue": "10"
+    }
+   },
+   "name": "projects/albassam-fund/databases/(default)/documents/trades/TsiObzzBFKOyVHicmzD9",
+   "updateTime": "2026-07-19T17:12:05.794529Z"
+  },
+  {
+   "createTime": "2026-07-04T15:20:15.131588Z",
+   "fields": {
+    "closePx": {
+     "doubleValue": 216.24
+    },
+    "closed": {
+     "stringValue": "2026-07-04"
+    },
+    "createdAt": {
+     "timestampValue": "2026-07-04T15:20:15.069Z"
+    },
+    "finalPct": {
+     "doubleValue": 2.000000000000004
+    },
+    "logo": {
+     "stringValue": "https://assets.parqet.com/logos/symbol/NVDA?format=png&size=64"
+    },
+    "name": {
+     "stringValue": "NVIDIA Corporation"
+    },
+    "opened": {
+     "stringValue": "2026-07-04"
+    },
+    "status": {
+     "stringValue": "closed"
+    },
+    "ticker": {
+     "stringValue": "NVDA"
+    },
+    "txns": {
+     "arrayValue": {
+      "values": [
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-07-04"
+          },
+          "px": {
+           "integerValue": "212"
+          },
+          "sh": {
+           "integerValue": "1"
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "wt": {
+     "integerValue": "10"
+    }
+   },
+   "name": "projects/albassam-fund/databases/(default)/documents/trades/Zead4Gq2kowZPh2Yfq2W",
+   "updateTime": "2026-11-22T19:26:58.771688Z"
+  },
+  {
+   "createTime": "2026-10-30T13:54:40.314233Z",
+   "fields": {
+    "closePx": {
+     "nullValue": null
+    },
+    "closed": {
+     "nullValue": null
+    },
+    "createdAt": {
+     "timestampValue": "2026-10-30T13:54:40.232Z"
+    },
+    "finalPct": {
+     "nullValue": null
+    },
+    "logo": {
+     "stringValue": "https://assets.parqet.com/logos/symbol/NBIS?format=png&size=64"
+    },
+    "name": {
+     "stringValue": "Nebius Group N.V."
+    },
+    "opened": {
+     "stringValue": "2026-10-30"
+    },
+    "pur": {
+     "doubleValue": 4.14
+    },
+    "status": {
+     "stringValue": "active"
+    },
+    "ticker": {
+     "stringValue": "NBIS"
+    },
+    "txns": {
+     "arrayValue": {
+      "values": [
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-10-30"
+          },
+          "k": {
+           "doubleValue": 1.686477
+          },
+          "px": {
+           "doubleValue": 149.9
+          },
+          "sh": {
+           "doubleValue": 438.7529
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       },
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-11-06"
+          },
+          "px": {
+           "doubleValue": 130.5
+          },
+          "sh": {
+           "doubleValue": 220.1347
+          },
+          "t": {
+           "stringValue": "sell"
+          }
+         }
+        }
+       },
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-11-13"
+          },
+          "k": {
+           "doubleValue": 1.686477
+          },
+          "px": {
+           "integerValue": "115"
+          },
+          "sh": {
+           "doubleValue": 44.0269
+          },
+          "t": {
+           "stringValue": "buy"
+          },
+          "wt": {
+           "doubleValue": 3.0022
+          }
+         }
+        }
+       },
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-11-18"
+          },
+          "k": {
+           "doubleValue": 1.686477
+          },
+          "px": {
+           "doubleValue": 104.64
+          },
+          "sh": {
+           "doubleValue": 306.2225
+          },
+          "t": {
+           "stringValue": "buy"
+          },
+          "wt": {
+           "integerValue": "19"
+          }
+         }
+        }
+       },
+       {
+        "mapValue": {
+         "fields": {
+          "asOf": {
+           "stringValue": "2026-11-20"
+          },
+          "cash": {
+           "doubleValue": 3.56
+          },
+          "d": {
+           "stringValue": "2026-11-20"
+          },
+          "k": {
+           "doubleValue": 1.686477
+          },
+          "px": {
+           "doubleValue": 87.24
+          },
+          "sh": {
+           "doubleValue": 68.8201
+          },
+          "t": {
+           "stringValue": "buy"
+          },
+          "wt": {
+           "doubleValue": 3.56
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "txnsBefore": {
+     "arrayValue": {
+      "values": [
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-10-30"
+          },
+          "px": {
+           "doubleValue": 149.9
+          },
+          "sh": {
+           "doubleValue": 896.9
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       },
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-11-06"
+          },
+          "px": {
+           "doubleValue": 130.5
+          },
+          "sh": {
+           "integerValue": "450"
+          },
+          "t": {
+           "stringValue": "sell"
+          }
+         }
+        }
+       },
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-11-13"
+          },
+          "px": {
+           "integerValue": "115"
+          },
+          "sh": {
+           "integerValue": "90"
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       },
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-11-18"
+          },
+          "px": {
+           "doubleValue": 104.64
+          },
+          "sh": {
+           "doubleValue": 625.9809
+          },
+          "t": {
+           "stringValue": "buy"
+          },
+          "wt": {
+           "integerValue": "19"
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "wt": {
+     "doubleValue": 64.56
+    }
+   },
+   "name": "projects/albassam-fund/databases/(default)/documents/trades/nzsDAGEB2jvPGt0dTbON",
+   "updateTime": "2026-11-22T19:26:54.603776Z"
+  },
+  {
+   "createTime": "2026-07-29T17:31:09.116543Z",
+   "fields": {
+    "closePx": {
+     "integerValue": "211"
+    },
+    "closed": {
+     "stringValue": "2026-08-06"
+    },
+    "createdAt": {
+     "timestampValue": "2026-07-29T17:31:08.985Z"
+    },
+    "finalPct": {
+     "doubleValue": 18.53932584269663
+    },
+    "logo": {
+     "stringValue": "https://assets.parqet.com/logos/symbol/CRDO?format=png&size=64"
+    },
+    "name": {
+     "stringValue": "Credo Technology Group Holding "
+    },
+    "opened": {
+     "stringValue": "2026-07-29"
+    },
+    "status": {
+     "stringValue": "closed"
+    },
+    "ticker": {
+     "stringValue": "CRDO"
+    },
+    "txns": {
+     "arrayValue": {
+      "values": [
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-07-29"
+          },
+          "px": {
+           "integerValue": "178"
+          },
+          "sh": {
+           "integerValue": "40"
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "wt": {
+     "integerValue": "20"
+    }
+   },
+   "name": "projects/albassam-fund/databases/(default)/documents/trades/or9PO9NTHDVA4SNuoPLK",
+   "updateTime": "2026-08-06T13:32:08.252399Z"
+  },
+  {
+   "createTime": "2026-07-04T15:22:44.005565Z",
+   "fields": {
+    "closePx": {
+     "integerValue": "395"
+    },
+    "closed": {
+     "stringValue": "2026-07-04"
+    },
+    "createdAt": {
+     "timestampValue": "2026-07-04T15:22:43.954Z"
+    },
+    "finalPct": {
+     "doubleValue": 19.696969696969695
+    },
+    "logo": {
+     "stringValue": "https://assets.parqet.com/logos/symbol/ARM?format=png&size=64"
+    },
+    "name": {
+     "stringValue": "ARM Holdings PLC"
+    },
+    "opened": {
+     "stringValue": "2026-07-04"
+    },
+    "status": {
+     "stringValue": "closed"
+    },
+    "ticker": {
+     "stringValue": "ARM"
+    },
+    "txns": {
+     "arrayValue": {
+      "values": [
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-07-04"
+          },
+          "px": {
+           "integerValue": "330"
+          },
+          "sh": {
+           "integerValue": "1"
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "wt": {
+     "integerValue": "30"
+    }
+   },
+   "name": "projects/albassam-fund/databases/(default)/documents/trades/qKuEuioWOumxewqJNjQa",
+   "updateTime": "2026-11-22T19:26:55.399207Z"
+  },
+  {
+   "createTime": "2026-07-29T17:30:13.671283Z",
+   "fields": {
+    "closePx": {
+     "integerValue": "140"
+    },
+    "closed": {
+     "stringValue": "2026-08-07"
+    },
+    "createdAt": {
+     "timestampValue": "2026-07-29T17:30:13.579Z"
+    },
+    "finalPct": {
+     "doubleValue": 78.00641025641025
+    },
+    "logo": {
+     "stringValue": "https://assets.parqet.com/logos/symbol/AAOI?format=png&size=64"
+    },
+    "name": {
+     "stringValue": "Applied Optoelectronics, Inc."
+    },
+    "opened": {
+     "stringValue": "2026-07-29"
+    },
+    "status": {
+     "stringValue": "closed"
+    },
+    "ticker": {
+     "stringValue": "AAOI"
+    },
+    "txns": {
+     "arrayValue": {
+      "values": [
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-07-29"
+          },
+          "px": {
+           "integerValue": "78"
+          },
+          "sh": {
+           "integerValue": "100"
+          },
+          "t": {
+           "stringValue": "buy"
+          }
+         }
+        }
+       },
+       {
+        "mapValue": {
+         "fields": {
+          "d": {
+           "stringValue": "2026-08-05"
+          },
+          "px": {
+           "doubleValue": 137.69
+          },
+          "sh": {
+           "integerValue": "50"
+          },
+          "t": {
+           "stringValue": "sell"
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "wt": {
+     "integerValue": "20"
+    }
+   },
+   "name": "projects/albassam-fund/databases/(default)/documents/trades/qmYBITY4FxJDR8gPpbZL",
+   "updateTime": "2026-08-07T14:15:42.464590Z"
+  }
+ ]
+}
