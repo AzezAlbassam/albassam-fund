@@ -6,12 +6,12 @@
 // ============================================================
 
 import { initShell, observeReveals, onReveal, roll, countTo, reducedMotion, usd0, pct1, pctBig, pts1, shortUsd,
-         day, esc, pctClass, logoHtml, daysBetween, sessionWord } from "./shell.js?v=42";
-import { live, state } from "./live.js?v=42";
-import { loadRace, raceSummary } from "./series.js?v=42";
-import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=42";
-import { simulate, statPct, derive, blendedPct, cashPct, share, potK } from "./roi.js?v=42";
-import { watchNews } from "./news.js?v=42";
+         day, esc, pctClass, logoHtml, daysBetween, sessionWord } from "./shell.js?v=43";
+import { live, state } from "./live.js?v=43";
+import { loadRace, raceSummary, cagr } from "./series.js?v=43";
+import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=43";
+import { simulate, statPct, derive, blendedPct, cashPct, share, potK } from "./roi.js?v=43";
+import { watchNews } from "./news.js?v=43";
 
 const $ = (s, r = document) => r.querySelector(s);
 initShell();
@@ -20,7 +20,7 @@ initShell();
 const media = $("#heroMedia");
 let maze = null;
 const phone = innerWidth < 720;
-import("./maze.js?v=42")
+import("./maze.js?v=43")
   .then(m => m.startMaze($("#maze"), { labelsEl: $("#mzLabels"), cols: phone ? 9 : 16, rows: phone ? 11 : 11, fit: phone ? 1.12 : 1 }))
   .then(mz => { maze = mz; feedMaze(); onHeroScroll(); })
   .catch(err => { console.warn("3D maze unavailable:", err); media.classList.add("fallback"); });
@@ -248,7 +248,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startOrbit } = await import("./orbit.js?v=42");
+    const { startOrbit } = await import("./orbit.js?v=43");
     orbit = await startOrbit($("#orbit"), $("#orbitLabels"), renderOrbitCard);
     feedOrbit();
   } catch (err) {
@@ -272,12 +272,13 @@ function renderForecast() {
   // the numbers
   $("#fcN").textContent = N + (N === 1 ? " year" : " years");
   countTo($("#fcValue"), grow(r, N), pctBig, 1600);
-  $("#fcRate").textContent = `at ${pct1(r * 100)} a year${fc.share < 1 ? "" : ", the same as our run so far"} · ${shortUsd(pot)} would become ${val(r, N) >= 1e6 ? shortUsd(val(r, N)) : usd0(val(r, N))}`;
+  $("#fcRate").textContent = `at ${pct1(r * 100)} a year${fc.share < 1 ? "" : ": our result so far, repeated once a year"} · ${shortUsd(pot)} would become ${val(r, N) >= 1e6 ? shortUsd(val(r, N)) : usd0(val(r, N))}`;
   $("#fcRows").innerHTML = rows.map(([k, name, rate]) =>
     `<tr class="${k}"><th scope="row"><i class="sw ${k}"></i>${name}</th>` +
     [5, 10].map(y => `<td>${pctBig(grow(rate, y))}<small>${shortUsd(pot)} → ${shortUsd(val(rate, y))}</small></td>`).join("") + `</tr>`).join("");
-  const days = Math.max(1, daysBetween(race.first, race.days[race.days.length - 1]));
-  const ann = Math.pow(1 + r0, 365 / days) - 1;
+  // the same CAGR pace as Analytics: from the last close before the first call to the latest one
+  const n = race.days.length - 1, days = Math.max(1, daysBetween(race.days[0], race.days[n]));
+  const ann = (cagr(race.fund[0], race.fund[n], race.days[0], race.days[n])?.pct ?? 0) / 100;
   const toBillion = Math.log(1e9 / pot) / Math.log(1 + ann);
   $("#fcNote").textContent = `Our fund made ${pct1(r0 * 100)} in ${days} days. Held to that exact speed, the math says about ${pct1(ann * 100)} a year` +
     (ann > 0.5 && toBillion < 20 ? ` and ${Math.round(1e9 / pot).toLocaleString("en-US")} times the money in about ${Math.ceil(toBillion)} years, which nobody keeps up.` : ".") +
@@ -311,7 +312,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=42");
+    const { startTowers } = await import("./bars3d.js?v=43");
     fc.towers = await startTowers($("#fcCanvas"), $("#fcLabels"));
     renderForecast();
   } catch (err) { console.warn("3D forecast unavailable:", err); $("#fcStage").classList.add("fallback"); }

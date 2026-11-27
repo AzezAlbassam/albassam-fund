@@ -74,16 +74,24 @@
 .nb-table tbody th{text-align:left;font:500 15px/1.35 var(--body);color:var(--text-secondary)}
 .nb-table td{font:500 18px/1.2 var(--mono);color:var(--text-primary);white-space:nowrap}
 .nb-table td small{display:block;margin-top:6px;font:400 12px/1.2 var(--mono);color:var(--text-muted)}
+@media (min-width:721px){.nb-table td small{white-space:normal}}   /* a tight desktop wraps "$100K → $128,640" instead of cutting off TASI; phones scroll */
 .nb-table tbody tr:hover>:not(.us){background-color:rgba(11,11,12,.025)}
 /* our column: framed in ink, a 3px ink cap on top */
 .nb-table .us{background-color:rgba(11,11,12,.03);box-shadow:inset 1px 0 var(--ink),inset -1px 0 var(--ink)}
 .nb-table thead .us{color:var(--ink);border-radius:var(--r) var(--r) 0 0;background-image:linear-gradient(var(--ink),var(--ink));background-size:100% 3px;background-repeat:no-repeat}
 .nb-table tbody tr:last-child .us{border-radius:0 0 var(--r) var(--r);box-shadow:inset 1px 0 var(--ink),inset -1px 0 var(--ink),inset 0 -1px var(--ink)}
+.yr-table thead th small{display:block;margin-top:6px;font:400 11px/1.2 var(--mono);letter-spacing:.04em;text-transform:none;color:var(--text-muted)}
+.nb-table tbody th small{display:block;margin-top:6px;font:400 12px/1.2 var(--mono);color:var(--text-muted)}
+.yr .nb-box{width:fit-content;max-width:100%}   /* one or two years: the box hugs its columns */
+#yrNote{max-width:68ch}
+.yr-table tr.yr-fund th{color:var(--ink)}
+.yr-table tr.yr-fund td{font-weight:600}
+.yr-table tr.yr-cagr>*{border-top:1px solid var(--ink)}
 .nb-table .pos{color:var(--pos)} .nb-table .neg{color:var(--loss)}
 .nb-box.play tbody tr{animation:rowIn .9s var(--ease-out) both;animation-delay:calc(.15s + var(--i) * 90ms)}
 
 /* ---------- month by month: ink tiles, darker for a bigger month, red for a loss ---------- */
-.mm h2{margin-bottom:clamp(24px,3.6vw,44px)}
+.mm h2,.yr h2{margin-bottom:clamp(24px,3.6vw,44px)}
 .mm-box{padding:clamp(8px,1.4vw,16px)}
 /* a long record scrolls sideways (min-width per month) instead of squeezing the tiles */
 .hm{width:100%;min-width:calc(140px + var(--m,4) * 112px);table-layout:fixed;border-collapse:separate;border-spacing:8px;font-variant-numeric:tabular-nums}

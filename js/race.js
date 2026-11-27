@@ -4,11 +4,11 @@
 // Everything re-renders from live(): trades, pot and quotes.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml } from "./shell.js?v=42";
-import { live, state } from "./live.js?v=42";
-import { statPct, share } from "./roi.js?v=42";
-import { loadRace, raceSummary, seriesStats, monthly } from "./series.js?v=42";
-import { raceChart, bindRaceControls } from "./chart.js?v=42";
+import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml, pctClass } from "./shell.js?v=43";
+import { live, state } from "./live.js?v=43";
+import { statPct, share } from "./roi.js?v=43";
+import { loadRace, raceSummary, seriesStats, monthly, cagr, yearly, yearsOn } from "./series.js?v=43";
+import { raceChart, bindRaceControls } from "./chart.js?v=43";
 
 const $ = (id) => document.getElementById(id);
 const FAIL = "Analytics could not load right now. Try again in a minute.";
@@ -28,7 +28,7 @@ let race = null, status = "loading", key = "", seq = 0;
 /* ---------- header: the line maze, our fund's path climbing out of it ---------- */
 let maze = null;
 const phone = innerWidth < 720;
-import("./maze.js?v=42")
+import("./maze.js?v=43")
   .then(m => m.startMaze($("rhMaze"), { labelsEl: $("rhLabels"), cols: phone ? 8 : 12, rows: phone ? 7 : 9, seed: 20260712, spin: 0.035, fit: phone ? 0.92 : 1 }))
   .then(mz => { maze = mz; feedMaze(); })
   .catch(err => console.warn("3D maze unavailable:", err));
@@ -55,7 +55,7 @@ async function onLive(what) {
 }
 
 function paint() {
-  strip(); legend(); numbers(); months(); podium(); feedMaze();
+  strip(); legend(); numbers(); months(); years(); podium(); feedMaze();
   observeReveals(document);
 }
 
@@ -74,12 +74,15 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=42");
+    const { startTowers } = await import("./bars3d.js?v=43");
     towers = await startTowers($("pdCanvas"), $("pdLabels"), { yaw0: -0.45, pitch: 0.35, spin: 0.06 });
     podium();
   } catch (err) { console.warn("3D podium unavailable:", err); $("pdStage").classList.add("fallback"); }
 }, { rootMargin: "500px 0px" }).observe($("pdStage"));
 
+const pc = (v) => `<span class="v ${pctClass(v)}">${pct1(v)}</span>`;
+// how long a CAGR covers, rounded down: the day before the anniversary never reads "12.0 months"
+const howLong = (y) => (y >= 1 ? `${(Math.floor(y * 100) / 100).toFixed(2)} years` : `${(Math.floor(y * 120) / 10).toFixed(1)} months`);
 const note = (msg) => `<p class="state-note${status === "loading" ? " busy" : ""}">${msg}</p>`;
 const stateMsg = () => status === "empty" ? EMPTY : status === "failed" ? FAIL : "Loading…";
 
@@ -121,10 +124,14 @@ function numbers() {
   const own = race.tasiOwn?.v.length > 2 ? race.tasiOwn : null;   // TASI's own Sun-Thu sessions
   const S = Object.fromEntries(SERIES.map(([k]) => [k, k === "tasi" && own ? seriesStats(own.days, own.v) : seriesStats(race.days, race[k])]));
   $("nbSpan").textContent = `${dayYear(race.first)} to ${dayYear(race.days[race.days.length - 1])}`;
-  const pc = (v) => Math.abs(v) < 0.05 ? `<span class="v">0.0%</span>` : `<span class="v ${v < 0 ? "neg" : "pos"}">${pct1(v)}</span>`;
   const dayCell = (x) => x ? `${pc(x.pct)}<small>${day(x.d)}</small>` : `<span class="muted">Too early</span>`;
+  // CAGR from each Return above, over the same dates (all four share them)
+  const n = race.days.length - 1, C = Object.fromEntries(SERIES.map(([k]) => [k, cagr(1, 1 + S[k].ret / 100, race.days[0], race.days[n])]));
+  const c = C.fund, cagrLabel = !c ? "Per year (CAGR)" : c.full ? `Per year (CAGR)<small>over ${howLong(c.years)}</small>`
+    : `Yearly pace (CAGR)<small>from ${howLong(c.years)} of history</small>`;   // under a year it is a pace, not a result
   const rows = [
     ["Return", k => `${pc(S[k].ret)}<small>${shortUsd(race.pot)} → ${usd0(S[k].end)}</small>`],   // the money only as an example
+    [cagrLabel, k => (C[k] ? pc(C[k].pct) : "…")],
     ["Deepest drop", k => pc(S[k].maxDD)],
     ["Best day", k => dayCell(S[k].best)],
     ["Worst day", k => dayCell(S[k].worst)],
@@ -155,6 +162,30 @@ function months() {
   </table>`;
   if (!box._end) { box._end = true; box.scrollLeft = box.scrollWidth; }   // phones: open on the latest month; later repaints keep the viewer's place
   playOnce(box.closest("[data-reveal]"));
+}
+
+/* ---------- year by year, and the CAGR ---------- */
+// Under a year of history a CAGR is only a pace: the row and the note say so.
+function years() {
+  const box = $("yrBox"), noteEl = $("yrNote");
+  if (status !== "ok") { box.innerHTML = note(stateMsg()); noteEl.textContent = ""; return; }
+  const Y = yearly(race), last = Y.length - 1;
+  if (!Y.length) { box.innerHTML = note("The first year is still running."); noteEl.textContent = ""; return; }
+  const when = (r, i) => (i === 0 && r.partial && i === last ? `${day(race.first)} to ${day(r.to)}`
+    : i === 0 ? `from ${day(race.first)}` : i === last && r.partial ? `to ${day(r.to)}` : "full year");
+  box.innerHTML = `<table class="nb-table yr-table">
+    <thead><tr><td></td>${Y.map((r, i) => `<th scope="col">${r.y}<small>${when(r, i)}</small></th>`).join("")}</tr></thead>
+    <tbody>${SERIES.map(([k, name], j) => `<tr class="${k === "fund" ? "yr-fund" : ""}" style="--i:${j}"><th scope="row">${name}</th>${Y.map(r =>
+      `<td>${pc(r[k])}</td>`).join("")}</tr>`).join("")}
+      <tr class="yr-fund yr-cagr" style="--i:${SERIES.length}"><th scope="row">Our fund's CAGR<small>from the start</small></th>${Y.map(r =>
+        `<td>${r.cagr ? `${pc(r.cagr.pct)}<small>${r.cagr.full ? "per year" : "pace"}, ${howLong(r.cagr.years)}</small>` : "…"}</td>`).join("")}</tr></tbody>
+  </table>`;
+  if (!box._end) { box._end = true; box.scrollLeft = box.scrollWidth; }   // many years: open on the latest one
+  const c = Y[last].cagr, so = (race.fund[race.days.length - 1] / race.fund[0] - 1) * 100;
+  const what = "CAGR (compound annual growth rate) is the one steady yearly rate that turns the starting pot into today's value";
+  noteEl.textContent = !c ? "" : c.full ? `${what}: ${pct1(c.pct)} a year over ${howLong(c.years)}.`
+    : `${what}. With ${howLong(c.years)} of history (${pct1(so)} so far) there is no yearly result yet: ${pct1(c.pct)} is the pace, what a full year at the same speed would make. The first full year ends on ${dayYear(yearsOn(race.days[0], 1))}.`;
+  playOnce(box.closest("[data-reveal]"), ".v");
 }
 
 /* ---------- where our lead came from ---------- */

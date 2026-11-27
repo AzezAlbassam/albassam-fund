@@ -13,10 +13,10 @@
 // the first call.
 // ============================================================
 
-import { history, stepper } from "./history.js?v=42";
-import { watchTickers } from "./prices.js?v=42";
-import { DEMO } from "./config.js?v=42";
-import { afterClose, sizePts } from "./roi.js?v=42";
+import { history, stepper } from "./history.js?v=43";
+import { watchTickers } from "./prices.js?v=43";
+import { DEMO } from "./config.js?v=43";
+import { afterClose, sizePts } from "./roi.js?v=43";
 
 export const GOLD = "GLD", SPX = "^GSPC", TASI = "^TASI.SR";   // TASI: the Saudi market, in SAR (a % is a %)
 const SPX_LIVE = ".SPX";   // CNBC's name for the S&P 500 (TASI has no live source)
@@ -127,6 +127,57 @@ export function monthly(race) {
     out.push({ m, fund: ch("fund"), gold: ch("gold"), spx: ch("spx"), tasi: ch("tasi") });
     prev = i;
   });
+  return out;
+}
+
+// ---- CAGR ------------------------------------------------------------
+// Years from d0 to d1 ("YYYY-MM-DD"), counted by anniversaries: whole years,
+// then the part of the current year by its real length (365 or 366 days).
+// Exactly 1 on the first anniversary, leap years included (Feb 29 -> Feb 28).
+const utc = (d) => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10));
+function plusYears(d, n) {
+  const y = +d.slice(0, 4) + n, m = +d.slice(5, 7), dd = +d.slice(8, 10);
+  return Date.UTC(y, m - 1, Math.min(dd, new Date(Date.UTC(y, m, 0)).getUTCDate()));
+}
+// The date n years after d ("YYYY-MM-DD"), on the same rule.
+export const yearsOn = (d, n) => new Date(plusYears(d, n)).toISOString().slice(0, 10);
+export function yearsBetween(d0, d1) {
+  const t1 = utc(d1);
+  if (!(t1 > utc(d0))) return 0;
+  let n = 0;
+  while (plusYears(d0, n + 1) <= t1) n++;
+  const a = plusYears(d0, n), b = plusYears(d0, n + 1);
+  return n + (t1 - a) / (b - a);
+}
+
+// Compound annual growth rate from v0 on d0 to v1 on d1: the one steady yearly
+// rate that turns v0 into v1. { pct, years, full } or null. full = a year or
+// more of history; a shorter period is only a pace (an extrapolation).
+export function cagr(v0, v1, d0, d1) {
+  const years = yearsBetween(d0, d1);
+  if (!(v0 > 0) || !(v1 > 0) || !(years > 0)) return null;
+  return { pct: (Math.pow(v1 / v0, 1 / years) - 1) * 100, years, full: years >= 1 };
+}
+
+// Calendar years: each year's own change (from the last close before it, or
+// from the start) and the fund's CAGR from the start to that year's end: Dec 31
+// once the year is over, the last close while it runs. A year counts as over
+// only when a later year's close exists. TASI uses its own Sun-Thu sessions,
+// like its stats row. [{ y, from, to, partial, fund, gold, spx, tasi, cagr }]
+export function yearly(race) {
+  const out = [], n = race.days.length - 1, own = race.tasiOwn?.v.length ? race.tasiOwn : null;
+  const tasiTo = (d) => own.v[Math.max(0, own.days.findLastIndex(x => x <= d))];
+  let i0 = 0, t0 = own?.v[0];
+  for (let i = 1; i <= n; i++) {
+    const y = race.days[i].slice(0, 4);
+    if (i < n && race.days[i + 1].slice(0, 4) === y) continue;   // not the year's last day yet
+    const done = i < n, end = done ? `${y}-12-31` : race.days[i];
+    const ch = k => (race[k][i] / race[k][i0] - 1) * 100, t1 = own ? tasiTo(end) : null;
+    out.push({ y, from: race.days[i0], to: race.days[i], partial: i0 === 0 || !done,
+      fund: ch("fund"), gold: ch("gold"), spx: ch("spx"), tasi: own ? (t1 / t0 - 1) * 100 : ch("tasi"),
+      cagr: cagr(race.fund[0], race.fund[i], race.days[0], end) });
+    i0 = i; t0 = t1;
+  }
   return out;
 }
 

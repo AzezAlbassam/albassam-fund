@@ -7,15 +7,15 @@
 // Firestore rules enforce owner-only writes server-side too.
 // ============================================================
 
-import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=42";
-import { store, purified } from "./store.js?v=42";
-import { addPick, addWt, cashProblem, kNow, newPick, potUsd, unreadable } from "./cashpick.js?v=42";
-import { healRecord } from "./owner.js?v=42";
-import { live, state } from "./live.js?v=42";
-import { quotes, fetchProfile, checkTicker } from "./prices.js?v=42";
-import { watchNews } from "./news.js?v=42";
-import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct, lastAdd, parseNum, share } from "./roi.js?v=42";
-import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=42";
+import { DEMO, firebaseConfig, OWNER_EMAIL } from "./config.js?v=43";
+import { store, purified } from "./store.js?v=43";
+import { addPick, addWt, cashProblem, kNow, newPick, potUsd, unreadable } from "./cashpick.js?v=43";
+import { healRecord } from "./owner.js?v=43";
+import { live, state } from "./live.js?v=43";
+import { quotes, fetchProfile, checkTicker } from "./prices.js?v=43";
+import { watchNews } from "./news.js?v=43";
+import { derive, blendedPct, simulate, computeStats, fmtPct, today, exitPx, cashPct, lastAdd, parseNum, share } from "./roi.js?v=43";
+import { initShell, observeReveals, roll, countTo, esc, logoHtml, pctClass, usd0, usd2, pct1, shortUsd, day, dayYear, daysBetween, sessionWord } from "./shell.js?v=43";
 
 const $ = (s, r = document) => r.querySelector(s);
 const WAIT = "…";
@@ -397,7 +397,7 @@ document.addEventListener("click", async (e) => {
   if (!t) return;
   const act = btn.dataset.act;
   try {
-    if (act === "share") return void (await import("./card.js?v=42")).shareCall(t);
+    if (act === "share") return void (await import("./card.js?v=43")).shareCall(t);
     if (act === "del" || act === "reopen" || act === "undo") {
       // two-step: the first click arms the button, a second one at least
       // half a second later confirms (a double-click can never do both)

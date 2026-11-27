@@ -27,8 +27,8 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin integrity="sha384-JU5BZoPLFT50NKsen0cKt0RTuYeiJ8LaXWA97AZ+JjLppaQ72oIFUVre0Vb/MBYO">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin integrity="sha384-4945sCngUQDV87Ya/YMj0C/CtNaGKMyhUP6ilixT6PaLNU/Wfb64r91sLpw+uD/q">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/site.css?v=42">
-<link rel="stylesheet" href="css/race.css?v=42">
+<link rel="stylesheet" href="css/site.css?v=43">
+<link rel="stylesheet" href="css/race.css?v=43">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"},
 "integrity":{
@@ -163,6 +163,20 @@
     </div>
   </section>
 
+  <!-- year by year: each calendar year, and the CAGR from the start -->
+  <section class="section yr" aria-labelledby="yrTitle">
+    <div class="wrap">
+      <p class="kicker" data-reveal>The long view</p>
+      <h2 id="yrTitle" data-reveal>Year by year.</h2>
+      <div class="glass nb-box" data-reveal>
+        <div class="tscroll" id="yrBox" tabindex="0" role="region" aria-labelledby="yrTitle">
+          <p class="state-note busy">Loading the years…</p>
+        </div>
+      </div>
+      <p class="span-note" id="yrNote" data-reveal></p>
+    </div>
+  </section>
+
   <!-- where the lead came from: sticky heading left, bars right -->
   <section class="section lb-sec" aria-labelledby="lbTitle">
     <div class="wrap split">
@@ -190,7 +204,6 @@
       </ol>
       <div class="hw-note" data-reveal>
         <p>Gold is tracked by GLD, the S&amp;P 500 by its index. Calls made in the WhatsApp group before this site opened (May 19 to July 3, 2026) carry the dates and prices of their messages; their sizes are estimates.</p>
-        <p>Day one shows those earlier gains landing all at once.</p>
       </div>
     </div>
   </section>
@@ -217,6 +230,6 @@
   </div>
 </footer>
 
-<script type="module" src="js/race.js?v=42"></script>
+<script type="module" src="js/race.js?v=43"></script>
 </body>
 </html>
