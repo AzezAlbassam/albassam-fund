@@ -6,13 +6,13 @@
 // account, and Firestore rules still check every write.
 // ============================================================
 
-import { addPick, addWt, cashProblem, kNow, newPick, unreadable } from "./cashpick.js?v=41";
-import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=41";
-import { store } from "./store.js?v=41";
-import { state } from "./live.js?v=41";
-import { checkTicker, fetchProfile } from "./prices.js?v=41";
-import { today, derive, lastAdd, cashPct, parseNum, share, withK } from "./roi.js?v=41";
-import { day, esc } from "./shell.js?v=41";
+import { addPick, addWt, cashProblem, kNow, newPick, unreadable } from "./cashpick.js?v=42";
+import { firebaseConfig, OWNER_EMAIL } from "./config.js?v=42";
+import { store } from "./store.js?v=42";
+import { state } from "./live.js?v=42";
+import { checkTicker, fetchProfile } from "./prices.js?v=42";
+import { today, derive, lastAdd, cashPct, parseNum, share, withK } from "./roi.js?v=42";
+import { day, esc } from "./shell.js?v=42";
 
 // Self-repair on the owner's signed-in visit, once the live record is in.
 // Both steps write nothing once done:

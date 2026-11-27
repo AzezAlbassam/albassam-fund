@@ -13,10 +13,10 @@
 // the first call.
 // ============================================================
 
-import { history, stepper } from "./history.js?v=41";
-import { watchTickers } from "./prices.js?v=41";
-import { DEMO } from "./config.js?v=41";
-import { afterClose, sizePts } from "./roi.js?v=41";
+import { history, stepper } from "./history.js?v=42";
+import { watchTickers } from "./prices.js?v=42";
+import { DEMO } from "./config.js?v=42";
+import { afterClose, sizePts } from "./roi.js?v=42";
 
 export const GOLD = "GLD", SPX = "^GSPC", TASI = "^TASI.SR";   // TASI: the Saudi market, in SAR (a % is a %)
 const SPX_LIVE = ".SPX";   // CNBC's name for the S&P 500 (TASI has no live source)
@@ -102,16 +102,13 @@ function pctAt(t, px, d) {
   return ((proceeds + held * px - cost) / cost) * 100;
 }
 
-// Summary numbers for one series of daily values. Best and worst
-// day skip day one: calls opened before the record started all carry
-// its date, so day one shows their earlier gains landing at once.
+// Summary numbers for one series of daily values.
 export function seriesStats(days, v) {
   const n = v.length;
   let peak = v[0], dd = 0, best = null, worst = null;
   for (let i = 1; i < n; i++) {
     peak = Math.max(peak, v[i]);
     dd = Math.min(dd, (v[i] / peak - 1) * 100);
-    if (i < 2) continue;
     const ch = (v[i] / v[i - 1] - 1) * 100;
     if (!best || ch > best.pct) best = { d: days[i], pct: ch };
     if (!worst || ch < worst.pct) worst = { d: days[i], pct: ch };

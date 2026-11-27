@@ -129,14 +129,13 @@ export function computeStats(trades, quotes) {
 }
 
 // ---- The pot grows with what is banked ----------------------------
-// A "% of pot" is a share of the pot ON THE DAY OF THE BUY: the start
-// ($100K) plus everything banked by then ($168,648 since Aug 7). k is
-// that pot over the start. A sized buy saves its own k; older buys work
-// it out: the July/August calls were all sized on the flat start (k = 1),
-// later ones on the start plus the calls closed before their day.
-// ponytail: Aug 8 = the day after the last July/August close; buys on and
-// after it without a saved k were sized on the grown pot (owner, Nov 20).
-const GROWS_FROM = "2026-08-08";
+// A "% of pot" is a share of the pot ON THE DAY OF THE BUY. k is that pot
+// over the start; every buy saves its own k. Until the site started sizing
+// buys on the grown pot (Nov 20, 2026) every call was sized on the original
+// $100K (k = 1): the group's own messages count it that way (Nov 13: "18%
+// left"). From Nov 20 a buy is sized on the start plus everything banked.
+// ponytail: buys saved without k get it worked out from this date.
+const GROWS_FROM = "2026-11-20";
 const kMemo = new WeakMap();
 function kAt(trades, d) {
   if (!d || d < GROWS_FROM) return 1;
@@ -186,34 +185,52 @@ export function sizePts(t, trades, upTo) {
     : s + (i ? (x.wt > 0 ? +x.wt : 0) : opening) * kOf(x, trades)), 0);
 }
 
-// Banked, in % of the start: every closed call's size × its final %.
-export const bankedPct = (trades) => trades.reduce((s, t) =>
-  s + (t.status === "closed" && t.finalPct != null ? sizePts(t, trades) * t.finalPct / 100 : 0), 0);
+// An open call's money, in points of the start, by average cost: what it
+// put in (cap), what it still holds at cost (held), and what its sales so
+// far locked in (gross; net = after purification). A sale returns its money
+// to cash, so a partly sold call only holds the rest of the pot.
+export function book(t, trades) {
+  const cap = sizePts(t, trades);
+  let sh = 0, cost = 0, all = 0, got = 0;
+  for (const x of t.txns || []) {
+    if (x.t === "buy") { sh += x.sh; cost += x.sh * x.px; all += x.sh * x.px; }
+    else if (sh > 0) { const c = cost * Math.min(1, x.sh / sh); got += x.sh * x.px - c; cost -= c; sh = Math.max(0, sh - x.sh); }
+  }
+  const f = all > 0 ? cap / all : 0;   // dollars -> points of the start
+  const gross = got * f;
+  return { cap, held: cost * f, gross, net: gross > 0 && t.pur > 0 ? gross * (1 - Math.min(t.pur, 100) / 100) : gross };
+}
 
-// Today's pot over the start (1.686 = $168,648 on $100K).
+// Banked, in % of the start: every closed call's size × its final %, and
+// what open calls' sales have locked in so far.
+export const bankedPct = (trades) => trades.reduce((s, t) =>
+  s + (t.status === "closed" ? (t.finalPct != null ? sizePts(t, trades) * t.finalPct / 100 : 0) : t.wt > 0 ? book(t, trades).net : 0), 0);
+
+// Today's pot over the start (1.585 = $158,500 on $100K).
 export const potK = (trades) => 1 + bankedPct(trades) / 100;
 
-// "% of pot" as it stands: an open call's share of TODAY's pot, a closed
-// call's share of the pot it was sized on. Same as wt until a call closes
-// after a later buy; the cash bar, the size labels and "on the pot" use it.
-export const share = (t, trades) => (!(t.wt > 0) ? 0 : t.status === "closed" ? +t.wt : +(sizePts(t, trades) / potK(trades)).toFixed(4));
+// "% of pot" as it stands: an open call's share of TODAY's pot (the shares it
+// still holds, at cost), a closed call's share of the pot it was sized on.
+// The cash bar, the size labels and "on the pot" use it.
+export const share = (t, trades) => (!(t.wt > 0) ? 0 : t.status === "closed" ? +t.wt : +(book(t, trades).held / potK(trades)).toFixed(4));
 
 // "$X since day one" — BANKING model (no leverage). Each call's "% of
-// pot" is the capital put to work in it. Closed calls BANK their gain
-// (size × final %); open calls MARK to today (size × live %). Sizes are
-// counted in points of the START (sizePts), so a call sized on the grown
-// pot weighs what its money weighs: total = banked + open, in dollars.
-// openPct = the open calls' gain or loss in % of TODAY's pot.
+// pot" is the capital put to work in it. Closed calls BANK their result
+// (size × final %); a sale from an open call banks what it locked in; the
+// shares still held MARK to today. Sizes are counted in points of the
+// START (sizePts), so every call weighs what its money weighs:
+// total = banked + open, in dollars.
+// openPct = what the shares still held are up or down, in % of TODAY's pot.
 export function simulate(trades, quotes, start = 100000) {
   let realized = 0, open = 0, nClosed = 0, nOpen = 0;
   for (const t of trades) {
-    const w = sizePts(t, trades) / 100;
     if (t.status === "closed") {
-      if (t.finalPct != null) { realized += w * t.finalPct; nClosed++; }
-    } else {
-      const p = statPct(t, quotes);
-      if (p != null) { open += w * p; nOpen++; }
+      if (t.finalPct != null) { realized += sizePts(t, trades) * t.finalPct / 100; nClosed++; }
+      continue;
     }
+    const b = book(t, trades), p = statPct(t, quotes);
+    realized += b.net;
+    if (p != null) { open += b.cap * p / 100 - b.gross; nOpen++; }
   }
   const totalPct = realized + open, k = 1 + realized / 100;
   return {

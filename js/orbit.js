@@ -11,8 +11,8 @@ import * as THREE from "three";
 import { LineSegments2 } from "three/addons/lines/LineSegments2.js";
 import { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js";
 import { LineMaterial } from "three/addons/lines/LineMaterial.js";
-import { esc } from "./shell.js?v=41";
-import { share } from "./roi.js?v=41";
+import { esc } from "./shell.js?v=42";
+import { share } from "./roi.js?v=42";
 
 const RADII = [2.1, 2.75, 3.4];
 const TILTS = [[0.0, 0.0], [0.28, 0.35], [-0.22, -0.4]];

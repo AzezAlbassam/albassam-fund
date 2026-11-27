@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Portfolio · Albassam Fund</title>
-<meta name="description" content="Every Albassam Fund call on the record. Wins and losses, sized and dated. Nothing deleted.">
+<meta name="description" content="Every Albassam Fund call on the record. Wins and losses, sized and dated.">
 <meta name="theme-color" content="#FFFFFF">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
@@ -28,8 +28,8 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin integrity="sha384-4945sCngUQDV87Ya/YMj0C/CtNaGKMyhUP6ilixT6PaLNU/Wfb64r91sLpw+uD/q">
 <!-- fonts load without blocking the page: text shows at once, the faces swap in -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/site.css?v=41">
-<link rel="stylesheet" href="css/ledger.css?v=41">
+<link rel="stylesheet" href="css/site.css?v=42">
+<link rel="stylesheet" href="css/ledger.css?v=42">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"},
 "integrity":{
@@ -70,7 +70,7 @@
     <div class="wrap lhead-copy" data-stagger>
       <p class="kicker">Portfolio</p>
       <h1 id="ledger-title" aria-label="Every call, on the record."><span class="w" aria-hidden="true">Every</span> <span class="w" aria-hidden="true">call,</span> <span class="nw"><span class="w" aria-hidden="true">on</span> <span class="w" aria-hidden="true">the</span> <span class="w" aria-hidden="true">record.</span></span></h1>
-      <p class="lede">Wins and losses, sized and dated. Nothing deleted.</p>
+      <p class="lede">Wins and losses, sized and dated.</p>
     </div>
   </section>
 
@@ -78,7 +78,7 @@
     <div class="wrap">
       <h2 id="tally-h" class="sr">Summary</h2>
       <dl class="tally" id="tally" data-stagger>
-        <div class="glass glow tilt t-bank"><dt>Banked</dt><dd data-s="bank"><span class="sk"></span></dd><dd class="t-foot">Locked in from closed calls</dd></div>
+        <div class="glass glow tilt t-bank"><dt>Banked</dt><dd data-s="bank"><span class="sk"></span></dd><dd class="t-foot">Locked in from sales</dd></div>
         <div class="glass tilt t-cash"><dt>Remaining cash</dt><dd data-s="cash"><span class="sk"></span></dd><dd class="t-bar" id="cashBar" role="img"></dd><dd class="t-key" id="cashKey"></dd><dd class="t-foot">Of the pot, not in any call</dd></div>
         <div class="glass tilt"><dt>Calls</dt><dd data-s="calls"><span class="sk"></span></dd></div>
         <div class="glass tilt"><dt>Won</dt><dd data-s="won"><span class="sk"></span></dd><dd class="pips" id="pips" aria-hidden="true"></dd></div>
@@ -127,7 +127,7 @@
       </ol>
       <p class="slow" id="slow" hidden>Still connecting to the record.</p>
       <div class="empty" id="empty" hidden><span class="empty-stamp" aria-hidden="true"></span><p>No calls match that filter.</p></div>
-      <p class="note">Calls opened before this record started are dated July 4, 2026.</p>
+      <p class="note">Calls made in the WhatsApp group before this site opened (May 19 to July 3, 2026) carry the dates and prices of their messages; their sizes are estimates.</p>
     </div>
   </section>
 </main>
@@ -139,7 +139,7 @@
         <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="7" fill="#0B0B0C"/><path d="M8.5 24 16 8l7.5 16" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.6 18.6l3-2.6 2.2 1.8 3.4-3.4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <b>Albassam Fund</b>
       </a>
-      <p>Albassam Fund. A family record of every call since July 4, 2026.</p>
+      <p>Albassam Fund. A family record of every call since May 19, 2026. Calls before July 4, 2026 were made in the WhatsApp group: their dates and prices come from its messages, their sizes are estimates.</p>
       <p>Prices from CNBC and Yahoo Finance; they may be delayed.</p>
       <p class="legal"><b>Not investment advice.</b> This site is a record of our own trades, shared for information only. It is not a recommendation to buy or sell anything. Past results do not promise future results; you can lose money. Decide for yourself.
         <span lang="ar" dir="rtl"><b>ليست توصية استثمارية.</b> هذا الموقع سجل لصفقاتنا الخاصة ويُعرض للاطلاع فقط، وليس دعوة للشراء أو البيع. النتائج السابقة لا تضمن النتائج القادمة، والخسارة واردة. القرار قرارك.</span></p>
@@ -152,6 +152,6 @@
   </div>
 </footer>
 
-<script type="module" src="js/ledger.js?v=41"></script>
+<script type="module" src="js/ledger.js?v=42"></script>
 </body>
 </html>
