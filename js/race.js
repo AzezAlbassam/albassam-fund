@@ -4,11 +4,11 @@
 // Everything re-renders from live(): trades, pot and quotes.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml, pctClass } from "./shell.js?v=43";
-import { live, state } from "./live.js?v=43";
-import { statPct, share } from "./roi.js?v=43";
-import { loadRace, raceSummary, seriesStats, monthly, cagr, yearly, yearsOn } from "./series.js?v=43";
-import { raceChart, bindRaceControls } from "./chart.js?v=43";
+import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml, pctClass } from "./shell.js?v=44";
+import { live, state } from "./live.js?v=44";
+import { statPct, share } from "./roi.js?v=44";
+import { loadRace, raceSummary, seriesStats, monthly, cagr, yearly, yearsOn } from "./series.js?v=44";
+import { raceChart, bindRaceControls } from "./chart.js?v=44";
 
 const $ = (id) => document.getElementById(id);
 const FAIL = "Analytics could not load right now. Try again in a minute.";
@@ -28,7 +28,7 @@ let race = null, status = "loading", key = "", seq = 0;
 /* ---------- header: the line maze, our fund's path climbing out of it ---------- */
 let maze = null;
 const phone = innerWidth < 720;
-import("./maze.js?v=43")
+import("./maze.js?v=44")
   .then(m => m.startMaze($("rhMaze"), { labelsEl: $("rhLabels"), cols: phone ? 8 : 12, rows: phone ? 7 : 9, seed: 20260712, spin: 0.035, fit: phone ? 0.92 : 1 }))
   .then(mz => { maze = mz; feedMaze(); })
   .catch(err => console.warn("3D maze unavailable:", err));
@@ -74,7 +74,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=43");
+    const { startTowers } = await import("./bars3d.js?v=44");
     towers = await startTowers($("pdCanvas"), $("pdLabels"), { yaw0: -0.45, pitch: 0.35, spin: 0.06 });
     podium();
   } catch (err) { console.warn("3D podium unavailable:", err); $("pdStage").classList.add("fallback"); }
@@ -82,7 +82,8 @@ new IntersectionObserver(async ([e], obs) => {
 
 const pc = (v) => `<span class="v ${pctClass(v)}">${pct1(v)}</span>`;
 // how long a CAGR covers, rounded down: the day before the anniversary never reads "12.0 months"
-const howLong = (y) => (y >= 1 ? `${(Math.floor(y * 100) / 100).toFixed(2)} years` : `${(Math.floor(y * 120) / 10).toFixed(1)} months`);
+// (+1e-9 only absorbs float noise: 4.6 * 100 is 459.99999999999994, and a real fraction of a year is never that close to the next step)
+const howLong = (y) => (y >= 1 ? `${(Math.floor(y * 100 + 1e-9) / 100).toFixed(2)} years` : `${(Math.floor(y * 120 + 1e-9) / 10).toFixed(1)} months`);
 const note = (msg) => `<p class="state-note${status === "loading" ? " busy" : ""}">${msg}</p>`;
 const stateMsg = () => status === "empty" ? EMPTY : status === "failed" ? FAIL : "Loading…";
 
@@ -183,7 +184,9 @@ function years() {
   if (!box._end) { box._end = true; box.scrollLeft = box.scrollWidth; }   // many years: open on the latest one
   const c = Y[last].cagr, so = (race.fund[race.days.length - 1] / race.fund[0] - 1) * 100;
   const what = "CAGR (compound annual growth rate) is the one steady yearly rate that turns the starting pot into today's value";
-  noteEl.textContent = !c ? "" : c.full ? `${what}: ${pct1(c.pct)} a year over ${howLong(c.years)}.`
+  const paced = Y.some(r => r.cagr && !r.cagr.full);   // the first year's column stays a pace after the anniversary
+  noteEl.textContent = !c ? "" : c.full ? `${what}: ${pct1(c.pct)} a year over ${howLong(c.years)}.` +
+      (paced ? " A cell marked “pace” covers less than a year from the start, so it is not a yearly result: it is what a full year at that speed would make." : "")
     : `${what}. With ${howLong(c.years)} of history (${pct1(so)} so far) there is no yearly result yet: ${pct1(c.pct)} is the pace, what a full year at the same speed would make. The first full year ends on ${dayYear(yearsOn(race.days[0], 1))}.`;
   playOnce(box.closest("[data-reveal]"), ".v");
 }

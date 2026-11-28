@@ -6,12 +6,12 @@
 // ============================================================
 
 import { initShell, observeReveals, onReveal, roll, countTo, reducedMotion, usd0, pct1, pctBig, pts1, shortUsd,
-         day, esc, pctClass, logoHtml, daysBetween, sessionWord } from "./shell.js?v=43";
-import { live, state } from "./live.js?v=43";
-import { loadRace, raceSummary, cagr } from "./series.js?v=43";
-import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=43";
-import { simulate, statPct, derive, blendedPct, cashPct, share, potK } from "./roi.js?v=43";
-import { watchNews } from "./news.js?v=43";
+         day, esc, pctClass, logoHtml, daysBetween, sessionWord } from "./shell.js?v=44";
+import { live, state } from "./live.js?v=44";
+import { loadRace, raceSummary, cagr } from "./series.js?v=44";
+import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=44";
+import { simulate, statPct, derive, blendedPct, cashPct, share, potK } from "./roi.js?v=44";
+import { watchNews } from "./news.js?v=44";
 
 const $ = (s, r = document) => r.querySelector(s);
 initShell();
@@ -20,7 +20,7 @@ initShell();
 const media = $("#heroMedia");
 let maze = null;
 const phone = innerWidth < 720;
-import("./maze.js?v=43")
+import("./maze.js?v=44")
   .then(m => m.startMaze($("#maze"), { labelsEl: $("#mzLabels"), cols: phone ? 9 : 16, rows: phone ? 11 : 11, fit: phone ? 1.12 : 1 }))
   .then(mz => { maze = mz; feedMaze(); onHeroScroll(); })
   .catch(err => { console.warn("3D maze unavailable:", err); media.classList.add("fallback"); });
@@ -179,7 +179,7 @@ function renderRecord() {
     return `<li class="call-card tilt">
       <div class="cc-top">${logoHtml(t)}<div><b>${esc(t.ticker)}</b><small>${esc(t.name || "")}</small></div></div>
       <p class="cc-pct ${pctClass(t.finalPct)}">${pct1(t.finalPct)}</p>
-      <p class="cc-meta">${day(t.opened)} → ${day(t.closed)}${t.wt > 0 ? " · " + t.wt + "% of pot" : ""}</p>
+      <p class="cc-meta">${day(t.opened)} → ${day(t.closed)}${t.wt > 0 ? " · " + +(+t.wt).toFixed(1) + "% of pot" : ""}</p>
       <p class="cc-gain ${pctClass(t.wt > 0 ? t.wt * t.finalPct / 100 : null)}">${t.wt > 0 ? pct1(t.wt * t.finalPct / 100) + " on the pot" : "Unsized"}</p></li>`;
   }).join("") || `<li class="muted">Closed calls land here with their result locked in.</li>`;
   row.setAttribute("data-stagger", "");
@@ -248,7 +248,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startOrbit } = await import("./orbit.js?v=43");
+    const { startOrbit } = await import("./orbit.js?v=44");
     orbit = await startOrbit($("#orbit"), $("#orbitLabels"), renderOrbitCard);
     feedOrbit();
   } catch (err) {
@@ -258,31 +258,33 @@ new IntersectionObserver(async ([e], obs) => {
 }, { rootMargin: "600px 0px" }).observe(stage);
 
 /* ---------- the forecast: what the pot could become ---------- */
-// "Our pace" = our return so far, repeated once a year. The literal
-// daily pace is shown in the note only: annualized it runs into the
-// billions within a few years, which no fund sustains.
+// "Our result" = under a year of history, our return so far repeated once a
+// year (the literal pace, annualized, runs into the billions and is shown in
+// the note only); from a full year on, our real CAGR, the same as Analytics.
 const FC_REF = [["spx", "S&amp;P 500", 0.10, 0xa1a1aa], ["gold", "Gold", 0.08, 0x6b6b74]];
 const fc = { share: 1, years: 5, towers: null };
 function renderForecast() {
   if (!race) return;
-  const r0 = raceSummary(race).fund / 100, r = r0 * fc.share, pot = state.pot, N = fc.years;
+  const n = race.days.length - 1, c = cagr(race.fund[0], race.fund[n], race.days[0], race.days[n]), full = !!c?.full;
+  const tot = raceSummary(race).fund / 100, r0 = full ? c.pct / 100 : tot, r = r0 * fc.share, pot = state.pot, N = fc.years;
   const val = (rate, y) => pot * Math.pow(1 + rate, y);
   const grow = (rate, y) => (Math.pow(1 + rate, y) - 1) * 100;   // total growth in %: what each person applies to their own money
   const rows = [["fund", "Our fund", r, 0x0b0b0c], ...FC_REF];
   // the numbers
   $("#fcN").textContent = N + (N === 1 ? " year" : " years");
   countTo($("#fcValue"), grow(r, N), pctBig, 1600);
-  $("#fcRate").textContent = `at ${pct1(r * 100)} a year${fc.share < 1 ? "" : ": our result so far, repeated once a year"} · ${shortUsd(pot)} would become ${val(r, N) >= 1e6 ? shortUsd(val(r, N)) : usd0(val(r, N))}`;
+  $("#fcRate").textContent = `at ${pct1(r * 100)} a year${fc.share < 1 ? "" : full ? ": our CAGR so far" : ": our result so far, repeated once a year"} · ${shortUsd(pot)} would become ${val(r, N) >= 1e6 ? shortUsd(val(r, N)) : usd0(val(r, N))}`;
   $("#fcRows").innerHTML = rows.map(([k, name, rate]) =>
     `<tr class="${k}"><th scope="row"><i class="sw ${k}"></i>${name}</th>` +
     [5, 10].map(y => `<td>${pctBig(grow(rate, y))}<small>${shortUsd(pot)} → ${shortUsd(val(rate, y))}</small></td>`).join("") + `</tr>`).join("");
-  // the same CAGR pace as Analytics: from the last close before the first call to the latest one
-  const n = race.days.length - 1, days = Math.max(1, daysBetween(race.days[0], race.days[n]));
-  const ann = (cagr(race.fund[0], race.fund[n], race.days[0], race.days[n])?.pct ?? 0) / 100;
+  // the same CAGR as Analytics: from the last close before the first call to the latest one
+  const days = Math.max(1, daysBetween(race.days[0], race.days[n])), ann = (c?.pct ?? 0) / 100;
   const toBillion = Math.log(1e9 / pot) / Math.log(1 + ann);
-  $("#fcNote").textContent = `Our fund made ${pct1(r0 * 100)} in ${days} days. Held to that exact speed, the math says about ${pct1(ann * 100)} a year` +
-    (ann > 0.5 && toBillion < 20 ? ` and ${Math.round(1e9 / pot).toLocaleString("en-US")} times the money in about ${Math.ceil(toBillion)} years, which nobody keeps up.` : ".") +
-    ` So these towers repeat our result once a year instead. Past results do not promise future ones.`;
+  $("#fcNote").textContent = full
+    ? `Our fund made ${pct1(tot * 100)} in ${days} days: ${pct1(ann * 100)} a year, compounded (CAGR). These towers repeat that yearly rate. Past results do not promise future ones.`
+    : `Our fund made ${pct1(tot * 100)} in ${days} days. At that exact pace, the math says about ${pct1(ann * 100)} a year` +
+      (ann > 0.5 && toBillion < 20 ? ` and ${Math.round(1e9 / pot).toLocaleString("en-US")} times the money in about ${Math.ceil(toBillion)} years, which nobody keeps up.` : ".") +
+      ` So these towers repeat our result once a year instead. Past results do not promise future ones.`;
   // the towers: one per year, our fund in front, the S&P 500 and gold behind
   if (!fc.towers) return;
   const max = val(Math.max(r, 0.1), N), H = 4.4, gap = N > 5 ? 0.82 : N > 3 ? 1.05 : 1.3;
@@ -312,7 +314,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=43");
+    const { startTowers } = await import("./bars3d.js?v=44");
     fc.towers = await startTowers($("#fcCanvas"), $("#fcLabels"));
     renderForecast();
   } catch (err) { console.warn("3D forecast unavailable:", err); $("#fcStage").classList.add("fallback"); }
