@@ -4,11 +4,11 @@
 // Everything re-renders from live(): trades, pot and quotes.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml, pctClass } from "./shell.js?v=45";
-import { live, state } from "./live.js?v=45";
-import { statPct, share } from "./roi.js?v=45";
-import { loadRace, raceSummary, seriesStats, monthly, cagr, yearly, yearsOn } from "./series.js?v=45";
-import { raceChart, bindRaceControls } from "./chart.js?v=45";
+import { initShell, observeReveals, onReveal, roll, countTo, usd0, pct1, shortUsd, day, dayYear, month, esc, logoHtml, pctClass } from "./shell.js?v=46";
+import { live, state } from "./live.js?v=46";
+import { statPct, share } from "./roi.js?v=46";
+import { loadRace, raceSummary, seriesStats, monthly, cagr, yearly, yearsOn } from "./series.js?v=46";
+import { raceChart, bindRaceControls } from "./chart.js?v=46";
 
 const $ = (id) => document.getElementById(id);
 const FAIL = "Analytics could not load right now. Try again in a minute.";
@@ -28,7 +28,7 @@ let race = null, status = "loading", key = "", seq = 0;
 /* ---------- header: the line maze, our fund's path climbing out of it ---------- */
 let maze = null;
 const phone = innerWidth < 720;
-import("./maze.js?v=45")
+import("./maze.js?v=46")
   .then(m => m.startMaze($("rhMaze"), { labelsEl: $("rhLabels"), cols: phone ? 8 : 12, rows: phone ? 7 : 9, seed: 20260712, spin: 0.035, fit: phone ? 0.92 : 1 }))
   .then(mz => { maze = mz; feedMaze(); })
   .catch(err => console.warn("3D maze unavailable:", err));
@@ -74,7 +74,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=45");
+    const { startTowers } = await import("./bars3d.js?v=46");
     towers = await startTowers($("pdCanvas"), $("pdLabels"), { yaw0: -0.45, pitch: 0.35, spin: 0.06 });
     podium();
   } catch (err) { console.warn("3D podium unavailable:", err); $("pdStage").classList.add("fallback"); }
@@ -109,8 +109,9 @@ function cagrChip() {
   const c = status === "ok" ? cagr(race.fund[0], race.fund[n], race.days[0], race.days[n]) : null;
   el.hidden = !c;
   if (!c) return;
-  el.innerHTML = `<span class="k">${c.full ? "CAGR · per year" : "Yearly pace (CAGR)"}</span><b class="${c.pct < 0 ? "neg" : ""}">${pct1(c.pct)}</b>` +
-    `<small>${c.full ? `over ${howLong(c.years)}` : `from ${howLong(c.years)} of history`}</small>`;
+  el.innerHTML = `<span>${c.full ? "CAGR" : "CAGR pace"}</span><b class="${c.pct < 0 ? "neg" : ""}">${pct1(c.pct)}</b><small>${howLong(c.years)}</small>`;
+  el.title = c.full ? `Compound annual growth rate, a year at a time, over ${howLong(c.years)}`
+    : `Compound annual growth rate as a pace: from ${howLong(c.years)} of history, not a full year yet`;
 }
 
 /* ---------- legend under the chart: latest values for the current view ---------- */

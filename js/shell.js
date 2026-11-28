@@ -4,8 +4,8 @@
 // build stamp and the "new version" bar. Plus small formatters.
 // ============================================================
 
-import { BUILD, DEMO } from "./config.js?v=45";
-import { today } from "./roi.js?v=45";
+import { BUILD, DEMO } from "./config.js?v=46";
+import { today } from "./roi.js?v=46";
 
 export const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -80,7 +80,7 @@ export function initShell() {
   // the owner's "+ New call" button, only on a device where the manager signed in
   try {
     if (localStorage.getItem("af:owner") === "1" && !document.getElementById("addForm"))
-      import("./owner.js?v=45").then(m => m.startOwner()).catch(e => console.warn("quick add unavailable:", e));
+      import("./owner.js?v=46").then(m => m.startOwner()).catch(e => console.warn("quick add unavailable:", e));
   } catch (e) { /* storage blocked */ }
 
   // "Get the app": install on the phone's home screen

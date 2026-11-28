@@ -6,21 +6,21 @@
 
 /* ---------- header: a line maze behind the copy ---------- */
 .rh{position:relative;isolation:isolate;overflow:hidden;overflow:clip;display:flex;align-items:flex-end;
-  min-height:clamp(600px,84svh,820px);padding:calc(var(--nav-h) + 184px) 0 clamp(96px,8vw,112px)}   /* +184: room for the CAGR card above the title */
+  min-height:clamp(600px,84svh,820px);padding:calc(var(--nav-h) + 76px) 0 clamp(96px,8vw,112px)}   /* +76: room for the CAGR pill above the title */
 .rh-copy{max-width:min(640px,52vw)}
 .rh h1{font-size:clamp(46px,5.8vw,84px);max-width:9.5ch}
 .rh h1 .w{display:inline-block;opacity:0;transform:perspective(700px) rotateX(-85deg) translateY(.25em);transform-origin:50% 100%;
   animation:wIn 1.2s var(--ease-out) forwards;animation-delay:calc(.2s + var(--i) * .11s)}
 @keyframes wIn{to{opacity:1;transform:none}}
 .rh .lede{max-width:40ch}
-/* the CAGR, top left of the first screen (an absolute layer: .rh-copy moves with a scroll animation) */
-.rh-top{position:absolute;top:calc(var(--nav-h) + 28px);left:0;right:0;z-index:2;pointer-events:none}
-.rh-cagr{display:inline-flex;flex-direction:column;gap:6px;margin:0;padding:14px 18px 16px;border-radius:var(--r);background:var(--panel);border:1px solid var(--ink);pointer-events:auto}
+/* the CAGR, top left of the first screen: a pill like Home's live chip (an absolute layer: .rh-copy moves with a scroll animation) */
+.rh-top{position:absolute;top:calc(var(--nav-h) + 16px);left:0;right:0;z-index:2;pointer-events:none}
+.rh-cagr{display:inline-flex;align-items:baseline;gap:10px;margin:0;padding:9px 16px;border-radius:999px;background:var(--paper);border:1px solid var(--ink);
+  font:500 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--text-secondary);white-space:nowrap;pointer-events:auto}
 .rh-cagr[hidden]{display:none}
-.rh-cagr .k{font:500 11px/1.3 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--text-secondary)}
-.rh-cagr b{font:600 clamp(28px,2.8vw,40px)/1.05 var(--display);letter-spacing:-.03em;color:var(--ink)}
+.rh-cagr b{font:600 16px/1 var(--display);letter-spacing:-.01em;color:var(--ink)}
 .rh-cagr b.neg{color:var(--loss)}
-.rh-cagr small{font:400 12px/1.3 var(--mono);color:var(--text-muted)}
+.rh-cagr small{font:inherit;color:var(--text-muted)}
 
 /* live headline strip: three lanes, one runner each, line length = return */
 .rh-strip{margin-top:clamp(28px,4vw,40px)}
