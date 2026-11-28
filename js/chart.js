@@ -10,7 +10,7 @@
 //   c.view({ bench: "gold"|"spx"|"both", range: "1M"|"3M"|"ALL", unit: "pct"|"usd" });
 // ============================================================
 
-import { onReveal, observeReveals, reducedMotion, day, shortUsd } from "./shell.js?v=44";
+import { onReveal, observeReveals, reducedMotion, day, shortUsd } from "./shell.js?v=45";
 
 const NS = "http://www.w3.org/2000/svg";
 const RANGES = { "1M": 22, "3M": 64 };
@@ -88,8 +88,8 @@ export function raceChart(el) {
 
     const bench = BENCH.includes(opts.bench) ? opts.bench : "gold";
     const endF = cut.fund[n - 1], endB = cut[bench][n - 1];
-    const lead = endF - endB, ahead = lead >= 0;
-    const leadTxt = (ahead ? "+" : "-") + (opts.unit === "pct" ? Math.abs(lead).toFixed(1) + " pts" : shortUsd(Math.abs(lead)));
+    const ahead = endF >= endB;   // the wash between our line and the benchmark's: ink ahead, red behind
+    const up = opts.unit === "pct" ? endF >= 0 : endF >= cut.fund[0];
     const area = path(cut.fund) + cut[bench].map((v, i) => "L" + X(n - 1 - i).toFixed(1) + " " + Y(cut[bench][n - 1 - i]).toFixed(1)).join("") + "Z";
 
     // x labels: month starts for long ranges, a few days for short ones
@@ -124,10 +124,10 @@ export function raceChart(el) {
       <line class="cross" y1="${pad.t}" y2="${H - pad.b}"/>
       ${keys.map(k => `<circle class="dot" data-k="${k}" r="4.5" fill="#FFFFFF" stroke-width="2" stroke="${HEX[k]}"/>`).join("")}`;
 
-    // the lead readout, pinned between our end point and the benchmark's
-    leadEl.className = "race-lead" + (ahead ? "" : " behind");
-    leadEl.innerHTML = `${ahead ? "Lead over" : "Behind"} ${{ gold: "gold", spx: "the S&amp;P 500", tasi: "TASI" }[bench]}<b>${leadTxt}</b>`;
-    leadEl.style.top = narrow ? "22px" : ((Y(endF) + Y(endB)) / 2).toFixed(0) + "px";
+    // the readout: our fund itself, by its end point: its % over the range shown, or all the money it holds now
+    leadEl.className = "race-lead" + (up ? "" : " behind");
+    leadEl.innerHTML = `Our fund<b>${opts.unit === "pct" ? fmtV(endF) : shortUsd(endF)}</b>`;
+    leadEl.style.top = narrow ? "22px" : Y(endF).toFixed(0) + "px";
     leadEl.style.width = narrow ? "auto" : (pad.r - 18) + "px";
 
     empty.hidden = true;

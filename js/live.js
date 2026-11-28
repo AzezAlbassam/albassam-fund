@@ -4,10 +4,10 @@
 //   live(what => render(state))   what: "trades" | "settings" | "quotes"
 // ============================================================
 
-import { initStore } from "./store.js?v=44";
-import { loadSplits, splitAdjust } from "./roi.js?v=44";
-import { startPrices, watchTickers, quotes } from "./prices.js?v=44";
-import { DEMO } from "./config.js?v=44";
+import { initStore } from "./store.js?v=45";
+import { loadSplits, splitAdjust } from "./roi.js?v=45";
+import { startPrices, watchTickers, quotes } from "./prices.js?v=45";
+import { DEMO } from "./config.js?v=45";
 
 export const state = { trades: [], pot: 100000, quotes, ready: false, cached: false };
 

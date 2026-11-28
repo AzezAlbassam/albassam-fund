@@ -13,10 +13,10 @@
 // the first call.
 // ============================================================
 
-import { history, stepper } from "./history.js?v=44";
-import { watchTickers } from "./prices.js?v=44";
-import { DEMO } from "./config.js?v=44";
-import { afterClose, sizePts } from "./roi.js?v=44";
+import { history, stepper } from "./history.js?v=45";
+import { watchTickers } from "./prices.js?v=45";
+import { DEMO } from "./config.js?v=45";
+import { afterClose, sizePts } from "./roi.js?v=45";
 
 export const GOLD = "GLD", SPX = "^GSPC", TASI = "^TASI.SR";   // TASI: the Saudi market, in SAR (a % is a %)
 const SPX_LIVE = ".SPX";   // CNBC's name for the S&P 500 (TASI has no live source)
