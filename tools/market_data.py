@@ -158,6 +158,16 @@ def main():
         byday = dict(zip(s["d"], s["c"])); byday.update(zip(new["d"], new["c"]))
         days = sorted(byday)
         series[tk] = {**new, "d": days, "c": [byday[x] for x in days]}
+    # hand corrections win over Yahoo: days it serves wrong (SNDK after its split) or never
+    # serves (TASI's Sunday sessions). ponytail: take closes from CNBC's bars if this list grows
+    try:
+        fixes = json.load(open(os.path.join(data, "closes-fix.json")))
+    except Exception:
+        fixes = {}
+    for tk, days in fixes.items():
+        if tk in series and isinstance(days, dict):
+            byday = dict(zip(series[tk]["d"], series[tk]["c"])); byday.update(days)
+            ds = sorted(byday); series[tk] = {**series[tk], "d": ds, "c": [byday[x] for x in ds]}
     doc = {"from": start, "series": series}
     if old.get("from") == doc["from"] and old.get("series") == doc["series"]:
         print("no change")

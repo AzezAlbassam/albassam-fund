@@ -6,12 +6,12 @@
 // ============================================================
 
 import { initShell, observeReveals, onReveal, roll, countTo, reducedMotion, usd0, pct1, pctBig, pts1, shortUsd,
-         day, esc, pctClass, logoHtml, daysBetween, sessionWord } from "./shell.js?v=46";
-import { live, state } from "./live.js?v=46";
-import { loadRace, raceSummary, cagr } from "./series.js?v=46";
-import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=46";
-import { simulate, statPct, derive, blendedPct, cashPct, share, potK } from "./roi.js?v=46";
-import { watchNews } from "./news.js?v=46";
+         day, esc, pctClass, openClass, onPot, logoHtml, daysBetween, sessionWord } from "./shell.js?v=47";
+import { live, state } from "./live.js?v=47";
+import { loadRace, raceSummary, cagr } from "./series.js?v=47";
+import { raceChart, bindRaceControls, viewValues } from "./chart.js?v=47";
+import { simulate, statPct, derive, blendedPct, cashPct, share, potK, contribPts } from "./roi.js?v=47";
+import { watchNews } from "./news.js?v=47";
 
 const $ = (s, r = document) => r.querySelector(s);
 initShell();
@@ -20,7 +20,7 @@ initShell();
 const media = $("#heroMedia");
 let maze = null;
 const phone = innerWidth < 720;
-import("./maze.js?v=46")
+import("./maze.js?v=47")
   .then(m => m.startMaze($("#maze"), { labelsEl: $("#mzLabels"), cols: phone ? 9 : 16, rows: phone ? 11 : 11, fit: phone ? 1.12 : 1 }))
   .then(mz => { maze = mz; feedMaze(); onHeroScroll(); })
   .catch(err => { console.warn("3D maze unavailable:", err); media.classList.add("fallback"); });
@@ -132,7 +132,7 @@ function renderTicker() {
   tickerKey = key;
   const one = items.map(t => {
     const p = pctOf(t);
-    return `<span class="tk-item">${logoHtml(t)}${esc(t.ticker)} <b class="${pctClass(p)}">${pct1(p)}</b><small>${t.status === "active" ? "open" : "closed " + day(t.closed)}</small></span>`;
+    return `<span class="tk-item">${logoHtml(t)}${esc(t.ticker)} <b class="${t.status === "active" ? openClass(p) : pctClass(p)}">${pct1(p)}</b><small>${t.status === "active" ? "open" : "closed " + day(t.closed)}</small></span>`;
   }).join("");
   let reps = 2;
   while (items.length * reps < 16) reps += 2;   // the track must be wider than any screen
@@ -180,7 +180,7 @@ function renderRecord() {
       <div class="cc-top">${logoHtml(t)}<div><b>${esc(t.ticker)}</b><small>${esc(t.name || "")}</small></div></div>
       <p class="cc-pct ${pctClass(t.finalPct)}">${pct1(t.finalPct)}</p>
       <p class="cc-meta">${day(t.opened)} → ${day(t.closed)}${t.wt > 0 ? " · " + +(+t.wt).toFixed(1) + "% of pot" : ""}</p>
-      <p class="cc-gain ${pctClass(t.wt > 0 ? t.wt * t.finalPct / 100 : null)}">${t.wt > 0 ? pct1(t.wt * t.finalPct / 100) + " on the pot" : "Unsized"}</p></li>`;
+      <p class="cc-gain ${pctClass(contribPts(t, state.trades))}">${t.wt > 0 ? onPot(contribPts(t, state.trades)) + " on the fund" : "Unsized"}</p></li>`;
   }).join("") || `<li class="muted">Closed calls land here with their result locked in.</li>`;
   row.setAttribute("data-stagger", "");
   observeReveals(row.parentElement);
@@ -208,7 +208,7 @@ function renderBook(liveOnly) {
       const el = box.querySelector(`[data-id="${CSS.escape(t.id)}"]`); if (!el) continue;
       const q = state.quotes[t.ticker], p = blendedPct(t, q?.c);
       el.querySelector("[data-f=pct]").textContent = pct1(p);
-      el.querySelector("[data-f=pct]").className = pctClass(p);
+      el.querySelector("[data-f=pct]").className = openClass(p);
       el.querySelector("[data-f=px]").textContent = q ? "$" + q.c.toFixed(2) : "…";
       el.querySelector("[data-f=today]").textContent = q?.dp != null ? pct1(q.dp) + " " + sessionWord(q) : "";
     }
@@ -218,9 +218,9 @@ function renderBook(liveOnly) {
     const d = derive(t), q = state.quotes[t.ticker], p = blendedPct(t, q?.c);
     return `<article class="glass glow pos-card tilt" data-id="${esc(t.id)}" data-reveal>
       <div class="top">${logoHtml(t)}<div><div class="tk">${esc(t.ticker)}</div><div class="nm">${esc(t.name)}</div></div>
-        <div class="roi"><b data-f="pct" class="${pctClass(p)}">${pct1(p)}</b><small data-f="today">${q?.dp != null ? pct1(q.dp) + " " + sessionWord(q) : ""}</small></div></div>
+        <div class="roi"><b data-f="pct" class="${openClass(p)}">${pct1(p)}</b><small data-f="today">${q?.dp != null ? pct1(q.dp) + " " + sessionWord(q) : ""}</small></div></div>
       <dl><div><dt>Avg cost</dt><dd>$${d.avgCost.toFixed(2)}</dd></div><div><dt>Now</dt><dd data-f="px">${q ? "$" + q.c.toFixed(2) : "…"}</dd></div>
-        <div><dt>Share of pot</dt><dd>${t.wt > 0 ? +share(t, state.trades).toFixed(2) + "%" : "Unsized"}</dd></div><div><dt>Opened</dt><dd>${day(t.opened)}</dd></div></dl>
+        <div><dt>Share of today's pot</dt><dd>${t.wt > 0 ? +share(t, state.trades).toFixed(2) + "%" : "Unsized"}</dd></div><div><dt>Opened</dt><dd>${day(t.opened)}</dd></div></dl>
     </article>`;
   }).join("") + cashCard(active) : `<div class="glass glow book-empty" data-reveal>
       <div><h3>All cash.</h3><p>Every gain is banked. The next call shows up here the minute it opens.</p></div></div>`;
@@ -230,12 +230,12 @@ function renderBook(liveOnly) {
 /* ---------- the 3D orbit, started when its section comes near ---------- */
 const stage = $("#orbitStage");
 function renderOrbitCard(t) {
-  const p = pctOf(t), w = share(t, state.trades), card = $("#orbitCard");
+  const p = pctOf(t), w = share(t, state.trades), card = $("#orbitCard"), on = contribPts(t, state.trades, state.quotes);
   card.innerHTML = `<div class="oc-top">${logoHtml(t)}<div><b>${esc(t.ticker)}</b><small>${esc(t.name || "")}</small></div>
-      <span class="oc-pct ${pctClass(p)}">${pct1(p)}</span></div>
+      <span class="oc-pct ${t.status === "active" ? openClass(p) : pctClass(p)}">${pct1(p)}</span></div>
     <dl><div><dt>Dates</dt><dd>${day(t.opened)} → ${t.status === "active" ? "now" : day(t.closed)}</dd></div>
-      <div><dt>Pot share</dt><dd>${w > 0 ? +w.toFixed(2) + "%" : "Unsized"}</dd></div>
-      <div><dt>On the pot</dt><dd class="${pctClass(w > 0 && p != null ? w * p / 100 : null)}">${w > 0 && p != null ? pct1(w * p / 100) : "…"}</dd></div></dl>`;
+      <div><dt>${t.status === "active" ? "Share of today's pot" : "Share of pot"}</dt><dd>${w > 0 ? +w.toFixed(2) + "%" : "Unsized"}</dd></div>
+      <div><dt>On the fund</dt><dd class="${pctClass(on)}">${on != null ? onPot(on) : "…"}</dd></div></dl>`;
 }
 function feedOrbit() {
   if (!orbit || !state.ready) return;
@@ -248,7 +248,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startOrbit } = await import("./orbit.js?v=46");
+    const { startOrbit } = await import("./orbit.js?v=47");
     orbit = await startOrbit($("#orbit"), $("#orbitLabels"), renderOrbitCard);
     feedOrbit();
   } catch (err) {
@@ -314,7 +314,7 @@ new IntersectionObserver(async ([e], obs) => {
   if (!e.isIntersecting) return;
   obs.disconnect();
   try {
-    const { startTowers } = await import("./bars3d.js?v=46");
+    const { startTowers } = await import("./bars3d.js?v=47");
     fc.towers = await startTowers($("#fcCanvas"), $("#fcLabels"));
     renderForecast();
   } catch (err) { console.warn("3D forecast unavailable:", err); $("#fcStage").classList.add("fallback"); }

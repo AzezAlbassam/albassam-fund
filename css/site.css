@@ -20,7 +20,7 @@
   --grad:linear-gradient(#0B0B0C,#0B0B0C);
   --grad-soft:rgba(11,11,12,.04);
   --fund:#0B0B0C; --gold:#55555D; --spx:#8A8A93; --pearl:#8A8A93;
-  --pos:#0B0B0C; --jade:#0B0B0C; --loss:#D92D20;
+  --pos:#0B0B0C; --jade:#0B0B0C; --loss:#D92D20; --gain:#0E7C47;   /* green: open calls that are up */
   --jade-muted:rgba(11,11,12,.05); --gold-muted:rgba(11,11,12,.05); --gold-hot:#0B0B0C;
   --ease-out:cubic-bezier(.16,1,.3,1); --ease-io:cubic-bezier(.65,0,.35,1); --spring:cubic-bezier(.22,1,.36,1);
   --tshadow:none;
@@ -59,7 +59,7 @@ h3{font-size:clamp(18px,2vw,22px);letter-spacing:-.02em}
 .num{font-family:var(--display);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.04em}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .fund{color:var(--fund)} .gold{color:var(--gold)} .pearl,.spx{color:var(--spx)} .jade{color:var(--fund)}
-.pos{color:var(--pos)} .loss,.neg{color:var(--loss)}
+.pos{color:var(--pos)} .loss,.neg{color:var(--loss)} .gain{color:var(--gain)}
 .muted{color:var(--text-muted)}
 
 /* ---------- layout ---------- */
@@ -172,7 +172,7 @@ body>.demo-chip{position:absolute;z-index:49;top:calc(var(--nav-h) + env(safe-ar
   color:var(--c);background:var(--paper);border:1px solid var(--c);
   font:600 18px/1 var(--display);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .stamp small{display:block;margin-top:5px;font:500 10px/1 var(--mono);letter-spacing:.14em;color:var(--text-muted)}
-.stamp.loss{--c:var(--loss)} .stamp.open{--c:var(--ink);border-style:dashed}
+.stamp.loss{--c:var(--loss)} .stamp.open{--c:var(--ink);border-style:dashed} .stamp.open.gain{--c:var(--gain)} .stamp.open.loss{--c:var(--loss)}
 [data-reveal] .stamp,.stamp[data-reveal]{opacity:0;transform:scale(.8);transition:opacity .5s var(--ease-out),transform .7s var(--spring)}
 .in .stamp,.stamp.in{opacity:1;transform:none}
 
@@ -196,7 +196,8 @@ body>.demo-chip{position:absolute;z-index:49;top:calc(var(--nav-h) + env(safe-ar
 .odo{display:inline-flex;align-items:baseline;white-space:nowrap}
 .odo .col{display:inline-block;height:1.12em;line-height:1.12;overflow:hidden;vertical-align:-.16em}
 .odo .col>span{display:flex;flex-direction:column;transform:translateY(0);transition:transform 1.6s var(--ease-out)}
-.odo .col>span>span{height:1.12em;line-height:1.12}
+.odo .col>span::before{content:"0\A 1\A 2\A 3\A 4\A 5\A 6\A 7\A 8\A 9";white-space:pre;line-height:1.12}
+.odo .ch::before{content:attr(data-c)}
 
 /* ---------- race chart (shared component) ---------- */
 .race{position:relative;width:100%;height:var(--race-h,420px);touch-action:pan-y;user-select:none;-webkit-user-select:none}
@@ -297,6 +298,7 @@ body>.demo-chip{position:absolute;z-index:49;top:calc(var(--nav-h) + env(safe-ar
 body.paused *,body.paused *::before,body.paused *::after,
 body.still *,body.still *::before,body.still *::after{animation-play-state:paused!important}
 @media (prefers-reduced-motion:reduce){
+  .odo .col>span{transition:none!important}   /* the numbers land at once */
   html{scroll-behavior:auto}
   [data-reveal],[data-stagger]>*,[data-reveal] .stamp,.stamp[data-reveal]{opacity:1!important;transform:none!important;transition:opacity .4s!important}
   .molten{transform:none!important}

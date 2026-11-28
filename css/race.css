@@ -137,6 +137,7 @@
 .lb-val{text-align:right}
 .lb-val b{display:block;font:600 15px/1.2 var(--mono);font-variant-numeric:tabular-nums;color:var(--pos)}
 .loss .lb-val b{color:var(--loss)}
+.gain .lb-bar{background:var(--gain)} .gain .lb-val b{color:var(--gain)}
 .lb-val small{color:var(--text-secondary)}
 .lb.play .lb-row{animation:rowIn .8s var(--ease-out) both;animation-delay:calc(var(--i) * 60ms)}
 

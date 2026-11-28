@@ -4,8 +4,8 @@
 // build stamp and the "new version" bar. Plus small formatters.
 // ============================================================
 
-import { BUILD, DEMO } from "./config.js?v=46";
-import { today } from "./roi.js?v=46";
+import { BUILD, DEMO } from "./config.js?v=47";
+import { today } from "./roi.js?v=47";
 
 export const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -80,7 +80,7 @@ export function initShell() {
   // the owner's "+ New call" button, only on a device where the manager signed in
   try {
     if (localStorage.getItem("af:owner") === "1" && !document.getElementById("addForm"))
-      import("./owner.js?v=46").then(m => m.startOwner()).catch(e => console.warn("quick add unavailable:", e));
+      import("./owner.js?v=47").then(m => m.startOwner()).catch(e => console.warn("quick add unavailable:", e));
   } catch (e) { /* storage blocked */ }
 
   // "Get the app": install on the phone's home screen
@@ -145,15 +145,19 @@ export function roll(el, text) {
   if (el._rolled === text) return;
   el._rolled = text;
   el.classList.add("odo");
-  el.setAttribute("aria-label", text);
+  el.removeAttribute("aria-label");
   const shape = text.replace(/\d/g, "0");
   if (el._shape !== shape) {
     el._shape = shape;
-    el.innerHTML = [...text].map(ch => /\d/.test(ch)
-      ? `<span class="col" aria-hidden="true"><span>${"0123456789".split("").map(d => `<span>${d}</span>`).join("")}</span></span>`
-      : `<span aria-hidden="true">${esc(ch)}</span>`).join("");
+    // the reels draw their digits and signs with CSS (::before), so the only text in the page is
+    // the real value in .sr: copying the page, a screen reader or an AI reading it gets "+28.6%",
+    // not "0123456789"
+    el.innerHTML = `<span class="sr"></span>` + [...text].map(ch => /\d/.test(ch)
+      ? `<span class="col" aria-hidden="true"><span></span></span>`
+      : `<span class="ch" aria-hidden="true" data-c="${esc(ch)}"></span>`).join("");
     el.offsetWidth;   // commit the zero state so the first roll animates
   }
+  el.firstChild.textContent = text;
   const cols = el.querySelectorAll(".col > span");
   let k = 0;
   [...text].forEach(ch => {
@@ -241,6 +245,9 @@ export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c =>
 // price carries (a saved close, or a Sunday's Friday close) unless that is today.
 export const sessionWord = (q) => (q?.ext === "pre" ? "pre-market" : q?.ext === "post" ? "after hours"
   : q?.d && q.d < today() ? "on " + day(q.d) : q?.saved ? "last close" : "today");
+export const onPot = (v) => v != null && Math.abs(v) >= 0.005 && Math.abs(v) < 0.05 ? (v > 0 ? "+" : "-") + Math.abs(v).toFixed(2) + "%" : pct1(v);
+// an OPEN call: green while it is up, red while it is down (closed calls stay ink / red)
+export const openClass = (p) => p == null || isNaN(p) || Math.abs(p) < 0.05 ? "" : p > 0 ? "gain" : "neg";
 export const pctClass = (p) => p == null || isNaN(p) || Math.abs(p) < 0.05 ? "" : p > 0 ? "pos" : "neg";   // same zero band as pct1
 
 // Company logo with a letter-badge fallback.

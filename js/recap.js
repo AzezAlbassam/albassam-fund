@@ -6,10 +6,10 @@
 // With no ?m it shows the last finished month.
 // ============================================================
 
-import { initShell, observeReveals, countTo, pct1, pts1, day, esc, logoHtml } from "./shell.js?v=46";
-import { live, state } from "./live.js?v=46";
-import { today, wtOn } from "./roi.js?v=46";
-import { loadRace, monthly } from "./series.js?v=46";
+import { initShell, observeReveals, countTo, pct1, pts1, onPot, day, esc, logoHtml } from "./shell.js?v=47";
+import { live, state } from "./live.js?v=47";
+import { today, wtOn, contribPts } from "./roi.js?v=47";
+import { loadRace, monthly } from "./series.js?v=47";
 
 const $ = (id) => document.getElementById(id);
 const NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -95,7 +95,7 @@ function paint(M) {
   const { closed, opened, won, lost } = monthCalls(state.trades, m), flat = closed.length - won - lost;
   const card = (t) => `<p class="who">${logoHtml(t)}<span>${esc(t.ticker)}</span></p>
     <p class="n${t.finalPct < 0 ? " neg" : ""}">${pct1(t.finalPct)}</p>
-    <small>${day(t.opened)} → ${day(t.closed || t.opened)}${t.wt > 0 ? ` · ${pct1((t.wt * t.finalPct) / 100)} on the pot` : ""}</small>`;
+    <small>${day(t.opened)} → ${day(t.closed || t.opened)}${t.wt > 0 ? ` · ${onPot(contribPts(t, state.trades))} on the fund` : ""}</small>`;
   const none = note(running ? "No call has closed yet this month." : "No call closed this month.");
   $("rcBest").innerHTML = closed.length ? card(closed[0]) : none;
   $("rcWorstK").textContent = closed.length > 1 && closed.at(-1).finalPct < 0 ? "Worst call" : "Weakest call";

@@ -214,6 +214,17 @@ export const potK = (trades) => 1 + bankedPct(trades) / 100;
 // The cash bar, the size labels and "on the pot" use it.
 export const share = (t, trades) => (!(t.wt > 0) ? 0 : t.status === "closed" ? +t.wt : +(book(t, trades).held / potK(trades)).toFixed(4));
 
+// What a call adds to the fund's total, in points of the start: a closed call
+// its size x final %, an open call what its sales banked plus what the shares
+// still held are up or down. Summed over the calls it IS simulate().totalPct,
+// so every "on the pot" figure adds up to the headline.
+export function contribPts(t, trades, quotes) {
+  if (!(t.wt > 0)) return null;
+  if (t.status === "closed") return t.finalPct != null ? sizePts(t, trades) * t.finalPct / 100 : null;
+  const b = book(t, trades), p = statPct(t, quotes);
+  return p == null ? null : b.net + b.cap * p / 100 - b.gross;
+}
+
 // "$X since day one" — BANKING model (no leverage). Each call's "% of
 // pot" is the capital put to work in it. Closed calls BANK their result
 // (size × final %); a sale from an open call banks what it locked in; the

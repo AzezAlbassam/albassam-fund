@@ -1,0 +1,5 @@
+{
+  "_why": "Closes Yahoo serves wrong or never serves, checked against CNBC's official daily bars. They win over Yahoo on every run (tools/market_data.py).",
+  "SNDK": {"2026-11-23": 87.71, "2026-11-24": 77.95},
+  "^TASI.SR": {"2026-11-08": 10016.92, "2026-11-15": 10258.22, "2026-11-22": 9960.44}
+}

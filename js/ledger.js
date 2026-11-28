@@ -5,11 +5,11 @@
 // so expanded rows, sparklines and reveals survive every change.
 // ============================================================
 
-import { initShell, observeReveals, onReveal, countTo, roll, usd0, usd2, pct1, day, daysBetween, esc, logoHtml } from "./shell.js?v=46";
-import { live, state } from "./live.js?v=46";
-import { derive, blendedPct, today, exitPx, lastAdd, cashPct, share, bankedPct, sizePts } from "./roi.js?v=46";
-import { potUsd } from "./cashpick.js?v=46";
-import { history } from "./history.js?v=46";
+import { initShell, observeReveals, onReveal, countTo, roll, usd0, usd2, pct1, onPot, day, daysBetween, esc, logoHtml } from "./shell.js?v=47";
+import { live, state } from "./live.js?v=47";
+import { derive, blendedPct, today, exitPx, lastAdd, cashPct, share, bankedPct, sizePts, contribPts } from "./roi.js?v=47";
+import { potUsd } from "./cashpick.js?v=47";
+import { history } from "./history.js?v=47";
 
 initShell();
 
@@ -21,7 +21,7 @@ document.querySelectorAll(".lhead h1 .w").forEach(w => {
   w.innerHTML = [...w.textContent].map(ch => `<span class="ch" style="--i:${ci++}">${esc(ch)}</span>`).join("");
 });
 // the header: a calm line maze, no path through it
-import("./maze.js?v=46")
+import("./maze.js?v=47")
   .then(m => m.startMaze($("#lmaze"), { cols: 12, rows: 9, seed: 20260815, spin: 0.035, fit: 1, path: false }))
   .catch(err => console.warn("3D maze unavailable:", err));
 
@@ -36,7 +36,7 @@ let byId = new Map();
 const isOpen = (t) => t.status !== "closed";
 const pctOf = (t) => isOpen(t) ? blendedPct(t, state.quotes[t.ticker]?.c ?? null) : (t.finalPct ?? null);
 const sz = (t) => share(t, state.trades);   // "% of pot": an open call's share of today's pot (roi.js)
-const potPts = (t, p) => (t.wt > 0 && p != null ? (sz(t) * p) / 100 : null);   // % the call added to the pot
+const potPts = (t, p) => (p == null ? null : contribPts(t, state.trades, state.quotes));   // what the call added to the fund (adds up to the headline)
 const endOf = (t) => (isOpen(t) ? today() : t.closed || t.opened || "");
 const money = (v) => (v == null || isNaN(v) ? "…" : usd2(Number(v)));
 const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
@@ -59,7 +59,7 @@ const SORTS = {
 
 /* ----------------------- row markup ----------------------- */
 function stampHtml(t, p) {
-  const cls = isOpen(t) ? "open" : p < 0 ? "loss" : "";
+  const cls = isOpen(t) ? "open" + (p == null || Math.abs(p) < 0.05 ? "" : p > 0 ? " gain" : " loss") : p < 0 ? "loss" : "";
   return `<span class="stamp ${cls}">${p == null ? "…" : pct1(p)}<small>${isOpen(t) ? "OPEN" : "CLOSED"}</small></span>`;
 }
 
@@ -80,9 +80,9 @@ function potHtml(t, p) {
   const v = potPts(t, p);
   // a closed loss had no profit to purify: no note
   const pur = t.pur > 0 && (isOpen(t) || (t.grossPct ?? t.finalPct) > 0) ? `<span class="sz">${isOpen(t) ? `${+t.pur}% purification at close` : `after ${+t.pur}% purification`}</span>` : "";
-  return `<span class="sz">${+sz(t).toFixed(1)}% of pot</span>` + pur +
+  return `<span class="sz">${+sz(t).toFixed(1)}% of ${isOpen(t) ? "today's pot" : "pot"}</span>` + pur +
     // red only for what prints as a loss (-0.1% or worse)
-    (v == null ? "" : `<span class="money ${v <= -0.05 ? "loss" : "pos"}"><b>${pct1(v)}</b> on the pot</span>`);
+    (v == null ? "" : `<span class="money ${v <= -0.005 ? "loss" : isOpen(t) && v >= 0.005 ? "gain" : "pos"}"><b>${onPot(v)}</b> on the fund</span>`);
 }
 
 function txHtml(t) {
@@ -264,7 +264,7 @@ list.addEventListener("click", (e) => {
   const s = e.target.closest("[data-share]");
   if (s) {   // the manager's picture of this call for WhatsApp
     const t = byId.get(s.dataset.share);
-    if (t) import("./card.js?v=46").then(m => m.shareCall(t)).catch(err => console.error("share card failed:", err));
+    if (t) import("./card.js?v=47").then(m => m.shareCall(t)).catch(err => console.error("share card failed:", err));
     return;
   }
   const b = e.target.closest(".call-head");
